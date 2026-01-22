@@ -1,25 +1,15 @@
+//using link instead of <a> to enable SPA nav
+//updates URL without reloading the page
 import { Link } from "react-router-dom";
 
 export default function Navbar() {
   return (
-    <div
-      style={{
-        width: 220,
-        backgroundColor: "#198754", // bootstrap green
-        color: "white",
-        padding: 20,
-      }}
-    >
+    <div className="sidebar">
       <h4>EduEire</h4>
 
-      <nav style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-        <Link to="/" style={{ color: "white", textDecoration: "none" }}>
-          Landing
-        </Link>
-
-        <Link to="/login" style={{ color: "white", textDecoration: "none" }}>
-          Login
-        </Link>
+      <nav className="sidebar__nav">
+        <Link to="/">Landing</Link>
+        <Link to="/login">Login</Link>
       </nav>
     </div>
   );

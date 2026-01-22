@@ -1,14 +1,15 @@
-import { Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Landing from "./pages/Landing";
+import { Routes, Route } from "react-router-dom"; //define which component is rendered
+import Navbar from "./components/Navbar"; //Navvar always visible for now 
+//page components (SPA pages, not HTML everytime)
+import Landing from "./pages/Landing"; //
 import Login from "./pages/Login";
 
 export default function App() {
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div className="app-layout">
       <Navbar />
 
-      <div style={{ flex: 1 }}>
+      <div className="page-content">
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
