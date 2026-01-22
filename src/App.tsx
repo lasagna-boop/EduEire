@@ -1,23 +1,18 @@
+import { Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+
 export default function App() {
   return (
-    <div>
-      <video
-        src="/TestLogo.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-        style={{
-          width: 100,
-          height: 100,
-          position: "fixed",
-          top: 50,
-          left: 50,
-        }}
-      />
+    <div style={{ display: "flex", height: "100vh" }}>
+      <Navbar />
 
-      <div style={{ padding: 50 }}>
-        
+      <div style={{ flex: 1 }}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+        </Routes>
       </div>
     </div>
   );
