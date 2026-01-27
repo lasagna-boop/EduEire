@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 type Post = {
   id: string;
   title: string;
@@ -6,39 +8,49 @@ type Post = {
   tags: string[];
   author: string;
   createdAt: string;
+  score?: number;
 };
 
 export default function PostCard({ post }: { post: Post }) {
+  const [score, setScore] = useState(post.score ?? 0);
+
   return (
-    <div
-      style={{
-        border: "1px solid #e5e7eb",
-        borderRadius: 12,
-        padding: 16,
-        background: "white",
-      }}
-    >
-      <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>
-        {post.university} • @{post.author} • {post.createdAt}
+    <div className="post-card">
+      <div className="post-card__votes">
+        <button
+          className="post-card__vote-btn"
+          onClick={() => setScore((s) => s + 1)}
+          aria-label="Upvote"
+        >
+          ▲
+        </button>
+
+        <div className="post-card__score">{score}</div>
+
+        <button
+          className="post-card__vote-btn"
+          onClick={() => setScore((s) => s - 1)}
+          aria-label="Downvote"
+        >
+          ▼
+        </button>
       </div>
 
-      <h3 style={{ margin: 0, marginBottom: 8 }}>{post.title}</h3>
-      <p style={{ margin: 0, marginBottom: 12, lineHeight: 1.4 }}>{post.body}</p>
+      <div className="post-card__content">
+        <div className="post-card__meta">
+          {post.university} • @{post.author} • {post.createdAt}
+        </div>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {post.tags.map((t) => (
-          <span
-            key={t}
-            style={{
-              fontSize: 12,
-              padding: "4px 8px",
-              borderRadius: 999,
-              background: "#f3f4f6",
-            }}
-          >
-            #{t}
-          </span>
-        ))}
+        <h3 className="post-card__title">{post.title}</h3>
+        <p className="post-card__body">{post.body}</p>
+
+        <div className="post-card__tags">
+          {post.tags.map((t) => (
+            <span key={t} className="post-card__tag">
+              #{t}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );

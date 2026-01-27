@@ -8,6 +8,7 @@ type Post = {
   tags: string[];
   author: string;
   createdAt: string; // keep simple for now
+  score? : number ; 
 };
 
 const MOCK_POSTS: Post[] = [
@@ -17,8 +18,9 @@ const MOCK_POSTS: Post[] = [
     body: "Any tips/resources/past papers that helped you? Trying to build a decent revision plan.",
     university: "TU Dublin",
     tags: ["exams", "computer-architecture", "tips"],
-    author: "anon",
+    author: "anon", 
     createdAt: "2026-01-27",
+    score : 12 ,
   },
   {
     id: "2",
@@ -28,6 +30,7 @@ const MOCK_POSTS: Post[] = [
     tags: ["study", "campus"],
     author: "mary",
     createdAt: "2026-01-25",
+    score : 9,
   },
   {
     id: "3",
@@ -42,10 +45,10 @@ const MOCK_POSTS: Post[] = [
 
 export default function Feed() {
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ marginBottom: 16 }}>Feed</h2>
+    <div className="feed">
+      <h2 className="feed__title">Feed</h2>
 
-      <div style={{ display: "grid", gap: 12, maxWidth: 820 }}>
+      <div className="feed__list">
         {MOCK_POSTS.map((post) => (
           <PostCard key={post.id} post={post} />
         ))}

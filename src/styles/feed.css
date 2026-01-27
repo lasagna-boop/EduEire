@@ -1,0 +1,101 @@
+/* ===== Feed page ===== */
+
+.feed {
+  padding: 32px;
+  max-width: 980px;
+}
+
+.feed__title {
+  margin: 0 0 16px 0;
+  font-size: 28px;
+}
+
+.feed__list {
+  display: grid;
+  gap: 14px;
+  max-width: 860px;
+}
+
+/* ===== Post card ===== */
+
+.post-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  background: white;
+
+  display: flex;
+  gap: 14px;
+}
+
+.post-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.post-card__meta {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-bottom: 8px;
+}
+
+.post-card__title {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+}
+
+.post-card__body {
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+
+.post-card__tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.post-card__tag {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+/* ===== Votes ===== */
+
+.post-card__votes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 44px;
+  user-select: none;
+}
+
+.post-card__vote-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.post-card__vote-btn:hover {
+  background: #f3f4f6;
+}
+
+.post-card__score {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.page-content {
+  display: flex;
+  justify-content: center; /*not ideal but works for now*/
+}
