@@ -10,6 +10,7 @@ export default function Navbar() {
       <nav className="sidebar__nav">
         <Link to="/">Landing</Link>
         <Link to="/login">Login</Link>
+        <Link to="/feed">Feed</Link>
       </nav>
     </div>
   );
