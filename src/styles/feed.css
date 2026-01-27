@@ -95,6 +95,30 @@
   font-size: 14px;
 }
 
+.post-card__vote-btn--active {
+  background: #e6f4ea;
+  border-color: #198754;
+}
+
+/* Active upvote */
+.post-card__vote-btn--up {
+  background: #e6f4ea;       /* light green */
+  border-color: #198754;
+  color: #198754;
+}
+
+/* Active downvote */
+.post-card__vote-btn--down {
+  background: #fde8e8;       /* light red */
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.post-card__vote-btn--disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .page-content {
   display: flex;
   justify-content: center; /*not ideal but works for now*/

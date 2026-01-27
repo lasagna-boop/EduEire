@@ -22,7 +22,7 @@ export default function App() {
       <div className="page-content">
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/feed" element={<Feed />} />
+          <Route path="/feed" element={<Feed user={user} />} />
           <Route path="/login" element={<Login user={user} onLogin={login} />} />
         </Routes>
       </div>
