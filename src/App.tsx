@@ -4,17 +4,26 @@ import Navbar from "./components/Navbar"; //Navvar always visible for now
 import Landing from "./pages/Landing"; //
 import Login from "./pages/Login";
 import Feed from "./pages/Feed"; 
+import { useState } from "react";
+
+type User = { name: string };
 
 export default function App() {
+  // Mock auth state (later replaced by Firebase Auth)
+  const [user, setUser] = useState<User | null>(null);
+
+  const login = () => setUser({ name: "stevie" });
+  const logout = () => setUser(null);
+
   return (
     <div className="app-layout">
-      <Navbar />
+      <Navbar user={user} onLogin={login} onLogout={logout} />
 
       <div className="page-content">
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
           <Route path="/feed" element={<Feed />} />
+          <Route path="/login" element={<Login user={user} onLogin={login} />} />
         </Routes>
       </div>
     </div>

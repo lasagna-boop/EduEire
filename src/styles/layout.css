@@ -35,3 +35,29 @@
 .page-content {
   flex: 1;
 }
+
+/* Auth block in the sidebar (mock auth for now) */
+.sidebar__auth {
+  margin-top: 24px;
+}
+
+.sidebar__user {
+  opacity: 0.9;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.sidebar__auth-btn {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sidebar__auth-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
