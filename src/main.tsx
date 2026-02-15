@@ -1,17 +1,20 @@
-//main.tsx for initialising the entire thing
-import "bootstrap/dist/css/bootstrap.min.css";
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client"; //react to DOM endpoint
-import { BrowserRouter } from "react-router-dom"; //single page navigation
-import App from "./App"; //root component
-import "./styles/layout.css";  //layout styling
-import "./styles/feed.css"
+// App entry point: loads global styles, mounts React, and wraps <App /> with providers.
 
-//react app goes inside root div id from index.html
-createRoot(document.getElementById("root")!).render( 
+import "bootstrap/dist/css/bootstrap.min.css"; //CSS framework
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom"; // SPA routе
+import App from "./App";
+import { AuthProvider } from "./context/AuthContext"; //global auth state
+import "./styles/layout.css"; //global layout styling
+import "./styles/feed.css"; // Feed/page styling might remove later
+
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>
 );

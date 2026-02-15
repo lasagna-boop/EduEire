@@ -1,3 +1,5 @@
+// simple landing page (placeholder for now)
+
 export default function Landing() {
   return (
     <div

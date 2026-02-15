@@ -1,18 +1,18 @@
-/* Root app layout */
+/* main app layout (sidebar + content) */
 .app-layout {
   display: flex;
   height: 100vh;
 }
 
-/* Sidebar navigation */
+/* left sidebar */
 .sidebar {
   width: 220px;
-  background-color: #198754; /* Bootstrap green */
+  background-color: #198754; /* bootstrap green */
   color: white;
   padding: 20px;
 }
 
-/* Navigation links container */
+/* nav links inside sidebar */
 .sidebar__nav {
   margin-top: 24px;
   display: flex;
@@ -20,9 +20,9 @@
   gap: 12px;
 }
 
-/* Navigation links */
+/* override bootstrap link color */
 .sidebar__nav a {
-  color: white; /*overrwrite default bootstrap color blue*/
+  color: white;
   text-decoration: none;
   font-weight: 500;
 }
@@ -31,12 +31,12 @@
   text-decoration: underline;
 }
 
-/* Main page content */
+/* right side content */
 .page-content {
   flex: 1;
 }
 
-/* Auth block in the sidebar (mock auth for now) */
+/* auth section inside sidebar */
 .sidebar__auth {
   margin-top: 24px;
 }

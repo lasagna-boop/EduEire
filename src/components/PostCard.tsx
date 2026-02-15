@@ -1,3 +1,6 @@
+// ui card for a single post (mock for now)
+// vote logic is local state only (not saved to firestore yet)
+
 import { useEffect, useState } from "react";
 
 type Vote = "up" | "down" | null;
@@ -20,12 +23,14 @@ export default function PostCard({
   post: Post;
   user: { name: string } | null;
 }) {
+  // local score + vote state (starts from mock post.score)
   const [score, setScore] = useState(post.score ?? 0);
   const [vote, setVote] = useState<Vote>(null);
 
+  // only logged in users can vote
   const canVote = !!user;
 
-  // If user logs out, reset local vote state
+  // if user logs out, reset local vote state back to original score
   useEffect(() => {
     if (!user) {
       setVote(null);
@@ -36,10 +41,12 @@ export default function PostCard({
   const handleUpvote = () => {
     if (!canVote) return;
 
+    // click again = undo vote
     if (vote === "up") {
       setScore((s) => s - 1);
       setVote(null);
     } else if (vote === "down") {
+      // switch from down -> up (net +2)
       setScore((s) => s + 2);
       setVote("up");
     } else {
@@ -55,6 +62,7 @@ export default function PostCard({
       setScore((s) => s + 1);
       setVote(null);
     } else if (vote === "up") {
+      // switch from up -> down (net -2)
       setScore((s) => s - 2);
       setVote("down");
     } else {
