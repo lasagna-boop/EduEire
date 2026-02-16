@@ -22,11 +22,13 @@ import { db } from "./firebase";
 export type Thread = {
   id: string;
   title: string;
+  body: string ; 
   university: string;
   tags: string[];
   authorId: string;
   authorName: string;
   createdAt?: any;
+  score?: number; 
 };
 
 // basic shape of a post doc in "threads/{threadId}/posts"
@@ -42,6 +44,7 @@ export type Post = {
 // also stores lastActivityAt + postCount for sorting and future features
 export async function createThread(input: {
   title: string;
+  body: string; 
   university: string;
   tags: string[];
   authorId: string;
@@ -49,6 +52,7 @@ export async function createThread(input: {
 }) {
   const ref = await addDoc(collection(db, "threads"), {
     ...input,
+    score: 0,
     createdAt: serverTimestamp(),
     lastActivityAt: serverTimestamp(),
     postCount: 0,

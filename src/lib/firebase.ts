@@ -1,8 +1,6 @@
-//firebase initialises ONLY here 
-//auth and db imports from this file to the entire project!! 
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,4 +14,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// fixes "stuck loading" when extensions/shields block firestore transport
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
