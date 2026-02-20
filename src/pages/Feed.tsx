@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import { createThread, listThreads } from "../lib/firestore";
 import { useAuth } from "../context/AuthContext";
+import { logout } from "../lib/auth";
 
 type UserLite = { name: string } | null;
 
-// shape that PostCard expects right now
 type PostCardPost = {
   id: string;
   title: string;
@@ -18,7 +19,6 @@ type PostCardPost = {
 };
 
 function formatCreatedAt(createdAt: any): string {
-  // firestore Timestamp -> date string (yyyy-mm-dd)
   try {
     if (createdAt?.toDate) return createdAt.toDate().toISOString().slice(0, 10);
   } catch {}
@@ -31,8 +31,8 @@ export default function Feed({ user }: { user: UserLite }) {
   const [posts, setPosts] = useState<PostCardPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // new thread form
   const [showNew, setShowNew] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -105,70 +105,161 @@ export default function Feed({ user }: { user: UserLite }) {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (e) {
+      console.error("Logout failed", e);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: implement search filtering
+  };
+
+  const filteredPosts = searchQuery
+    ? posts.filter(
+        (p) =>
+          p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.body.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : posts;
+
   return (
-    <div className="feed">
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <h2 className="feed__title" style={{ margin: 0 }}>
-          Feed
-        </h2>
+    <div className="feed-page">
+      {/* Header */}
+      <header className="feed-page__header">
+        <Link to="/" className="feed-page__logo">
+          <img src="/logo.png" alt="EduÉire" className="feed-page__logo-img" />
+        </Link>
 
-        {fbUser && (
-          <button type="button" onClick={() => setShowNew((v) => !v)} disabled={busy}>
-            {showNew ? "Close" : "New thread"}
-          </button>
-        )}
-      </div>
-
-      {error && <p style={{ color: "red", marginTop: 12 }}>{error}</p>}
-
-      {showNew && fbUser && (
-        <form
-          onSubmit={handleCreate}
-          style={{ display: "grid", gap: 10, marginTop: 14, maxWidth: 720 }}
-        >
+        <form className="feed-page__search" onSubmit={handleSearch}>
+          <span className="feed-page__search-icon">🔍</span>
           <input
-            placeholder="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
+            type="text"
+            placeholder="Search posts"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="feed-page__search-input"
           />
-
-          <textarea
-            placeholder="body"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows={4}
-            required
-          />
-
-          <input
-            placeholder="university"
-            value={university}
-            onChange={(e) => setUniversity(e.target.value)}
-            required
-          />
-
-          <input
-            placeholder="tags (comma separated)"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-          />
-
-          <button type="submit" disabled={busy}>
-            {busy ? "Posting…" : "Post"}
-          </button>
         </form>
-      )}
 
-      {loading ? (
-        <p style={{ marginTop: 16 }}>Loading…</p>
-      ) : (
-        <div className="feed__list" style={{ marginTop: 16 }}>
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} user={user} />
-          ))}
+        <div className="feed-page__actions">
+          {fbUser && (
+            <>
+              <span className="feed-page__user">
+                {fbUser.displayName || fbUser.email}
+              </span>
+              <button onClick={handleLogout} className="feed-page__btn feed-page__btn--outline">
+                Log Out
+              </button>
+            </>
+          )}
         </div>
-      )}
+      </header>
+
+      {/* Main Content */}
+      <main className="feed-page__main">
+        <div className="feed-page__content">
+          {/* Create Post Card */}
+          {fbUser && (
+            <div className="feed-page__create-card">
+              {!showNew ? (
+                <button
+                  className="feed-page__create-trigger"
+                  onClick={() => setShowNew(true)}
+                >
+                  <span className="feed-page__create-icon">✏️</span>
+                  <span>Create Post</span>
+                </button>
+              ) : (
+                <form onSubmit={handleCreate} className="feed-page__create-form">
+                  <input
+                    className="feed-page__input"
+                    placeholder="Title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                  />
+                  <textarea
+                    className="feed-page__textarea"
+                    placeholder="What's on your mind?"
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    rows={4}
+                    required
+                  />
+                  <div className="feed-page__form-row">
+                    <input
+                      className="feed-page__input"
+                      placeholder="University"
+                      value={university}
+                      onChange={(e) => setUniversity(e.target.value)}
+                      required
+                    />
+                    <input
+                      className="feed-page__input"
+                      placeholder="Tags (comma separated)"
+                      value={tags}
+                      onChange={(e) => setTags(e.target.value)}
+                    />
+                  </div>
+                  <div className="feed-page__form-actions">
+                    <button
+                      type="button"
+                      onClick={() => setShowNew(false)}
+                      className="feed-page__btn feed-page__btn--outline"
+                      disabled={busy}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="feed-page__btn feed-page__btn--filled"
+                      disabled={busy}
+                    >
+                      {busy ? "Posting…" : "Post"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
+          {error && <p className="feed-page__error">{error}</p>}
+
+          {/* Posts List */}
+          {loading ? (
+            <div className="feed-page__loading">Loading posts…</div>
+          ) : filteredPosts.length === 0 ? (
+            <div className="feed-page__empty">No posts yet. Be the first to post!</div>
+          ) : (
+            <div className="feed-page__list">
+              {filteredPosts.map((post) => (
+                <PostCard key={post.id} post={post} user={user} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <aside className="feed-page__sidebar">
+          <div className="feed-page__sidebar-card">
+            <h3>About EduÉire</h3>
+            <p>Ireland's community for students and educators to connect, share, and learn together.</p>
+          </div>
+          {fbUser && (
+            <div className="feed-page__sidebar-card">
+              <h3>Quick Links</h3>
+              <ul className="feed-page__quick-links">
+                <li><Link to="/">Home</Link></li>
+                <li><button onClick={() => setShowNew(true)}>Create Post</button></li>
+              </ul>
+            </div>
+          )}
+        </aside>
+      </main>
     </div>
   );
 }
