@@ -1,15 +1,13 @@
-// ui card for a single post (mock for now)
-// vote logic is local state only (not saved to firestore yet)
-
 import { useEffect, useState } from "react";
-
-type Vote = "up" | "down" | null;
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { getUserVote, voteOnThread, type Vote } from "../lib/firestore";
 
 type Post = {
   id: string;
   title: string;
   body: string;
-  university: string;
+  communityId: string;
   tags: string[];
   author: string;
   createdAt: string;
@@ -23,51 +21,74 @@ export default function PostCard({
   post: Post;
   user: { name: string } | null;
 }) {
-  // local score + vote state (starts from mock post.score)
+  const { user: fbUser } = useAuth();
+  
   const [score, setScore] = useState(post.score ?? 0);
   const [vote, setVote] = useState<Vote>(null);
+  const [voting, setVoting] = useState(false);
 
-  // only logged in users can vote
-  const canVote = !!user;
+  const canVote = !!fbUser;
 
-  // if user logs out, reset local vote state back to original score
+  // fetch user's existing vote on mount
   useEffect(() => {
-    if (!user) {
+    if (fbUser) {
+      getUserVote(post.id, fbUser.uid)
+        .then(setVote)
+        .catch((e) => console.error("Failed to get vote", e));
+    } else {
       setVote(null);
-      setScore(post.score ?? 0);
     }
-  }, [user, post.score]);
+  }, [fbUser, post.id]);
+
+  // update score when post changes
+  useEffect(() => {
+    setScore(post.score ?? 0);
+  }, [post.score]);
+
+  const handleVote = async (newVote: Vote) => {
+    if (!canVote || !fbUser || voting) return;
+
+    const oldVote = vote;
+    const oldScore = score;
+
+    // optimistic update
+    let scoreChange = 0;
+    if (oldVote === null && newVote === "up") scoreChange = 1;
+    else if (oldVote === null && newVote === "down") scoreChange = -1;
+    else if (oldVote === "up" && newVote === null) scoreChange = -1;
+    else if (oldVote === "up" && newVote === "down") scoreChange = -2;
+    else if (oldVote === "down" && newVote === null) scoreChange = 1;
+    else if (oldVote === "down" && newVote === "up") scoreChange = 2;
+
+    setVote(newVote);
+    setScore((s) => s + scoreChange);
+    setVoting(true);
+
+    try {
+      await voteOnThread(post.id, fbUser.uid, newVote);
+    } catch (e) {
+      console.error("Failed to vote", e);
+      // revert on error
+      setVote(oldVote);
+      setScore(oldScore);
+    } finally {
+      setVoting(false);
+    }
+  };
 
   const handleUpvote = () => {
-    if (!canVote) return;
-
-    // click again = undo vote
     if (vote === "up") {
-      setScore((s) => s - 1);
-      setVote(null);
-    } else if (vote === "down") {
-      // switch from down -> up (net +2)
-      setScore((s) => s + 2);
-      setVote("up");
+      handleVote(null);
     } else {
-      setScore((s) => s + 1);
-      setVote("up");
+      handleVote("up");
     }
   };
 
   const handleDownvote = () => {
-    if (!canVote) return;
-
     if (vote === "down") {
-      setScore((s) => s + 1);
-      setVote(null);
-    } else if (vote === "up") {
-      // switch from up -> down (net -2)
-      setScore((s) => s - 2);
-      setVote("down");
+      handleVote(null);
     } else {
-      setScore((s) => s - 1);
-      setVote("down");
+      handleVote("down");
     }
   };
 
@@ -107,7 +128,10 @@ export default function PostCard({
 
       <div className="post-card__content">
         <div className="post-card__meta">
-          {post.university} • @{post.author} • {post.createdAt}
+          <Link to={`/c/${post.communityId}`} className="post-card__community">
+            c/{post.communityId}
+          </Link>
+          {" • "}@{post.author} • {post.createdAt}
         </div>
 
         <h3 className="post-card__title">{post.title}</h3>

@@ -1,34 +1,160 @@
 // src/lib/firestore.ts
-// firestore helpers for threads + posts
-// idea: keep db queries here so ui stays cleaner and doesn't import firebase sdk everywhere
+// firestore helpers for threads, posts, communities, and subscriptions
 
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   collection,
   doc,
+  getDoc,
   getDocs,
+  increment,
   limit,
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
+  updateDoc,
   where,
   startAfter,
 } from "firebase/firestore";
 import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 
-// basic shape of a thread doc in "threads" collection
-// createdAt is a firestore timestamp (right now typed as any for simplicity)
+// ==================== COMMUNITIES ====================
+
+export type Community = {
+  id: string;
+  name: string;
+  fullName: string;
+  description: string;
+  memberCount: number;
+  createdAt?: any;
+};
+
+// get a single community by ID
+export async function getCommunity(communityId: string): Promise<Community | null> {
+  const snap = await getDoc(doc(db, "communities", communityId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...(snap.data() as any) };
+}
+
+// list all communities
+export async function listCommunities(): Promise<Community[]> {
+  const q = query(collection(db, "communities"), orderBy("name", "asc"));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+}
+
+// create a community (used for seeding)
+export async function createCommunity(input: {
+  id: string;
+  name: string;
+  fullName: string;
+  description: string;
+}) {
+  await setDoc(doc(db, "communities", input.id), {
+    name: input.name,
+    fullName: input.fullName,
+    description: input.description,
+    memberCount: 0,
+    createdAt: serverTimestamp(),
+  });
+  return input.id;
+}
+
+// seed initial communities (safe to call multiple times - uses setDoc with merge)
+export async function seedCommunities() {
+  const communities = [
+    {
+      id: "tud",
+      name: "TUD",
+      fullName: "Technological University Dublin",
+      description: "Community for TU Dublin students and staff",
+    },
+    {
+      id: "trinity",
+      name: "Trinity",
+      fullName: "Trinity College Dublin",
+      description: "Community for Trinity College Dublin students and staff",
+    },
+    {
+      id: "ucd",
+      name: "UCD",
+      fullName: "University College Dublin",
+      description: "Community for UCD students and staff",
+    },
+  ];
+
+  for (const c of communities) {
+    await setDoc(
+      doc(db, "communities", c.id),
+      {
+        name: c.name,
+        fullName: c.fullName,
+        description: c.description,
+        memberCount: 0,
+        createdAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }
+
+  return communities.map((c) => c.id);
+}
+
+// ==================== USER SUBSCRIPTIONS ====================
+
+export type UserProfile = {
+  id: string;
+  subscriptions: string[];
+};
+
+// get user's subscriptions
+export async function getUserSubscriptions(userId: string): Promise<string[]> {
+  const snap = await getDoc(doc(db, "users", userId));
+  if (!snap.exists()) return [];
+  return snap.data()?.subscriptions || [];
+}
+
+// subscribe to a community
+export async function subscribeToCommunity(userId: string, communityId: string) {
+  const userRef = doc(db, "users", userId);
+  const communityRef = doc(db, "communities", communityId);
+
+  await setDoc(userRef, { subscriptions: arrayUnion(communityId) }, { merge: true });
+  await updateDoc(communityRef, { memberCount: increment(1) });
+}
+
+// unsubscribe from a community
+export async function unsubscribeFromCommunity(userId: string, communityId: string) {
+  const userRef = doc(db, "users", userId);
+  const communityRef = doc(db, "communities", communityId);
+
+  await updateDoc(userRef, { subscriptions: arrayRemove(communityId) });
+  await updateDoc(communityRef, { memberCount: increment(-1) });
+}
+
+// check if user is subscribed to a community
+export async function isSubscribed(userId: string, communityId: string): Promise<boolean> {
+  const subs = await getUserSubscriptions(userId);
+  return subs.includes(communityId);
+}
+
+// ==================== THREADS ====================
+
+// thread now uses communityId instead of university
 export type Thread = {
   id: string;
   title: string;
-  body: string ; 
-  university: string;
+  body: string;
+  communityId: string;
   tags: string[];
   authorId: string;
   authorName: string;
   createdAt?: any;
-  score?: number; 
+  score?: number;
 };
 
 // basic shape of a post doc in "threads/{threadId}/posts"
@@ -41,11 +167,10 @@ export type Post = {
 };
 
 // creates a new thread document
-// also stores lastActivityAt + postCount for sorting and future features
 export async function createThread(input: {
   title: string;
-  body: string; 
-  university: string;
+  body: string;
+  communityId: string;
   tags: string[];
   authorId: string;
   authorName: string;
@@ -60,34 +185,35 @@ export async function createThread(input: {
   return ref.id;
 }
 
-// lists threads with optional university filter + simple cursor pagination
-// sorted by lastActivityAt desc (most active first)
+// lists threads with optional community filter + simple cursor pagination
 export async function listThreads(opts: {
-  university?: string;
+  communityId?: string;
+  communityIds?: string[];
   pageSize?: number;
   cursor?: QueryDocumentSnapshot<DocumentData> | null;
 }) {
   const pageSize = opts.pageSize ?? 20;
-
   const base = collection(db, "threads");
 
-  // query parts (order + limit + optional where + optional startAfter)
-  // note: typed as any[] for now to keep it quick
   const parts: any[] = [orderBy("lastActivityAt", "desc"), limit(pageSize)];
 
-  // filter threads by university if provided
-  if (opts.university) parts.unshift(where("university", "==", opts.university));
+  // filter by single community
+  if (opts.communityId) {
+    parts.unshift(where("communityId", "==", opts.communityId));
+  }
+  // filter by multiple communities (user's subscriptions)
+  else if (opts.communityIds && opts.communityIds.length > 0) {
+    // Firestore 'in' query supports up to 30 values
+    const ids = opts.communityIds.slice(0, 30);
+    parts.unshift(where("communityId", "in", ids));
+  }
 
-  // pagination: if we have a last doc snapshot, start after it
   if (opts.cursor) parts.push(startAfter(opts.cursor));
 
   const q = query(base, ...parts);
   const snap = await getDocs(q);
 
-  // map firestore docs to our Thread type (id + data)
   const threads: Thread[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-
-  // next cursor is the last doc in this page (or null if no docs)
   const nextCursor = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
 
   return { threads, nextCursor };
@@ -118,4 +244,62 @@ export async function listPosts(threadId: string, pageSize = 50) {
 
   const posts: Post[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
   return posts;
+}
+
+// ==================== VOTING ====================
+
+export type Vote = "up" | "down" | null;
+
+// get user's vote on a thread
+export async function getUserVote(threadId: string, userId: string): Promise<Vote> {
+  const voteRef = doc(db, "threads", threadId, "votes", userId);
+  const snap = await getDoc(voteRef);
+  if (!snap.exists()) return null;
+  return snap.data()?.vote || null;
+}
+
+// vote on a thread (handles up, down, and removing vote)
+export async function voteOnThread(
+  threadId: string,
+  userId: string,
+  newVote: Vote
+) {
+  const voteRef = doc(db, "threads", threadId, "votes", userId);
+  const threadRef = doc(db, "threads", threadId);
+  
+  // get current vote
+  const currentSnap = await getDoc(voteRef);
+  const currentVote: Vote = currentSnap.exists() ? currentSnap.data()?.vote : null;
+  
+  // calculate score change
+  let scoreChange = 0;
+  
+  if (currentVote === null && newVote === "up") {
+    scoreChange = 1;
+  } else if (currentVote === null && newVote === "down") {
+    scoreChange = -1;
+  } else if (currentVote === "up" && newVote === null) {
+    scoreChange = -1;
+  } else if (currentVote === "up" && newVote === "down") {
+    scoreChange = -2;
+  } else if (currentVote === "down" && newVote === null) {
+    scoreChange = 1;
+  } else if (currentVote === "down" && newVote === "up") {
+    scoreChange = 2;
+  }
+  
+  // update vote document
+  if (newVote === null) {
+    // remove vote by setting to null (or we could delete the doc)
+    await setDoc(voteRef, { vote: null });
+  } else {
+    await setDoc(voteRef, { vote: newVote });
+  }
+  
+  // update thread score
+  if (scoreChange !== 0) {
+    await updateDoc(threadRef, { score: increment(scoreChange) });
+  }
+  
+  return { newVote, scoreChange };
 }

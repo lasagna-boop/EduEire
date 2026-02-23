@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import SlideMenu from "../components/SlideMenu";
 import {
-  createThread,
+  getCommunity,
   listThreads,
   listCommunities,
-  seedCommunities,
-  type Community,
+  createThread,
+  subscribeToCommunity,
+  unsubscribeFromCommunity,
+  getUserSubscriptions,
+  type Community as CommunityType,
 } from "../lib/firestore";
 import { useAuth } from "../context/AuthContext";
 import { logout } from "../lib/auth";
@@ -32,55 +35,59 @@ function formatCreatedAt(createdAt: any): string {
   return "just now";
 }
 
-export default function Feed({ user }: { user: UserLite }) {
+export default function Community({ user }: { user: UserLite }) {
+  const { communityId } = useParams<{ communityId: string }>();
   const { user: fbUser } = useAuth();
 
+  const [community, setCommunity] = useState<CommunityType | null>(null);
+  const [communities, setCommunities] = useState<CommunityType[]>([]);
   const [posts, setPosts] = useState<PostCardPost[]>([]);
-  const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [showNew, setShowNew] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [communityId, setCommunityId] = useState("");
   const [tags, setTags] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const loadCommunities = async () => {
+  const loadCommunity = async () => {
+    if (!communityId) return;
+    
     try {
-      let list = await listCommunities();
-      
-      // Auto-seed communities if none exist
-      if (list.length === 0) {
-        console.log("No communities found, seeding TUD, Trinity, UCD...");
-        await seedCommunities();
-        list = await listCommunities();
-        console.log("Communities seeded:", list);
-      }
-      
-      setCommunities(list);
-      if (list.length > 0 && !communityId) {
-        setCommunityId(list[0].id);
-      }
+      const c = await getCommunity(communityId);
+      setCommunity(c);
     } catch (e) {
-      console.error("Failed to load/seed communities:", e);
+      console.error("Failed to load community", e);
     }
   };
 
-  const load = async () => {
+  const loadCommunities = async () => {
+    try {
+      const list = await listCommunities();
+      setCommunities(list);
+    } catch (e) {
+      console.error("Failed to load communities", e);
+    }
+  };
+
+  const loadPosts = async () => {
+    if (!communityId) return;
+    
     setError(null);
     setLoading(true);
 
     try {
-      const { threads } = await listThreads({ pageSize: 30 });
+      const { threads } = await listThreads({ communityId, pageSize: 30 });
 
       const mapped: PostCardPost[] = threads.map((t: any) => ({
         id: t.id,
         title: t.title,
         body: t.body ?? "",
-        communityId: t.communityId ?? t.university ?? "",
+        communityId: t.communityId ?? "",
         tags: Array.isArray(t.tags) ? t.tags : [],
         author: t.authorName || "anon",
         createdAt: formatCreatedAt(t.createdAt),
@@ -89,16 +96,49 @@ export default function Feed({ user }: { user: UserLite }) {
 
       setPosts(mapped);
     } catch (e: any) {
-      setError(e?.message ?? "failed to load threads");
+      setError(e?.message ?? "failed to load posts");
     } finally {
       setLoading(false);
     }
   };
 
+  const checkSubscription = async () => {
+    if (!fbUser || !communityId) return;
+    
+    try {
+      const subs = await getUserSubscriptions(fbUser.uid);
+      setIsSubscribed(subs.includes(communityId));
+    } catch (e) {
+      console.error("Failed to check subscription", e);
+    }
+  };
+
   useEffect(() => {
+    loadCommunity();
     loadCommunities();
-    load();
-  }, []);
+    loadPosts();
+    checkSubscription();
+  }, [communityId, fbUser?.uid]);
+
+  const handleSubscribe = async () => {
+    if (!fbUser || !communityId) return;
+    
+    setSubLoading(true);
+    try {
+      if (isSubscribed) {
+        await unsubscribeFromCommunity(fbUser.uid, communityId);
+        setIsSubscribed(false);
+      } else {
+        await subscribeToCommunity(fbUser.uid, communityId);
+        setIsSubscribed(true);
+      }
+      await loadCommunity();
+    } catch (e) {
+      console.error("Failed to update subscription", e);
+    } finally {
+      setSubLoading(false);
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,9 +167,9 @@ export default function Feed({ user }: { user: UserLite }) {
       setTags("");
       setShowNew(false);
 
-      await load();
+      await loadPosts();
     } catch (e: any) {
-      setError(e?.message ?? "failed to create thread");
+      setError(e?.message ?? "failed to create post");
     } finally {
       setBusy(false);
     }
@@ -145,7 +185,6 @@ export default function Feed({ user }: { user: UserLite }) {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: implement search filtering
   };
 
   const filteredPosts = searchQuery
@@ -169,7 +208,7 @@ export default function Feed({ user }: { user: UserLite }) {
           <span className="feed-page__search-icon">🔍</span>
           <input
             type="text"
-            placeholder="Search posts"
+            placeholder={`Search in c/${communityId}`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="feed-page__search-input"
@@ -199,7 +238,10 @@ export default function Feed({ user }: { user: UserLite }) {
             <ul className="feed-page__community-list">
               {communities.map((c) => (
                 <li key={c.id}>
-                  <Link to={`/c/${c.id}`} className="feed-page__community-link">
+                  <Link
+                    to={`/c/${c.id}`}
+                    className={`feed-page__community-link ${c.id === communityId ? "feed-page__community-link--active" : ""}`}
+                  >
                     <span className="feed-page__community-icon">🎓</span>
                     <span className="feed-page__community-name">c/{c.id}</span>
                   </Link>
@@ -211,6 +253,26 @@ export default function Feed({ user }: { user: UserLite }) {
 
         {/* Center - Posts */}
         <div className="feed-page__content">
+          {/* Community Header */}
+          <div className="community-header">
+            <div className="community-header__info">
+              <h1 className="community-header__title">c/{communityId}</h1>
+              {community && (
+                <p className="community-header__fullname">{community.fullName}</p>
+              )}
+            </div>
+            {fbUser && (
+              <button
+                onClick={handleSubscribe}
+                disabled={subLoading}
+                className={`feed-page__btn ${isSubscribed ? "feed-page__btn--outline" : "feed-page__btn--filled"}`}
+              >
+                {subLoading ? "..." : isSubscribed ? "Joined" : "Join"}
+              </button>
+            )}
+          </div>
+
+          {/* Create Post */}
           {fbUser && (
             <div className="feed-page__create-card">
               {!showNew ? (
@@ -219,7 +281,7 @@ export default function Feed({ user }: { user: UserLite }) {
                   onClick={() => setShowNew(true)}
                 >
                   <span className="feed-page__create-icon">✏️</span>
-                  <span>Create Post</span>
+                  <span>Create Post in c/{communityId}</span>
                 </button>
               ) : (
                 <form onSubmit={handleCreate} className="feed-page__create-form">
@@ -238,27 +300,12 @@ export default function Feed({ user }: { user: UserLite }) {
                     rows={4}
                     required
                   />
-                  <div className="feed-page__form-row">
-                    <select
-                      className="feed-page__select"
-                      value={communityId}
-                      onChange={(e) => setCommunityId(e.target.value)}
-                      required
-                    >
-                      <option value="">Select Community</option>
-                      {communities.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      className="feed-page__input"
-                      placeholder="Tags (comma separated)"
-                      value={tags}
-                      onChange={(e) => setTags(e.target.value)}
-                    />
-                  </div>
+                  <input
+                    className="feed-page__input"
+                    placeholder="Tags (comma separated)"
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                  />
                   <div className="feed-page__form-actions">
                     <button
                       type="button"
@@ -283,10 +330,13 @@ export default function Feed({ user }: { user: UserLite }) {
 
           {error && <p className="feed-page__error">{error}</p>}
 
+          {/* Posts List */}
           {loading ? (
             <div className="feed-page__loading">Loading posts…</div>
           ) : filteredPosts.length === 0 ? (
-            <div className="feed-page__empty">No posts yet. Be the first to post!</div>
+            <div className="feed-page__empty">
+              No posts in c/{communityId} yet. Be the first to post!
+            </div>
           ) : (
             <div className="feed-page__list">
               {filteredPosts.map((post) => (
@@ -296,11 +346,22 @@ export default function Feed({ user }: { user: UserLite }) {
           )}
         </div>
 
-        {/* Right Sidebar - About */}
+        {/* Right Sidebar - Community Info */}
         <aside className="feed-page__right-sidebar">
           <div className="feed-page__sidebar-card">
-            <h3>About EduÉire</h3>
-            <p>Ireland's community for students and educators to connect, share, and learn together.</p>
+            <h3>About c/{communityId}</h3>
+            {community ? (
+              <>
+                <p>{community.description || community.fullName}</p>
+                <div className="community-stats">
+                  <span className="community-stats__item">
+                    <strong>{community.memberCount}</strong> members
+                  </span>
+                </div>
+              </>
+            ) : (
+              <p>Loading...</p>
+            )}
           </div>
         </aside>
       </main>

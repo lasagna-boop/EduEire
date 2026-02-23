@@ -1,15 +1,24 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { login, register } from "../lib/auth";
 import { useAuth } from "../context/AuthContext";
+import SlideMenu from "../components/SlideMenu";
 
 export default function Login() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [isRegister, setIsRegister] = useState(false);
+
+  // Open in signup mode when coming from Landing "Sign Up" (?mode=signup)
+  useEffect(() => {
+    if (searchParams.get("mode") === "signup") {
+      setIsRegister(true);
+    }
+  }, [searchParams]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -35,6 +44,7 @@ export default function Login() {
     <div className="login-page">
       {/* Header */}
       <header className="login-page__header">
+        <SlideMenu />
         <Link to="/" className="login-page__logo">
           <img src="/logo.png" alt="EduÉire" className="login-page__logo-img" />
         </Link>

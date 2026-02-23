@@ -10,6 +10,7 @@ import "./styles/layout.css";
 import "./styles/feed.css";
 import "./styles/landing.css";
 import "./styles/login.css";
+import "./styles/slide-menu.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

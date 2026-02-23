@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { logout } from "../lib/auth";
+import SlideMenu from "../components/SlideMenu";
 
 export default function Landing() {
   const { user } = useAuth();
@@ -27,6 +28,7 @@ export default function Landing() {
     <div className="landing">
       {/* Top Header Bar - Reddit Style */}
       <header className="landing__header">
+        <SlideMenu />
         <Link to="/" className="landing__logo">
           <img src="/logo.png" alt="EduÉire" className="landing__logo-img" />
         </Link>
@@ -57,7 +59,7 @@ export default function Landing() {
               <Link to="/login" className="landing__btn landing__btn--outline">
                 Log In
               </Link>
-              <Link to="/login" className="landing__btn landing__btn--filled">
+              <Link to="/login?mode=signup" className="landing__btn landing__btn--filled">
                 Sign Up
               </Link>
             </>
