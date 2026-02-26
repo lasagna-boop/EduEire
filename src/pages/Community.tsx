@@ -218,9 +218,9 @@ export default function Community({ user }: { user: UserLite }) {
         <div className="feed-page__actions">
           {fbUser && (
             <>
-              <span className="feed-page__user">
+              <Link to="/profile" className="feed-page__user feed-page__user--link">
                 {fbUser.displayName || fbUser.email}
-              </span>
+              </Link>
               <button onClick={handleLogout} className="feed-page__btn feed-page__btn--outline">
                 Log Out
               </button>

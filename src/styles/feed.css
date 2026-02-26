@@ -84,6 +84,14 @@
   font-weight: 500;
 }
 
+.feed-page__user--link {
+  text-decoration: none;
+}
+
+.feed-page__user--link:hover {
+  color: #0079d3;
+}
+
 /* Buttons */
 .feed-page__btn {
   padding: 8px 16px;
@@ -177,6 +185,147 @@
   font-size: 0.9rem;
   color: #7c7c7c;
   margin: 0;
+}
+
+/* Profile */
+.profile-header {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.profile-header__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a1b;
+  margin: 0 0 8px 0;
+}
+
+.profile-header__email {
+  color: #7c7c7c;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.profile-section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.profile-section__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a1b;
+  margin: 0 0 16px 0;
+}
+
+.profile-empty {
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.profile-empty p {
+  color: #7c7c7c;
+  margin: 0 0 16px 0;
+}
+
+.profile-subscriptions {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.profile-subscription-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #edeff1;
+  gap: 12px;
+}
+
+.profile-subscription-item:last-child {
+  border-bottom: none;
+}
+
+.profile-subscription-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+}
+
+.profile-subscription-link:hover .profile-subscription-name {
+  color: #0079d3;
+}
+
+.profile-subscription-icon {
+  font-size: 1.5rem;
+}
+
+.profile-subscription-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-subscription-name {
+  font-weight: 600;
+  color: #1a1a1b;
+}
+
+.profile-subscription-full {
+  font-size: 0.85rem;
+  color: #7c7c7c;
+}
+
+.profile-subscription-unsub {
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #dc3545;
+  border-radius: 20px;
+  background: transparent;
+  color: #dc3545;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.profile-subscription-unsub:hover:not(:disabled) {
+  background: #fde8e8;
+}
+
+.profile-subscription-unsub:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profile-sidebar-loading {
+  margin: 0;
+  color: #7c7c7c;
+  font-size: 0.9rem;
+}
+
+/* Profile posts heading */
+.profile-posts__heading {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a1b;
+  margin: 0 0 12px 0;
+}
+
+/* Profile layout: center posts + right sidebar */
+.profile-main {
+  justify-content: center;
+}
+
+.profile-main .feed-page__content {
+  max-width: 700px;
 }
 
 /* Community Stats */
@@ -536,6 +685,21 @@
     display: none;
   }
 
+  .profile-main .feed-page__right-sidebar.profile-sidebar {
+    display: block;
+    width: 100%;
+    order: -1;
+  }
+
+  .profile-main {
+    flex-wrap: wrap;
+  }
+
+  .profile-main .feed-page__content {
+    max-width: none;
+    width: 100%;
+  }
+
   .feed-page__content {
     max-width: none;
   }
@@ -566,5 +730,17 @@
 
   .feed-page__form-row {
     grid-template-columns: 1fr;
+  }
+
+  .profile-header {
+    padding: 16px;
+  }
+
+  .profile-header__title {
+    font-size: 1.25rem;
+  }
+
+  .profile-posts__heading {
+    font-size: 1rem;
   }
 }

@@ -50,6 +50,9 @@ export default function Landing() {
               <Link to="/feed" className="landing__btn landing__btn--outline">
                 My Feed
               </Link>
+              <Link to="/profile" className="landing__btn landing__btn--outline">
+                Profile
+              </Link>
               <button onClick={handleLogout} className="landing__btn landing__btn--filled">
                 Log Out
               </button>

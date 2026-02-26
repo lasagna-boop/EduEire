@@ -185,25 +185,42 @@ export async function createThread(input: {
   return ref.id;
 }
 
-// lists threads with optional community filter + simple cursor pagination
+// lists threads with optional community/author filter + simple cursor pagination
 export async function listThreads(opts: {
   communityId?: string;
   communityIds?: string[];
+  authorId?: string;
   pageSize?: number;
   cursor?: QueryDocumentSnapshot<DocumentData> | null;
 }) {
   const pageSize = opts.pageSize ?? 20;
   const base = collection(db, "threads");
 
+  // authorId filter skips orderBy to avoid needing a composite index;
+  // results are sorted client-side instead
+  if (opts.authorId) {
+    const parts: any[] = [where("authorId", "==", opts.authorId), limit(pageSize)];
+    if (opts.cursor) parts.push(startAfter(opts.cursor));
+
+    const q = query(base, ...parts);
+    const snap = await getDocs(q);
+
+    const threads: Thread[] = snap.docs
+      .map((d) => ({ id: d.id, ...(d.data() as any) }))
+      .sort((a, b) => {
+        const ta = a.createdAt?.toMillis?.() ?? 0;
+        const tb = b.createdAt?.toMillis?.() ?? 0;
+        return tb - ta;
+      });
+    const nextCursor = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
+    return { threads, nextCursor };
+  }
+
   const parts: any[] = [orderBy("lastActivityAt", "desc"), limit(pageSize)];
 
-  // filter by single community
   if (opts.communityId) {
     parts.unshift(where("communityId", "==", opts.communityId));
-  }
-  // filter by multiple communities (user's subscriptions)
-  else if (opts.communityIds && opts.communityIds.length > 0) {
-    // Firestore 'in' query supports up to 30 values
+  } else if (opts.communityIds && opts.communityIds.length > 0) {
     const ids = opts.communityIds.slice(0, 30);
     parts.unshift(where("communityId", "in", ids));
   }
