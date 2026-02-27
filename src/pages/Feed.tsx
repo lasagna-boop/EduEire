@@ -7,12 +7,11 @@ import {
   listThreads,
   listCommunities,
   seedCommunities,
+  countPosts,
   type Community,
 } from "../lib/firestore";
 import { useAuth } from "../context/AuthContext";
 import { logout } from "../lib/auth";
-
-type UserLite = { name: string } | null;
 
 type PostCardPost = {
   id: string;
@@ -23,6 +22,7 @@ type PostCardPost = {
   author: string;
   createdAt: string;
   score?: number;
+  postCount?: number;
 };
 
 function formatCreatedAt(createdAt: any): string {
@@ -32,7 +32,7 @@ function formatCreatedAt(createdAt: any): string {
   return "just now";
 }
 
-export default function Feed({ user }: { user: UserLite }) {
+export default function Feed() {
   const { user: fbUser } = useAuth();
 
   const [posts, setPosts] = useState<PostCardPost[]>([]);
@@ -76,7 +76,9 @@ export default function Feed({ user }: { user: UserLite }) {
     try {
       const { threads } = await listThreads({ pageSize: 30 });
 
-      const mapped: PostCardPost[] = threads.map((t: any) => ({
+      const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
+
+      const mapped: PostCardPost[] = threads.map((t: any, i: number) => ({
         id: t.id,
         title: t.title,
         body: t.body ?? "",
@@ -85,6 +87,7 @@ export default function Feed({ user }: { user: UserLite }) {
         author: t.authorName || "anon",
         createdAt: formatCreatedAt(t.createdAt),
         score: t.score ?? 0,
+        postCount: counts[i],
       }));
 
       setPosts(mapped);
@@ -290,7 +293,7 @@ export default function Feed({ user }: { user: UserLite }) {
           ) : (
             <div className="feed-page__list">
               {filteredPosts.map((post) => (
-                <PostCard key={post.id} post={post} user={user} />
+                <PostCard key={post.id} post={post} />
               ))}
             </div>
           )}

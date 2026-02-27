@@ -12,15 +12,10 @@ type Post = {
   author: string;
   createdAt: string;
   score?: number;
+  postCount?: number;
 };
 
-export default function PostCard({
-  post,
-  user,
-}: {
-  post: Post;
-  user: { name: string } | null;
-}) {
+export default function PostCard({ post }: { post: Post }) {
   const { user: fbUser } = useAuth();
   
   const [score, setScore] = useState(post.score ?? 0);
@@ -29,7 +24,7 @@ export default function PostCard({
 
   const canVote = !!fbUser;
 
-  // fetch user's existing vote on mount
+  // fetch user's existing vote
   useEffect(() => {
     if (fbUser) {
       getUserVote(post.id, fbUser.uid)
@@ -134,7 +129,9 @@ export default function PostCard({
           {" • "}@{post.author} • {post.createdAt}
         </div>
 
-        <h3 className="post-card__title">{post.title}</h3>
+        <Link to={`/thread/${post.id}`} className="post-card__title-link">
+          <h3 className="post-card__title">{post.title}</h3>
+        </Link>
         <p className="post-card__body">{post.body}</p>
 
         <div className="post-card__tags">
@@ -143,6 +140,12 @@ export default function PostCard({
               #{t}
             </span>
           ))}
+        </div>
+
+        <div className="post-card__footer">
+          <Link to={`/thread/${post.id}`} className="post-card__comments-link">
+            💬 {post.postCount ?? 0} {(post.postCount ?? 0) === 1 ? "Comment" : "Comments"}
+          </Link>
         </div>
       </div>
     </div>

@@ -7,12 +7,11 @@ import {
   getCommunity,
   unsubscribeFromCommunity,
   listThreads,
+  countPosts,
   type Community as CommunityType,
 } from "../lib/firestore";
 import { useAuth } from "../context/AuthContext";
 import { logout } from "../lib/auth";
-
-type UserLite = { name: string } | null;
 
 type PostCardPost = {
   id: string;
@@ -23,6 +22,7 @@ type PostCardPost = {
   author: string;
   createdAt: string;
   score?: number;
+  postCount?: number;
 };
 
 function formatCreatedAt(createdAt: any): string {
@@ -32,7 +32,7 @@ function formatCreatedAt(createdAt: any): string {
   return "just now";
 }
 
-export default function Profile({ user }: { user: UserLite }) {
+export default function Profile() {
   const { user: fbUser } = useAuth();
 
   const [subscriptions, setSubscriptions] = useState<CommunityType[]>([]);
@@ -64,7 +64,9 @@ export default function Profile({ user }: { user: UserLite }) {
     setPostsLoading(true);
     try {
       const { threads } = await listThreads({ authorId: fbUser.uid, pageSize: 30 });
-      const mapped: PostCardPost[] = threads.map((t: any) => ({
+      const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
+
+      const mapped: PostCardPost[] = threads.map((t: any, i: number) => ({
         id: t.id,
         title: t.title,
         body: t.body ?? "",
@@ -73,6 +75,7 @@ export default function Profile({ user }: { user: UserLite }) {
         author: t.authorName || "anon",
         createdAt: formatCreatedAt(t.createdAt),
         score: t.score ?? 0,
+        postCount: counts[i],
       }));
       setMyPosts(mapped);
     } catch (e) {
@@ -154,7 +157,7 @@ export default function Profile({ user }: { user: UserLite }) {
           ) : (
             <div className="feed-page__list">
               {myPosts.map((post) => (
-                <PostCard key={post.id} post={post} user={user} />
+                <PostCard key={post.id} post={post} />
               ))}
             </div>
           )}

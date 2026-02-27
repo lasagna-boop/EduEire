@@ -7,6 +7,7 @@ import {
   arrayUnion,
   collection,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   increment,
@@ -164,7 +165,15 @@ export type Post = {
   authorId: string;
   authorName: string;
   createdAt?: any;
+  score?: number;
 };
+
+// get a single thread by ID
+export async function getThread(threadId: string): Promise<Thread | null> {
+  const snap = await getDoc(doc(db, "threads", threadId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...(snap.data() as any) };
+}
 
 // creates a new thread document
 export async function createThread(input: {
@@ -236,16 +245,27 @@ export async function listThreads(opts: {
   return { threads, nextCursor };
 }
 
-// adds a post inside a thread (subcollection)
-// note: currently does not update thread.lastActivityAt/postCount (can be added later)
+// adds a post inside a thread (subcollection) and bumps the thread's activity
 export async function addPost(
   threadId: string,
   input: { body: string; authorId: string; authorName: string }
 ) {
   const ref = await addDoc(collection(doc(db, "threads", threadId), "posts"), {
     ...input,
+    score: 0,
     createdAt: serverTimestamp(),
   });
+
+  // best-effort: update thread stats; may fail if rules restrict thread updates
+  try {
+    await updateDoc(doc(db, "threads", threadId), {
+      lastActivityAt: serverTimestamp(),
+      postCount: increment(1),
+    });
+  } catch (e) {
+    console.warn("Could not update thread stats (permissions?)", e);
+  }
+
   return ref.id;
 }
 
@@ -261,6 +281,14 @@ export async function listPosts(threadId: string, pageSize = 50) {
 
   const posts: Post[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
   return posts;
+}
+
+// returns actual comment count for a thread from the server
+export async function countPosts(threadId: string): Promise<number> {
+  const snap = await getCountFromServer(
+    collection(doc(db, "threads", threadId), "posts")
+  );
+  return snap.data().count;
 }
 
 // ==================== VOTING ====================
@@ -318,5 +346,53 @@ export async function voteOnThread(
     await updateDoc(threadRef, { score: increment(scoreChange) });
   }
   
+  return { newVote, scoreChange };
+}
+
+// ==================== COMMENT VOTING ====================
+
+// get user's vote on a comment (post)
+export async function getCommentVote(
+  threadId: string,
+  postId: string,
+  userId: string
+): Promise<Vote> {
+  const ref = doc(db, "threads", threadId, "posts", postId, "votes", userId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  return snap.data()?.vote || null;
+}
+
+// vote on a comment (post)
+export async function voteOnComment(
+  threadId: string,
+  postId: string,
+  userId: string,
+  newVote: Vote
+) {
+  const voteRef = doc(db, "threads", threadId, "posts", postId, "votes", userId);
+  const postRef = doc(db, "threads", threadId, "posts", postId);
+
+  const currentSnap = await getDoc(voteRef);
+  const currentVote: Vote = currentSnap.exists() ? currentSnap.data()?.vote : null;
+
+  let scoreChange = 0;
+  if (currentVote === null && newVote === "up") scoreChange = 1;
+  else if (currentVote === null && newVote === "down") scoreChange = -1;
+  else if (currentVote === "up" && newVote === null) scoreChange = -1;
+  else if (currentVote === "up" && newVote === "down") scoreChange = -2;
+  else if (currentVote === "down" && newVote === null) scoreChange = 1;
+  else if (currentVote === "down" && newVote === "up") scoreChange = 2;
+
+  await setDoc(voteRef, { vote: newVote });
+
+  if (scoreChange !== 0) {
+    try {
+      await updateDoc(postRef, { score: increment(scoreChange) });
+    } catch (e) {
+      console.warn("Could not update comment score", e);
+    }
+  }
+
   return { newVote, scoreChange };
 }
