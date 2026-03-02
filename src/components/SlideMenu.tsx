@@ -4,11 +4,11 @@ import { listCommunities } from "../lib/firestore";
 
 export default function SlideMenu() {
   const [open, setOpen] = useState(false);
-  const [communities, setCommunities] = useState<{ id: string; name: string }[]>([]);
+  const [communities, setCommunities] = useState<{ id: string }[]>([]);
 
   useEffect(() => {
     listCommunities()
-      .then((list) => setCommunities(list.map((c) => ({ id: c.id, name: c.name }))))
+      .then((list) => setCommunities(list.map((c) => ({ id: c.id }))))
       .catch((e) => console.error("Failed to load communities", e));
   }, []);
 

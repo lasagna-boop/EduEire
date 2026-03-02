@@ -9,12 +9,15 @@ import {
   voteOnThread,
   getCommentVote,
   voteOnComment,
+  isAdmin,
+  setModerationStatus,
   type Thread,
   type Post,
   type Vote,
 } from "../lib/firestore";
 import { useAuth } from "../context/AuthContext";
 import { logout } from "../lib/auth";
+import { checkProfanity } from "../lib/moderation";
 
 function formatDate(ts: any): string {
   try {
@@ -40,11 +43,13 @@ function timeAgo(ts: any): string {
   }
 }
 
-function CommentItem({ comment, threadId }: { comment: Post; threadId: string }) {
+function CommentItem({ comment, threadId, onFlagged }: { comment: Post; threadId: string; onFlagged?: () => void }) {
   const { user: fbUser } = useAuth();
   const [score, setScore] = useState(comment.score ?? 0);
   const [vote, setVote] = useState<Vote>(null);
   const [voting, setVoting] = useState(false);
+  const [admin, setAdmin] = useState(false);
+  const [flagged, setFlagged] = useState(false);
   const canVote = !!fbUser;
 
   useEffect(() => {
@@ -52,8 +57,20 @@ function CommentItem({ comment, threadId }: { comment: Post; threadId: string })
       getCommentVote(threadId, comment.id, fbUser.uid)
         .then(setVote)
         .catch((e) => console.error("Failed to get comment vote", e));
+      isAdmin(fbUser.uid).then(setAdmin);
     }
   }, [fbUser, threadId, comment.id]);
+
+  const handleFlag = async () => {
+    if (!admin || flagged) return;
+    try {
+      await setModerationStatus(`threads/${threadId}/posts/${comment.id}`, "pending_review");
+      setFlagged(true);
+      onFlagged?.();
+    } catch (e) {
+      console.error("Failed to flag comment", e);
+    }
+  };
 
   const handleVote = async (newVote: Vote) => {
     if (!canVote || !fbUser || voting) return;
@@ -119,6 +136,17 @@ function CommentItem({ comment, threadId }: { comment: Post; threadId: string })
           <span className="comment__time">{timeAgo(comment.createdAt)}</span>
         </div>
         <p className="comment__text">{comment.body}</p>
+        {admin && (
+          <button
+            className={`post-card__flag-btn${flagged ? " post-card__flag-btn--flagged" : ""}`}
+            onClick={handleFlag}
+            disabled={flagged}
+            title={flagged ? "Flagged for review" : "Flag for review"}
+            style={{ marginTop: 4 }}
+          >
+            {flagged ? "🚩 Flagged" : "⚑ Flag"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -149,7 +177,7 @@ export default function ThreadDetail() {
         listPosts(threadId),
       ]);
       setThread(t);
-      setComments(posts);
+      setComments(posts.filter((p: any) => !p.moderationStatus || p.moderationStatus === "approved"));
       if (t) setScore(t.score ?? 0);
     } catch (e) {
       console.error("Failed to load thread", e);
@@ -205,6 +233,14 @@ export default function ThreadDetail() {
 
     setSubmitting(true);
     setError(null);
+
+    const modResult = checkProfanity(commentBody.trim());
+    if (modResult.flagged) {
+      setError("Your comment contains inappropriate language and cannot be published.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       await addPost(threadId, {
         body: commentBody.trim(),
@@ -213,7 +249,7 @@ export default function ThreadDetail() {
       });
       setCommentBody("");
       const posts = await listPosts(threadId);
-      setComments(posts);
+      setComments(posts.filter((p: any) => !p.moderationStatus || p.moderationStatus === "approved"));
     } catch (e: any) {
       setError(e?.message ?? "Failed to add comment");
     } finally {
@@ -340,7 +376,12 @@ export default function ThreadDetail() {
                 ) : (
                   <div className="comments-list">
                     {comments.map((c) => (
-                      <CommentItem key={c.id} comment={c} threadId={threadId!} />
+                      <CommentItem
+                        key={c.id}
+                        comment={c}
+                        threadId={threadId!}
+                        onFlagged={() => setComments((prev) => prev.filter((p) => p.id !== c.id))}
+                      />
                     ))}
                   </div>
                 )}

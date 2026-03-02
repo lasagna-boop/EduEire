@@ -7,7 +7,6 @@ import {
   arrayUnion,
   collection,
   doc,
-  getCountFromServer,
   getDoc,
   getDocs,
   increment,
@@ -49,21 +48,7 @@ export async function listCommunities(): Promise<Community[]> {
 }
 
 // create a community (used for seeding)
-export async function createCommunity(input: {
-  id: string;
-  name: string;
-  fullName: string;
-  description: string;
-}) {
-  await setDoc(doc(db, "communities", input.id), {
-    name: input.name,
-    fullName: input.fullName,
-    description: input.description,
-    memberCount: 0,
-    createdAt: serverTimestamp(),
-  });
-  return input.id;
-}
+
 
 // seed initial communities (safe to call multiple times - uses setDoc with merge)
 export async function seedCommunities() {
@@ -107,11 +92,6 @@ export async function seedCommunities() {
 
 // ==================== USER SUBSCRIPTIONS ====================
 
-export type UserProfile = {
-  id: string;
-  subscriptions: string[];
-};
-
 // get user's subscriptions
 export async function getUserSubscriptions(userId: string): Promise<string[]> {
   const snap = await getDoc(doc(db, "users", userId));
@@ -138,9 +118,85 @@ export async function unsubscribeFromCommunity(userId: string, communityId: stri
 }
 
 // check if user is subscribed to a community
-export async function isSubscribed(userId: string, communityId: string): Promise<boolean> {
-  const subs = await getUserSubscriptions(userId);
-  return subs.includes(communityId);
+// ==================== ADMIN / MODERATION ====================
+
+export async function isAdmin(userId: string): Promise<boolean> {
+  const snap = await getDoc(doc(db, "users", userId));
+  if (!snap.exists()) return false;
+  return snap.data()?.role === "admin";
+}
+
+export type FlaggedItem = {
+  id: string;
+  type: "thread" | "comment";
+  threadId: string;
+  title?: string;
+  body: string;
+  authorName: string;
+  communityId?: string;
+  moderationStatus: string;
+  moderationMatches: string[];
+  toxicityScore?: number;
+  createdAt?: any;
+};
+
+export async function listFlaggedThreads(): Promise<FlaggedItem[]> {
+  const items: FlaggedItem[] = [];
+
+  const threadQ = query(
+    collection(db, "threads"),
+    where("moderationStatus", "==", "pending_review")
+  );
+  const threadSnap = await getDocs(threadQ);
+  for (const d of threadSnap.docs) {
+    const data = d.data() as any;
+    items.push({
+      id: d.id,
+      type: "thread",
+      threadId: d.id,
+      title: data.title,
+      body: data.body ?? "",
+      authorName: data.authorName ?? "unknown",
+      communityId: data.communityId,
+      moderationStatus: data.moderationStatus,
+      moderationMatches: data.moderationMatches ?? [],
+      toxicityScore: data.toxicityScore,
+      createdAt: data.createdAt,
+    });
+  }
+
+  // Fetch flagged comments from each thread's posts subcollection
+  const allThreadsSnap = await getDocs(collection(db, "threads"));
+  for (const tDoc of allThreadsSnap.docs) {
+    const commentQ = query(
+      collection(db, "threads", tDoc.id, "posts"),
+      where("moderationStatus", "==", "pending_review")
+    );
+    const commentSnap = await getDocs(commentQ);
+    for (const d of commentSnap.docs) {
+      const data = d.data() as any;
+      items.push({
+        id: d.id,
+        type: "comment",
+        threadId: tDoc.id,
+        body: data.body ?? "",
+        authorName: data.authorName ?? "unknown",
+        moderationStatus: data.moderationStatus,
+        moderationMatches: data.moderationMatches ?? [],
+        toxicityScore: data.toxicityScore,
+        createdAt: data.createdAt,
+      });
+    }
+  }
+
+  return items;
+}
+
+export async function setModerationStatus(
+  path: string,
+  status: "approved" | "rejected" | "pending_review"
+) {
+  await updateDoc(doc(db, path), { moderationStatus: status });
 }
 
 // ==================== THREADS ====================
@@ -187,6 +243,7 @@ export async function createThread(input: {
   const ref = await addDoc(collection(db, "threads"), {
     ...input,
     score: 0,
+    moderationStatus: "approved",
     createdAt: serverTimestamp(),
     lastActivityAt: serverTimestamp(),
     postCount: 0,
@@ -197,7 +254,6 @@ export async function createThread(input: {
 // lists threads with optional community/author filter + simple cursor pagination
 export async function listThreads(opts: {
   communityId?: string;
-  communityIds?: string[];
   authorId?: string;
   pageSize?: number;
   cursor?: QueryDocumentSnapshot<DocumentData> | null;
@@ -229,9 +285,6 @@ export async function listThreads(opts: {
 
   if (opts.communityId) {
     parts.unshift(where("communityId", "==", opts.communityId));
-  } else if (opts.communityIds && opts.communityIds.length > 0) {
-    const ids = opts.communityIds.slice(0, 30);
-    parts.unshift(where("communityId", "in", ids));
   }
 
   if (opts.cursor) parts.push(startAfter(opts.cursor));
@@ -253,6 +306,7 @@ export async function addPost(
   const ref = await addDoc(collection(doc(db, "threads", threadId), "posts"), {
     ...input,
     score: 0,
+    moderationStatus: "approved",
     createdAt: serverTimestamp(),
   });
 
@@ -283,12 +337,14 @@ export async function listPosts(threadId: string, pageSize = 50) {
   return posts;
 }
 
-// returns actual comment count for a thread from the server
+// returns comment count excluding flagged/rejected posts
 export async function countPosts(threadId: string): Promise<number> {
-  const snap = await getCountFromServer(
-    collection(doc(db, "threads", threadId), "posts")
-  );
-  return snap.data().count;
+  const postsRef = collection(doc(db, "threads", threadId), "posts");
+  const snap = await getDocs(postsRef);
+  return snap.docs.filter((d) => {
+    const status = d.data().moderationStatus;
+    return !status || status === "approved";
+  }).length;
 }
 
 // ==================== VOTING ====================

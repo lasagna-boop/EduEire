@@ -63,7 +63,10 @@ export default function Profile() {
     if (!fbUser) return;
     setPostsLoading(true);
     try {
-      const { threads } = await listThreads({ authorId: fbUser.uid, pageSize: 30 });
+      const { threads: allThreads } = await listThreads({ authorId: fbUser.uid, pageSize: 30 });
+      const threads = allThreads.filter(
+        (t: any) => t.moderationStatus !== "rejected"
+      );
       const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
 
       const mapped: PostCardPost[] = threads.map((t: any, i: number) => ({

@@ -25,8 +25,13 @@ dist-ssr
 
 # Firebase
 .firebase
+functions/lib
 
 # Env
 .env
 .env.*
 !.env.example
+
+# Banned word lists (contain profanity — kept out of repo)
+src/lib/banned-words.ts
+functions/src/banned-words.ts

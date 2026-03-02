@@ -5,6 +5,7 @@ import Feed from "./pages/Feed";
 import Community from "./pages/Community";
 import Profile from "./pages/Profile";
 import ThreadDetail from "./pages/ThreadDetail";
+import Admin from "./pages/Admin";
 import { useAuth } from "./context/AuthContext";
 
 export default function App() {
@@ -36,6 +37,10 @@ export default function App() {
       <Route
         path="/profile"
         element={user ? <Profile /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/admin"
+        element={user ? <Admin /> : <Navigate to="/login" replace />}
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

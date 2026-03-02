@@ -8,10 +8,12 @@ import {
   listCommunities,
   seedCommunities,
   countPosts,
+  isAdmin,
   type Community,
 } from "../lib/firestore";
 import { useAuth } from "../context/AuthContext";
 import { logout } from "../lib/auth";
+import { moderateContent } from "../lib/moderation";
 
 type PostCardPost = {
   id: string;
@@ -41,6 +43,7 @@ export default function Feed() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [adminUser, setAdminUser] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -74,7 +77,10 @@ export default function Feed() {
     setLoading(true);
 
     try {
-      const { threads } = await listThreads({ pageSize: 30 });
+      const { threads: allThreads } = await listThreads({ pageSize: 30 });
+      const threads = allThreads.filter(
+        (t: any) => !t.moderationStatus || t.moderationStatus === "approved"
+      );
 
       const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
 
@@ -101,6 +107,7 @@ export default function Feed() {
   useEffect(() => {
     loadCommunities();
     load();
+    if (fbUser) isAdmin(fbUser.uid).then(setAdminUser);
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -109,6 +116,13 @@ export default function Feed() {
 
     setBusy(true);
     setError(null);
+
+    const modResult = moderateContent(title.trim(), body.trim());
+    if (modResult.flagged) {
+      setError(`Your post contains inappropriate language and cannot be published.`);
+      setBusy(false);
+      return;
+    }
 
     try {
       const tagList = tags
@@ -146,11 +160,6 @@ export default function Feed() {
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: implement search filtering
-  };
-
   const filteredPosts = searchQuery
     ? posts.filter(
         (p) =>
@@ -168,7 +177,7 @@ export default function Feed() {
           <img src="/logo.png" alt="EduÉire" className="feed-page__logo-img" />
         </Link>
 
-        <form className="feed-page__search" onSubmit={handleSearch}>
+        <form className="feed-page__search" onSubmit={(e) => e.preventDefault()}>
           <span className="feed-page__search-icon">🔍</span>
           <input
             type="text"
@@ -185,6 +194,11 @@ export default function Feed() {
               <Link to="/profile" className="feed-page__user feed-page__user--link">
                 {fbUser.displayName || fbUser.email}
               </Link>
+              {adminUser && (
+                <Link to="/admin" className="feed-page__btn feed-page__btn--outline" style={{ fontSize: "0.8rem" }}>
+                  Admin
+                </Link>
+              )}
               <button onClick={handleLogout} className="feed-page__btn feed-page__btn--outline">
                 Log Out
               </button>

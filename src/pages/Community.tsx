@@ -15,6 +15,7 @@ import {
 } from "../lib/firestore";
 import { useAuth } from "../context/AuthContext";
 import { logout } from "../lib/auth";
+import { moderateContent } from "../lib/moderation";
 
 type PostCardPost = {
   id: string;
@@ -81,7 +82,10 @@ export default function Community() {
     setLoading(true);
 
     try {
-      const { threads } = await listThreads({ communityId, pageSize: 30 });
+      const { threads: allThreads } = await listThreads({ communityId, pageSize: 30 });
+      const threads = allThreads.filter(
+        (t: any) => !t.moderationStatus || t.moderationStatus === "approved"
+      );
 
       const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
 
@@ -150,6 +154,13 @@ export default function Community() {
     setBusy(true);
     setError(null);
 
+    const modResult = moderateContent(title.trim(), body.trim());
+    if (modResult.flagged) {
+      setError(`Your post contains inappropriate language and cannot be published.`);
+      setBusy(false);
+      return;
+    }
+
     try {
       const tagList = tags
         .split(",")
@@ -186,10 +197,6 @@ export default function Community() {
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-  };
-
   const filteredPosts = searchQuery
     ? posts.filter(
         (p) =>
@@ -207,7 +214,7 @@ export default function Community() {
           <img src="/logo.png" alt="EduÉire" className="feed-page__logo-img" />
         </Link>
 
-        <form className="feed-page__search" onSubmit={handleSearch}>
+        <form className="feed-page__search" onSubmit={(e) => e.preventDefault()}>
           <span className="feed-page__search-icon">🔍</span>
           <input
             type="text"

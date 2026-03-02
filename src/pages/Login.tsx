@@ -50,7 +50,7 @@ export default function Login() {
         </Link>
       </header>
 
-      {/* Main Content */}
+      {/* Main  */}
       <main className="login-page__main">
         <div className="login-page__card">
           <h1 className="login-page__title">

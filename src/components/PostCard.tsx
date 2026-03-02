@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getUserVote, voteOnThread, type Vote } from "../lib/firestore";
+import { getUserVote, voteOnThread, isAdmin, setModerationStatus, type Vote } from "../lib/firestore";
 
 type Post = {
   id: string;
@@ -21,19 +21,31 @@ export default function PostCard({ post }: { post: Post }) {
   const [score, setScore] = useState(post.score ?? 0);
   const [vote, setVote] = useState<Vote>(null);
   const [voting, setVoting] = useState(false);
+  const [admin, setAdmin] = useState(false);
+  const [flagged, setFlagged] = useState(false);
 
   const canVote = !!fbUser;
 
-  // fetch user's existing vote
   useEffect(() => {
     if (fbUser) {
       getUserVote(post.id, fbUser.uid)
         .then(setVote)
         .catch((e) => console.error("Failed to get vote", e));
+      isAdmin(fbUser.uid).then(setAdmin);
     } else {
       setVote(null);
     }
   }, [fbUser, post.id]);
+
+  const handleFlag = async () => {
+    if (!admin || flagged) return;
+    try {
+      await setModerationStatus(`threads/${post.id}`, "pending_review");
+      setFlagged(true);
+    } catch (e) {
+      console.error("Failed to flag thread", e);
+    }
+  };
 
   // update score when post changes
   useEffect(() => {
@@ -146,6 +158,16 @@ export default function PostCard({ post }: { post: Post }) {
           <Link to={`/thread/${post.id}`} className="post-card__comments-link">
             💬 {post.postCount ?? 0} {(post.postCount ?? 0) === 1 ? "Comment" : "Comments"}
           </Link>
+          {admin && (
+            <button
+              className={`post-card__flag-btn${flagged ? " post-card__flag-btn--flagged" : ""}`}
+              onClick={handleFlag}
+              disabled={flagged}
+              title={flagged ? "Flagged for review" : "Flag for review"}
+            >
+              {flagged ? "🚩 Flagged" : "⚑ Flag"}
+            </button>
+          )}
         </div>
       </div>
     </div>
