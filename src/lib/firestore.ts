@@ -213,6 +213,8 @@ export type Thread = {
   authorName: string;
   createdAt?: any;
   score?: number;
+  // optional expiry for flash threads; when in the past, thread is hidden from feeds
+  flashExpiresAt?: any;
 };
 
 // basic shape of a post doc in "threads/{threadId}/posts"
@@ -240,6 +242,7 @@ export async function createThread(input: {
   tags: string[];
   authorId: string;
   authorName: string;
+  flashExpiresAt?: Date | null;
 }) {
   const access = await getUserAccessProfile(input.authorId);
   if (access.accessMode !== "full") {
@@ -248,6 +251,7 @@ export async function createThread(input: {
 
   const ref = await addDoc(collection(db, "threads"), {
     ...input,
+    flashExpiresAt: input.flashExpiresAt ?? null,
     score: 0,
     moderationStatus: "approved",
     createdAt: serverTimestamp(),

@@ -27,6 +27,7 @@ type PostCardPost = {
   createdAt: string;
   score?: number;
   postCount?: number;
+  isFlash?: boolean;
 };
 
 function formatCreatedAt(createdAt: any): string {
@@ -54,6 +55,7 @@ export default function Community() {
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
   const [busy, setBusy] = useState(false);
+const [flashDuration, setFlashDuration] = useState<"" | "1" | "3" | "24">("");
 
   const loadCommunity = async () => {
     if (!communityId) return;
@@ -83,9 +85,18 @@ export default function Community() {
 
     try {
       const { threads: allThreads } = await listThreads({ communityId, pageSize: 30 });
-      const threads = allThreads.filter(
-        (t: any) => !t.moderationStatus || t.moderationStatus === "approved"
-      );
+      const now = Date.now();
+      const threads = allThreads.filter((t: any) => {
+        if (t.moderationStatus && t.moderationStatus !== "approved") return false;
+        const expires = t.flashExpiresAt;
+        if (!expires) return true;
+        try {
+          const date = expires.toDate ? expires.toDate() : expires;
+          return date.getTime() > now;
+        } catch {
+          return true;
+        }
+      });
 
       const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
 
@@ -99,6 +110,7 @@ export default function Community() {
         createdAt: formatCreatedAt(t.createdAt),
         score: t.score ?? 0,
         postCount: counts[i],
+        isFlash: !!t.flashExpiresAt,
       }));
 
       setPosts(mapped);
@@ -167,6 +179,12 @@ export default function Community() {
         .map((s) => s.trim())
         .filter(Boolean);
 
+      let flashExpiresAt: Date | null = null;
+      if (flashDuration) {
+        const hours = Number(flashDuration);
+        flashExpiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
+      }
+
       await createThread({
         title: title.trim(),
         body: body.trim(),
@@ -174,11 +192,13 @@ export default function Community() {
         tags: tagList,
         authorId: fbUser.uid,
         authorName: fbUser.displayName || fbUser.email || "user",
+        flashExpiresAt,
       });
 
       setTitle("");
       setBody("");
       setTags("");
+      setFlashDuration("");
       setShowNew(false);
 
       await loadPosts();
@@ -316,6 +336,18 @@ export default function Community() {
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
                   />
+                  <select
+                    className="feed-page__select"
+                    value={flashDuration}
+                    onChange={(e) =>
+                      setFlashDuration(e.target.value as "" | "1" | "3" | "24")
+                    }
+                  >
+                    <option value="">Normal post</option>
+                    <option value="1">Flash: 1 hour</option>
+                    <option value="3">Flash: 3 hours</option>
+                    <option value="24">Flash: 24 hours</option>
+                  </select>
                   <div className="feed-page__form-actions">
                     <button
                       type="button"

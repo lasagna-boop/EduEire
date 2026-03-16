@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import SlideMenu from "../components/SlideMenu";
 import {
@@ -168,6 +168,34 @@ export default function ThreadDetail() {
   const [voting, setVoting] = useState(false);
   const canVote = !!fbUser;
 
+  const [flashRemaining, setFlashRemaining] = useState<string | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (flashTimer.current) clearInterval(flashTimer.current);
+    if (!thread) { setFlashRemaining(null); return; }
+
+    const raw = (thread as any).flashExpiresAt;
+    if (!raw) { setFlashRemaining(null); return; }
+
+    const expiresMs = (raw.toDate ? raw.toDate() : new Date(raw)).getTime();
+
+    const tick = () => {
+      const diff = expiresMs - Date.now();
+      if (diff <= 0) { setFlashRemaining("Expired"); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setFlashRemaining(
+        h > 0 ? `${h}h ${m}m ${s}s` : m > 0 ? `${m}m ${s}s` : `${s}s`
+      );
+    };
+
+    tick();
+    flashTimer.current = setInterval(tick, 1000);
+    return () => { if (flashTimer.current) clearInterval(flashTimer.current); };
+  }, [thread]);
+
   const load = async () => {
     if (!threadId) return;
     setLoading(true);
@@ -296,7 +324,7 @@ export default function ThreadDetail() {
           ) : (
             <>
               {/* Thread card */}
-              <div className="thread-detail">
+              <div className={`thread-detail${flashRemaining ? " thread-detail--flash" : ""}`}>
                 <div className="thread-detail__votes">
                   <button
                     className={[
@@ -324,11 +352,22 @@ export default function ThreadDetail() {
                 </div>
 
                 <div className="thread-detail__body">
+                  {flashRemaining && (
+                    <div className="thread-detail__flash-bar">
+                      <span className="post-card__flash-banner">
+                        <span className="post-card__flash-dot" />
+                        <span>Flash Thread</span>
+                      </span>
+                      <span className="thread-detail__flash-timer">
+                        {flashRemaining === "Expired" ? "Expired" : `${flashRemaining} remaining`}
+                      </span>
+                    </div>
+                  )}
                   <div className="post-card__meta">
                     <Link to={`/c/${thread.communityId}`} className="post-card__community">
                       c/{thread.communityId}
                     </Link>
-                    {" • "}@{thread.authorName} • {formatDate(thread.createdAt)}
+                    <span> @{thread.authorName} • {formatDate(thread.createdAt)}</span>
                   </div>
                   <h1 className="thread-detail__title">{thread.title}</h1>
                   <p className="thread-detail__text">{thread.body}</p>

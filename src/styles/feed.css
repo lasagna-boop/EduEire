@@ -604,6 +604,58 @@
   text-decoration: underline;
 }
 
+/* Flash thread card glow */
+.post-card--flash {
+  border: 1px solid #ffc107;
+  box-shadow: 0 0 8px rgba(255, 193, 7, 0.25);
+}
+
+.post-card--flash:hover {
+  border-color: #e0a800;
+  box-shadow: 0 0 12px rgba(255, 193, 7, 0.35);
+}
+
+/* Flash banner inside card */
+.post-card__flash-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffc107;
+  color: #1a1a1b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+.post-card__flash-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+  animation: flash-pulse 1.4s infinite;
+}
+
+@keyframes flash-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+  }
+  70% {
+    transform: scale(1.5);
+    box-shadow: 0 0 0 5px rgba(255, 255, 255, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
 .post-card__title {
   margin: 0 0 8px 0;
   font-size: 18px;
@@ -709,6 +761,27 @@
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.thread-detail--flash {
+  border-color: #ffc107;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+}
+
+.thread-detail__flash-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.thread-detail__flash-timer {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b58100;
+  font-variant-numeric: tabular-nums;
 }
 
 .thread-detail__votes {

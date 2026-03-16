@@ -23,6 +23,7 @@ type PostCardPost = {
   createdAt: string;
   score?: number;
   postCount?: number;
+  isFlash?: boolean;
 };
 
 function formatCreatedAt(createdAt: any): string {
@@ -64,9 +65,18 @@ export default function Profile() {
     setPostsLoading(true);
     try {
       const { threads: allThreads } = await listThreads({ authorId: fbUser.uid, pageSize: 30 });
-      const threads = allThreads.filter(
-        (t: any) => t.moderationStatus !== "rejected"
-      );
+      const now = Date.now();
+      const threads = allThreads.filter((t: any) => {
+        if (t.moderationStatus === "rejected") return false;
+        const expires = t.flashExpiresAt;
+        if (!expires) return true;
+        try {
+          const date = expires.toDate ? expires.toDate() : expires;
+          return date.getTime() > now;
+        } catch {
+          return true;
+        }
+      });
       const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
 
       const mapped: PostCardPost[] = threads.map((t: any, i: number) => ({
@@ -79,6 +89,7 @@ export default function Profile() {
         createdAt: formatCreatedAt(t.createdAt),
         score: t.score ?? 0,
         postCount: counts[i],
+        isFlash: !!t.flashExpiresAt,
       }));
       setMyPosts(mapped);
     } catch (e) {

@@ -13,6 +13,8 @@ type Post = {
   createdAt: string;
   score?: number;
   postCount?: number;
+  // optional flag for flash threads; mapped in parent pages
+  isFlash?: boolean;
 };
 
 export default function PostCard({ post }: { post: Post }) {
@@ -100,7 +102,7 @@ export default function PostCard({ post }: { post: Post }) {
   };
 
   return (
-    <div className="post-card">
+    <div className={`post-card${post.isFlash ? " post-card--flash" : ""}`}>
       <div className="post-card__votes">
         <button
           className={[
@@ -134,11 +136,17 @@ export default function PostCard({ post }: { post: Post }) {
       </div>
 
       <div className="post-card__content">
+        {post.isFlash && (
+          <div className="post-card__flash-banner">
+            <span className="post-card__flash-dot" />
+            <span>Flash Thread</span>
+          </div>
+        )}
         <div className="post-card__meta">
           <Link to={`/c/${post.communityId}`} className="post-card__community">
             c/{post.communityId}
           </Link>
-          {" • "}@{post.author} • {post.createdAt}
+          <span>@{post.author} • {post.createdAt}</span>
         </div>
 
         <Link to={`/thread/${post.id}`} className="post-card__title-link">
