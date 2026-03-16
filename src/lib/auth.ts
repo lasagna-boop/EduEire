@@ -8,6 +8,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "./firebase";
+import { ensureUserProfile } from "./userAccess";
 
 // creates a new user in firebase auth
 // optionally sets displayName right after registration
@@ -16,6 +17,13 @@ export async function register(email: string, password: string, displayName?: st
 
   // if a display name is provided, update the firebase user profile
   if (displayName) await updateProfile(cred.user, { displayName });
+
+  // keep users/{uid} in sync with access mode flags
+  await ensureUserProfile({
+    uid: cred.user.uid,
+    email: cred.user.email ?? email,
+    displayName: displayName || cred.user.displayName,
+  });
 
   // return the firebase user object so ui can use uid/displayName/etc
   return cred.user;

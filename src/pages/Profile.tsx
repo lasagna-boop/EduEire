@@ -33,7 +33,7 @@ function formatCreatedAt(createdAt: any): string {
 }
 
 export default function Profile() {
-  const { user: fbUser } = useAuth();
+  const { user: fbUser, studentEmailConfirmed, accessMode } = useAuth();
 
   const [subscriptions, setSubscriptions] = useState<CommunityType[]>([]);
   const [myPosts, setMyPosts] = useState<PostCardPost[]>([]);
@@ -143,6 +143,12 @@ export default function Profile() {
           <div className="profile-header">
             <h1 className="profile-header__title">Profile</h1>
             <p className="profile-header__email">{fbUser?.email || fbUser?.displayName || "—"}</p>
+            <p className="profile-header__email">
+              Student email confirmed: {studentEmailConfirmed ? "Yes" : "No"}
+            </p>
+            <p className="profile-header__email">
+              Account mode: {accessMode === "full" ? "Full access" : "Read-only"}
+            </p>
           </div>
 
           <h2 className="profile-posts__heading">My Posts</h2>

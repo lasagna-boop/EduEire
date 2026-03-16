@@ -154,7 +154,7 @@ function CommentItem({ comment, threadId, onFlagged }: { comment: Post; threadId
 
 export default function ThreadDetail() {
   const { threadId } = useParams<{ threadId: string }>();
-  const { user: fbUser } = useAuth();
+  const { user: fbUser, canWrite } = useAuth();
 
   const [thread, setThread] = useState<Thread | null>(null);
   const [comments, setComments] = useState<Post[]>([]);
@@ -229,7 +229,7 @@ export default function ThreadDetail() {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fbUser || !threadId || !commentBody.trim()) return;
+    if (!fbUser || !threadId || !commentBody.trim() || !canWrite) return;
 
     setSubmitting(true);
     setError(null);
@@ -341,7 +341,7 @@ export default function ThreadDetail() {
               </div>
 
               {/* Comment form */}
-              {fbUser && (
+              {fbUser && canWrite && (
                 <form onSubmit={handleSubmitComment} className="comment-form">
                   <textarea
                     className="comment-form__input"
@@ -361,6 +361,13 @@ export default function ThreadDetail() {
                     </button>
                   </div>
                 </form>
+              )}
+              {fbUser && !canWrite && (
+                <div className="comment-form">
+                  <p className="comments-section__empty">
+                    Your account is read-only. Confirm a student email to write comments.
+                  </p>
+                </div>
               )}
 
               {error && <p className="feed-page__error">{error}</p>}

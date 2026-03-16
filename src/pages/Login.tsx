@@ -61,6 +61,11 @@ export default function Login() {
               ? "Join Ireland's education community"
               : "Welcome back to EduÉire"}
           </p>
+          {isRegister && (
+            <p className="login-page__subtitle" style={{ marginTop: 8 }}>
+              Student email domains (@mytudublin.ie, @tcd.ie, @ucdconnect.ie) get full posting access. Other emails are read-only.
+            </p>
+          )}
 
           {user ? (
             <p className="login-page__already">

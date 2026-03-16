@@ -35,7 +35,7 @@ function formatCreatedAt(createdAt: any): string {
 }
 
 export default function Feed() {
-  const { user: fbUser } = useAuth();
+  const { user: fbUser, canWrite } = useAuth();
 
   const [posts, setPosts] = useState<PostCardPost[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -228,7 +228,7 @@ export default function Feed() {
 
         {/* Center - Posts */}
         <div className="feed-page__content">
-          {fbUser && (
+          {fbUser && canWrite && (
             <div className="feed-page__create-card">
               {!showNew ? (
                 <button
@@ -295,6 +295,13 @@ export default function Feed() {
                   </div>
                 </form>
               )}
+            </div>
+          )}
+          {fbUser && !canWrite && (
+            <div className="feed-page__create-card">
+              <div className="feed-page__empty">
+                Your account is in read-only mode. Confirm a student email to create threads and comments.
+              </div>
             </div>
           )}
 

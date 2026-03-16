@@ -38,7 +38,7 @@ function formatCreatedAt(createdAt: any): string {
 
 export default function Community() {
   const { communityId } = useParams<{ communityId: string }>();
-  const { user: fbUser } = useAuth();
+  const { user: fbUser, canWrite } = useAuth();
 
   const [community, setCommunity] = useState<CommunityType | null>(null);
   const [communities, setCommunities] = useState<CommunityType[]>([]);
@@ -149,7 +149,7 @@ export default function Community() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fbUser || !communityId) return;
+    if (!fbUser || !communityId || !canWrite) return;
 
     setBusy(true);
     setError(null);
@@ -283,7 +283,7 @@ export default function Community() {
           </div>
 
           {/* Create Post */}
-          {fbUser && (
+          {fbUser && canWrite && (
             <div className="feed-page__create-card">
               {!showNew ? (
                 <button
@@ -335,6 +335,13 @@ export default function Community() {
                   </div>
                 </form>
               )}
+            </div>
+          )}
+          {fbUser && !canWrite && (
+            <div className="feed-page__create-card">
+              <div className="feed-page__empty">
+                Read-only account: you can browse and like posts, but only confirmed student emails can create new threads.
+              </div>
             </div>
           )}
 

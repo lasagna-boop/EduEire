@@ -21,6 +21,7 @@ import {
 } from "firebase/firestore";
 import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
+import { getUserAccessProfile } from "./userAccess";
 
 // ==================== COMMUNITIES ====================
 
@@ -240,6 +241,11 @@ export async function createThread(input: {
   authorId: string;
   authorName: string;
 }) {
+  const access = await getUserAccessProfile(input.authorId);
+  if (access.accessMode !== "full") {
+    throw new Error("Only confirmed student emails can create threads.");
+  }
+
   const ref = await addDoc(collection(db, "threads"), {
     ...input,
     score: 0,
@@ -303,6 +309,11 @@ export async function addPost(
   threadId: string,
   input: { body: string; authorId: string; authorName: string }
 ) {
+  const access = await getUserAccessProfile(input.authorId);
+  if (access.accessMode !== "full") {
+    throw new Error("Only confirmed student emails can add comments.");
+  }
+
   const ref = await addDoc(collection(doc(db, "threads", threadId), "posts"), {
     ...input,
     score: 0,
