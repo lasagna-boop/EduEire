@@ -3,6 +3,22 @@
     display: none;
   }
 
+  .feed-create-thread--desktop {
+    display: none;
+  }
+
+  .feed-create-thread--mobile {
+    display: block;
+  }
+
+  .community-create-thread--mobile {
+    display: block;
+  }
+
+  .community-create-thread--desktop {
+    display: none;
+  }
+
   .profile-main .feed-page__right-sidebar.profile-sidebar {
     display: block;
     width: 100%;
@@ -26,6 +42,10 @@
 @media (max-width: 800px) {
   .feed-page__left-sidebar {
     display: none;
+  }
+
+  .feed-mobile-sections {
+    display: block;
   }
 }
 

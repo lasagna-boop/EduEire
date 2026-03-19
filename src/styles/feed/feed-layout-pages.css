@@ -190,3 +190,20 @@
 .community-stats__item strong {
   color: #1a1a1b;
 }
+
+.community-create-thread--mobile {
+  display: none;
+}
+
+.community-create-thread--desktop {
+  display: block;
+}
+
+.feed-create-thread--mobile,
+.feed-mobile-sections {
+  display: none;
+}
+
+.feed-create-thread--desktop {
+  display: block;
+}

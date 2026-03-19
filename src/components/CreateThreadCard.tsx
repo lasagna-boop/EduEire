@@ -13,6 +13,7 @@ type BaseProps = {
   onFormError: (message: string | null) => void;
   triggerLabel: string;
   readOnlyMessage: string;
+  presentation?: "inline" | "overlay";
 };
 
 type FeedModeProps = BaseProps & {
@@ -36,11 +37,21 @@ const FLASH_OPTIONS: { value: FlashDuration; label: string }[] = [
   { value: "24", label: "Flash: 24 hours" },
 ];
 
+const TAG_OPTIONS = [
+  "Admissions",
+  "First Year/Transition",
+  "Academics/Modules",
+  "Accommodation/Cost of Living",
+  "Student Services",
+  "Campus Life",
+  "Other",
+] as const;
+
 export function CreateThreadCard(props: Readonly<Props>) {
   const [showNew, setShowNew] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [tags, setTags] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
   const [flashDuration, setFlashDuration] = useState<FlashDuration>("");
   const [busy, setBusy] = useState(false);
 
@@ -64,10 +75,7 @@ export function CreateThreadCard(props: Readonly<Props>) {
     }
 
     try {
-      const tagList = tags
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+      const tagList = selectedTag ? [selectedTag] : [];
 
       let flashExpiresAt: Date | null = null;
       if (flashDuration) {
@@ -87,7 +95,7 @@ export function CreateThreadCard(props: Readonly<Props>) {
 
       setTitle("");
       setBody("");
-      setTags("");
+      setSelectedTag("");
       setFlashDuration("");
       setShowNew(false);
       await props.onPosted();
@@ -127,87 +135,118 @@ export function CreateThreadCard(props: Readonly<Props>) {
     </select>
   );
 
-  return (
-    <div className="feed-page__create-card">
-      {showNew ? (
-        <form onSubmit={handleSubmit} className="feed-page__create-form">
-          <input
-            className="feed-page__input"
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+  const tagsSelect = (
+    <select
+      className="feed-page__select"
+      value={selectedTag}
+      onChange={(e) => setSelectedTag(e.target.value)}
+    >
+      <option value="">Select Tag</option>
+      {TAG_OPTIONS.map((tag) => (
+        <option key={tag} value={tag}>
+          {tag}
+        </option>
+      ))}
+    </select>
+  );
+
+  const createForm = (
+    <form onSubmit={handleSubmit} className="feed-page__create-form">
+      <input
+        className="feed-page__input"
+        placeholder="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        required
+      />
+      <textarea
+        className="feed-page__textarea"
+        placeholder="What's on your mind?"
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        rows={4}
+        required
+      />
+      {props.mode === "feed" ? (
+        <div className="feed-page__form-row">
+          <select
+            className="feed-page__select"
+            value={props.communityId}
+            onChange={(e) => props.onCommunityIdChange(e.target.value)}
             required
-          />
-          <textarea
-            className="feed-page__textarea"
-            placeholder="What's on your mind?"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows={4}
-            required
-          />
-          {props.mode === "feed" ? (
-            <div className="feed-page__form-row">
-              <select
-                className="feed-page__select"
-                value={props.communityId}
-                onChange={(e) => props.onCommunityIdChange(e.target.value)}
-                required
-              >
-                <option value="">Select Community</option>
-                {props.communities.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                className="feed-page__input"
-                placeholder="Tags (comma separated)"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-              />
-              {flashSelect}
-            </div>
-          ) : (
-            <>
-              <input
-                className="feed-page__input"
-                placeholder="Tags (comma separated)"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-              />
-              {flashSelect}
-            </>
-          )}
-          <div className="feed-page__form-actions">
-            <button
-              type="button"
-              onClick={() => setShowNew(false)}
-              className="feed-page__btn feed-page__btn--outline"
-              disabled={busy}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="feed-page__btn feed-page__btn--filled"
-              disabled={busy}
-            >
-              {busy ? "Posting…" : "Post"}
-            </button>
-          </div>
-        </form>
+          >
+            <option value="">Select Community</option>
+            {props.communities.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          {tagsSelect}
+          {flashSelect}
+        </div>
       ) : (
+        <>
+          {tagsSelect}
+          {flashSelect}
+        </>
+      )}
+      <div className="feed-page__form-actions">
         <button
           type="button"
-          className="feed-page__create-trigger"
-          onClick={() => setShowNew(true)}
+          onClick={() => setShowNew(false)}
+          className="feed-page__btn feed-page__btn--outline"
+          disabled={busy}
         >
-          <span className="feed-page__create-icon">✏️</span>
-          <span>{props.triggerLabel}</span>
+          Cancel
         </button>
-      )}
+        <button
+          type="submit"
+          className="feed-page__btn feed-page__btn--filled"
+          disabled={busy}
+        >
+          {busy ? "Posting…" : "Post"}
+        </button>
+      </div>
+    </form>
+  );
+
+  const useOverlay = props.presentation === "overlay";
+
+  return (
+    <div className="feed-page__create-card">
+      <button
+        type="button"
+        className="feed-page__create-trigger"
+        onClick={() => setShowNew(true)}
+      >
+        <span className="feed-page__create-icon">+</span>
+        <span>{props.triggerLabel}</span>
+      </button>
+
+      {!useOverlay && showNew ? createForm : null}
+
+      {useOverlay && showNew ? (
+        <div className="feed-page__create-overlay" role="dialog" aria-modal="true">
+          <div className="feed-page__create-overlay-panel">
+            <div className="feed-page__create-overlay-header">
+              <div className="feed-page__create-overlay-title-wrap">
+                <h2>Create Thread</h2>
+                <p>Share your idea clearly and choose relevant tags.</p>
+              </div>
+              <button
+                type="button"
+                className="feed-page__create-overlay-close"
+                aria-label="Close create thread form"
+                onClick={() => setShowNew(false)}
+              >
+                ×
+              </button>
+            </div>
+            {createForm}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

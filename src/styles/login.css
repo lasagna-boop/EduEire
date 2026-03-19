@@ -161,6 +161,19 @@
   cursor: not-allowed;
 }
 
+/* Keep slide-menu pills centered specifically on login page */
+.login-page .slide-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 46px;
+  height: 46px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  line-height: 1.2;
+}
+
 @media (max-width: 480px) {
   .login-page__card {
     padding: 24px;

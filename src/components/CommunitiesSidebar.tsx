@@ -1,35 +1,49 @@
-import { Link } from "react-router-dom";
-
 type CommunityRef = { id: string };
 
 type Props = {
   communities: CommunityRef[];
   /** When set, highlights the active community link */
   activeCommunityId?: string;
+  activeSection?: string;
+  onSectionSelect?: (section: string) => void;
 };
 
-export function CommunitiesSidebar({ communities, activeCommunityId }: Readonly<Props>) {
+export const SECTION_OPTIONS = [
+  { label: "Admissions", icon: "📝" },
+  { label: "First Year/Transition", icon: "🚀" },
+  { label: "Academics/Modules", icon: "📚" },
+  { label: "Accommodation/Cost of Living", icon: "🏠" },
+  { label: "Student Services", icon: "💬" },
+  { label: "Campus Life", icon: "🌿" },
+  { label: "Other", icon: "✨" },
+] as const;
+
+export function CommunitiesSidebar({
+  communities: _communities,
+  activeCommunityId: _activeCommunityId,
+  activeSection,
+  onSectionSelect,
+}: Readonly<Props>) {
   return (
     <aside className="feed-page__left-sidebar">
       <div className="feed-page__sidebar-card">
-        <h3>Communities</h3>
+        <h3>Sections</h3>
         <ul className="feed-page__community-list">
-          {communities.map((c) => (
-            <li key={c.id}>
-              <Link
-                to={`/c/${c.id}`}
+          {SECTION_OPTIONS.map((s, idx) => (
+            <li key={`${s.label}-${idx}`}>
+              <button
+                type="button"
                 className={[
                   "feed-page__community-link",
-                  activeCommunityId && c.id === activeCommunityId
-                    ? "feed-page__community-link--active"
-                    : "",
+                  activeSection === s.label ? "feed-page__community-link--active" : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
+                onClick={() => onSectionSelect?.(s.label)}
               >
-                <span className="feed-page__community-icon">🎓</span>
-                <span className="feed-page__community-name">c/{c.id}</span>
-              </Link>
+                <span className="feed-page__community-icon">{s.icon}</span>
+                <span className="feed-page__community-name">{s.label}</span>
+              </button>
             </li>
           ))}
         </ul>

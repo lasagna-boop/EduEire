@@ -39,11 +39,24 @@
 .feed-page__community-link {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
   padding: 10px 12px;
+  min-height: 52px;
   border-radius: 8px;
   text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
   transition: background 0.15s;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.feed-page__community-link:focus {
+  outline: none;
 }
 
 .feed-page__community-link:hover {
@@ -57,10 +70,41 @@
 
 .feed-page__community-icon {
   font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 0;
+  width: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .feed-page__community-name {
   font-weight: 500;
   color: #1a1a1b;
   font-size: 0.9rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0; /* allow text wrapping inside flex container */
+  white-space: normal;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  min-height: 30px;
+}
+
+.feed-mobile-sections__toggle {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid #edeff1;
+  border-radius: 8px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a1a1b;
+  cursor: pointer;
 }
