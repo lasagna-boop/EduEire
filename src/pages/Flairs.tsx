@@ -66,6 +66,8 @@ export default function Flairs() {
         title: titleTrimmed,
         authorId: fbUser.uid,
         authorName: fbUser.displayName || fbUser.email || "user",
+        toxicityScore: modResult.toxicityScore ?? 0,
+        spamScore: modResult.spamScore ?? 0,
       });
       setTitle("");
       await load();

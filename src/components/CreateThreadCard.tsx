@@ -102,6 +102,8 @@ export function CreateThreadCard(props: Readonly<Props>) {
         authorId: props.fbUser.uid,
         authorName: props.fbUser.displayName || props.fbUser.email || "user",
         flashExpiresAt,
+        toxicityScore: modResult.toxicityScore ?? 0,
+        spamScore: modResult.spamScore ?? 0,
       });
 
       setTitle("");

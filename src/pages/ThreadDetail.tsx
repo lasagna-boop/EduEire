@@ -16,7 +16,7 @@ import { useAuth } from "../context/useAuth";
 import { errorMessage } from "../lib/errors";
 import { useLogout } from "../hooks/useLogout";
 import { isApprovedPost } from "../lib/postModeration";
-import { checkProfanity } from "../lib/moderation";
+import { moderateContent } from "../lib/moderation";
 import { hasReadOnlyAllowedTag } from "../lib/sectionAccess";
 import { voteScoreDelta } from "../lib/voteScoreDelta";
 
@@ -105,9 +105,9 @@ export default function ThreadDetail() {
     setSubmitting(true);
     setError(null);
 
-    const modResult = checkProfanity(commentBody.trim());
+    const modResult = moderateContent("", commentBody.trim());
     if (modResult.flagged) {
-      setError("Your comment contains inappropriate language and cannot be published.");
+      setError("Your comment looks like spam or contains inappropriate language.");
       setSubmitting(false);
       return;
     }
@@ -117,6 +117,8 @@ export default function ThreadDetail() {
         body: commentBody.trim(),
         authorId: fbUser.uid,
         authorName: fbUser.displayName || fbUser.email || "user",
+        toxicityScore: modResult.toxicityScore ?? 0,
+        spamScore: modResult.spamScore ?? 0,
       });
       setCommentBody("");
       const posts = await listPosts(threadId);

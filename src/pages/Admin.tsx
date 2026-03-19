@@ -34,6 +34,12 @@ function toxicityScoreColor(score: number): string {
   return "#2e7d32";
 }
 
+function spamScoreColor(score: number): string {
+  if (score >= 0.7) return "#c62828";
+  if (score >= 0.4) return "#ef6c00";
+  return "#2e7d32";
+}
+
 export default function Admin() {
   const { user: fbUser } = useAuth();
 
@@ -183,6 +189,17 @@ export default function Admin() {
                       }}
                     >
                       ML Toxicity Score: {(item.toxicityScore * 100).toFixed(1)}%
+                    </div>
+                  ) : null}
+
+                  {item.spamScore != null ? (
+                    <div
+                      className="admin-card__toxicity"
+                      style={{
+                        color: spamScoreColor(item.spamScore),
+                      }}
+                    >
+                      Spam Score: {(item.spamScore * 100).toFixed(1)}%
                     </div>
                   ) : null}
 

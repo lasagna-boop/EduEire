@@ -209,6 +209,7 @@ export type FlaggedItem = {
   moderationStatus: string;
   moderationMatches: string[];
   toxicityScore?: number;
+  spamScore?: number;
   createdAt?: unknown;
 };
 
@@ -220,6 +221,7 @@ type FlaggedThreadDoc = {
   moderationStatus?: string;
   moderationMatches?: string[];
   toxicityScore?: number;
+  spamScore?: number;
   createdAt?: unknown;
 };
 
@@ -229,6 +231,7 @@ type FlaggedCommentDoc = {
   moderationStatus?: string;
   moderationMatches?: string[];
   toxicityScore?: number;
+  spamScore?: number;
   createdAt?: unknown;
 };
 
@@ -239,6 +242,7 @@ type FlaggedFlairDoc = {
   moderationStatus?: string;
   moderationMatches?: string[];
   toxicityScore?: number;
+  spamScore?: number;
   createdAt?: unknown;
 };
 
@@ -263,6 +267,7 @@ export async function listFlaggedThreads(): Promise<FlaggedItem[]> {
       moderationStatus: data.moderationStatus ?? "pending_review",
       moderationMatches: data.moderationMatches ?? [],
       toxicityScore: data.toxicityScore,
+      spamScore: data.spamScore,
       createdAt: data.createdAt,
     });
   }
@@ -286,6 +291,7 @@ export async function listFlaggedThreads(): Promise<FlaggedItem[]> {
         moderationStatus: data.moderationStatus ?? "pending_review",
         moderationMatches: data.moderationMatches ?? [],
         toxicityScore: data.toxicityScore,
+        spamScore: data.spamScore,
         createdAt: data.createdAt,
       });
     }
@@ -308,6 +314,7 @@ export async function listFlaggedThreads(): Promise<FlaggedItem[]> {
       moderationStatus: data.moderationStatus ?? "pending_review",
       moderationMatches: data.moderationMatches ?? [],
       toxicityScore: data.toxicityScore,
+      spamScore: data.spamScore,
       createdAt: data.createdAt,
     });
   }
@@ -338,6 +345,8 @@ export type Thread = {
   // optional expiry for flash threads; when in the past, thread is hidden from feeds
   flashExpiresAt?: unknown;
   moderationStatus?: string;
+  toxicityScore?: number;
+  spamScore?: number;
   /** legacy field from older data */
   university?: string;
 };
@@ -351,6 +360,8 @@ export type Post = {
   createdAt?: unknown;
   score?: number;
   moderationStatus?: string;
+  toxicityScore?: number;
+  spamScore?: number;
 };
 
 type ThreadDocData = Omit<Thread, "id">;
@@ -373,6 +384,8 @@ export async function createThread(input: {
   authorId: string;
   authorName: string;
   flashExpiresAt?: Date | null;
+  toxicityScore?: number;
+  spamScore?: number;
 }) {
   const access = await getUserAccessProfile(input.authorId);
   if (access.accessMode !== "full" && !hasReadOnlyAllowedTag(input.tags)) {
@@ -383,6 +396,8 @@ export async function createThread(input: {
 
   const ref = await addDoc(collection(db, "threads"), {
     ...input,
+    toxicityScore: input.toxicityScore ?? 0,
+    spamScore: input.spamScore ?? 0,
     flashExpiresAt: input.flashExpiresAt ?? null,
     score: 0,
     moderationStatus: "approved",
@@ -445,7 +460,13 @@ export async function listThreads(opts: {
 // adds a post inside a thread (subcollection) and bumps the thread's activity
 export async function addPost(
   threadId: string,
-  input: { body: string; authorId: string; authorName: string }
+  input: {
+    body: string;
+    authorId: string;
+    authorName: string;
+    toxicityScore?: number;
+    spamScore?: number;
+  }
 ) {
   const access = await getUserAccessProfile(input.authorId);
   if (access.accessMode !== "full") {
@@ -462,6 +483,8 @@ export async function addPost(
 
   const ref = await addDoc(collection(doc(db, "threads", threadId), "posts"), {
     ...input,
+    toxicityScore: input.toxicityScore ?? 0,
+    spamScore: input.spamScore ?? 0,
     score: 0,
     moderationStatus: "approved",
     createdAt: serverTimestamp(),
@@ -604,6 +627,8 @@ export type Flair = {
   score?: number;
   moderationStatus?: string;
   moderationMatches?: string[];
+  toxicityScore?: number;
+  spamScore?: number;
 };
 
 export async function getFlair(flairId: string): Promise<Flair | null> {
@@ -630,6 +655,8 @@ export async function createFlair(input: {
   description?: string;
   authorId: string;
   authorName: string;
+  toxicityScore?: number;
+  spamScore?: number;
 }) {
   const access = await getUserAccessProfile(input.authorId);
   if (access.accessMode !== "full") {
@@ -654,6 +681,8 @@ export async function createFlair(input: {
     description: input.description ?? "",
     authorId: input.authorId,
     authorName: input.authorName,
+    toxicityScore: input.toxicityScore ?? 0,
+    spamScore: input.spamScore ?? 0,
     score: 0,
     moderationStatus: "approved",
     createdAt: serverTimestamp(),

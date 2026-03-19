@@ -5,6 +5,7 @@
 // to catch profanity, slurs, and spam before content reaches Firestore.
 
 import { BANNED_WORDS } from "./banned-words";
+import { checkSpam } from "./moderationSpam";
 
 // ==================== LEET-SPEAK SUBSTITUTION MAP ====================
 
@@ -53,7 +54,46 @@ export function normalise(text: string): string {
 export type ModerationResult = {
   flagged: boolean;
   matches: string[];
+  spamScore?: number;
+  toxicityScore?: number;
 };
+
+function clamp01(value: number): number {
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
+}
+
+function qualitySignals(title: string, body: string): { score: number; matches: string[] } {
+  const t = title.trim();
+  const b = body.trim();
+  const matches: string[] = [];
+  let score = 0;
+
+  // Very short/low-effort thread title (e.g. "dd")
+  if (t.length > 0 && t.length <= 2) {
+    matches.push("low_effort_title");
+    score += 0.5;
+  } else if (t.length > 0 && t.length <= 4) {
+    matches.push("short_title");
+    score += 0.2;
+  }
+
+  // Tiny body + tiny title is often low-value spam/noise
+  if (b.length > 0 && b.length <= 6 && t.length <= 4) {
+    matches.push("low_effort_body");
+    score += 0.25;
+  }
+
+  const compact = `${t}${b}`.toLowerCase().replaceAll(/\s+/g, "");
+  const uniqueChars = new Set(compact.split("")).size;
+  if (compact.length > 0 && compact.length <= 10 && uniqueChars <= 3) {
+    matches.push("gibberish_short");
+    score += 0.3;
+  }
+
+  return { score: clamp01(score), matches };
+}
 
 export function checkProfanity(text: string): ModerationResult {
   const normalised = normalise(text);
@@ -81,13 +121,25 @@ function escapeRegex(str: string): string {
 
 // checks title + body together, returns Red if flagged
 export function moderateContent(title: string, body: string): ModerationResult {
-  const titleResult = checkProfanity(title);
-  const bodyResult = checkProfanity(body);
+  const combined = `${title}\n${body}`;
+  const profanityResult = checkProfanity(combined);
+  const spamResult = checkSpam(combined);
+  const qualityResult = qualitySignals(title, body);
+  const spamScore = clamp01(spamResult.spamScore + qualityResult.score);
+  const toxicityScore = clamp01(profanityResult.matches.length * 0.35);
 
-  const allMatches = [...new Set([...titleResult.matches, ...bodyResult.matches])];
+  const allMatches = [
+    ...new Set([
+      ...profanityResult.matches,
+      ...spamResult.matches,
+      ...qualityResult.matches,
+    ]),
+  ];
 
   return {
-    flagged: allMatches.length > 0,
+    flagged: profanityResult.flagged || spamScore >= 0.5,
     matches: allMatches,
+    spamScore,
+    toxicityScore,
   };
 }
