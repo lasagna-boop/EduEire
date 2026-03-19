@@ -19,6 +19,13 @@ import type { PostCardPost } from "../types/postCard";
 export default function Profile() {
   const { user: fbUser, studentEmailConfirmed, accessMode } = useAuth();
   const handleLogout = useLogout();
+  const eireversary = fbUser?.metadata?.creationTime
+    ? new Date(fbUser.metadata.creationTime).toLocaleDateString("en-IE", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "—";
 
   const [subscriptions, setSubscriptions] = useState<CommunityType[]>([]);
   const [myPosts, setMyPosts] = useState<PostCardPost[]>([]);
@@ -111,6 +118,7 @@ export default function Profile() {
             <p className="profile-header__email">
               Account mode: {accessMode === "full" ? "Full access" : "Read-only"}
             </p>
+            <p className="profile-header__email">Éireversary: {eireversary}</p>
           </div>
 
           <h2 className="profile-posts__heading">My Posts</h2>

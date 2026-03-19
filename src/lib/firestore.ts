@@ -22,6 +22,7 @@ import {
 import type { DocumentData, QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { getUserAccessProfile } from "./userAccess";
+import { hasReadOnlyAllowedTag } from "./sectionAccess";
 import { voteScoreDelta } from "./voteScoreDelta";
 
 function firestoreMillis(ts: unknown): number {
@@ -374,8 +375,10 @@ export async function createThread(input: {
   flashExpiresAt?: Date | null;
 }) {
   const access = await getUserAccessProfile(input.authorId);
-  if (access.accessMode !== "full") {
-    throw new Error("Only confirmed student emails can create threads.");
+  if (access.accessMode !== "full" && !hasReadOnlyAllowedTag(input.tags)) {
+    throw new Error(
+      "Read-only accounts can create threads only in Admissions or First Year/Transition."
+    );
   }
 
   const ref = await addDoc(collection(db, "threads"), {
@@ -446,7 +449,15 @@ export async function addPost(
 ) {
   const access = await getUserAccessProfile(input.authorId);
   if (access.accessMode !== "full") {
-    throw new Error("Only confirmed student emails can add comments.");
+    const threadSnap = await getDoc(doc(db, "threads", threadId));
+    const threadTags = threadSnap.exists()
+      ? (threadSnap.data()?.tags as string[] | undefined)
+      : undefined;
+    if (!hasReadOnlyAllowedTag(threadTags)) {
+      throw new Error(
+        "Read-only accounts can comment only in Admissions or First Year/Transition threads."
+      );
+    }
   }
 
   const ref = await addDoc(collection(doc(db, "threads", threadId), "posts"), {

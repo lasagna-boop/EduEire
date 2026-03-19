@@ -29,7 +29,7 @@ function communityJoinButtonLabel(subLoading: boolean, isSubscribed: boolean): s
 
 export default function Community() {
   const { communityId } = useParams<{ communityId: string }>();
-  const { user: fbUser, canWrite } = useAuth();
+  const { user: fbUser, canWrite, accessMode } = useAuth();
   const handleLogout = useLogout();
 
   const [community, setCommunity] = useState<CommunityType | null>(null);
@@ -224,11 +224,12 @@ export default function Community() {
               mode="community"
               fbUser={fbUser}
               canWrite={canWrite}
+              accessMode={accessMode}
               fixedCommunityId={communityId ?? ""}
               onPosted={loadPosts}
               onFormError={setError}
               triggerLabel="Create Thread"
-              readOnlyMessage="Read-only account: you can browse and like posts, but only confirmed student emails can create new threads."
+              readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
               presentation="overlay"
             />
           </div>
@@ -281,11 +282,12 @@ export default function Community() {
               mode="community"
               fbUser={fbUser}
               canWrite={canWrite}
+              accessMode={accessMode}
               fixedCommunityId={communityId ?? ""}
               onPosted={loadPosts}
               onFormError={setError}
               triggerLabel="Create Thread"
-              readOnlyMessage="Read-only account: you can browse and like posts, but only confirmed student emails can create new threads."
+              readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
               presentation="overlay"
             />
           </div>

@@ -17,11 +17,12 @@ import { errorMessage } from "../lib/errors";
 import { useLogout } from "../hooks/useLogout";
 import { isApprovedPost } from "../lib/postModeration";
 import { checkProfanity } from "../lib/moderation";
+import { hasReadOnlyAllowedTag } from "../lib/sectionAccess";
 import { voteScoreDelta } from "../lib/voteScoreDelta";
 
 export default function ThreadDetail() {
   const { threadId } = useParams<{ threadId: string }>();
-  const { user: fbUser, canWrite } = useAuth();
+  const { user: fbUser, canWrite, accessMode } = useAuth();
   const handleLogout = useLogout();
 
   const [thread, setThread] = useState<Thread | null>(null);
@@ -35,6 +36,8 @@ export default function ThreadDetail() {
   const [vote, setVote] = useState<Vote>(null);
   const [voting, setVoting] = useState(false);
   const canVote = fbUser !== null;
+  const canCommentInThread =
+    canWrite || (accessMode === "read_only" && hasReadOnlyAllowedTag(thread?.tags));
 
   const load = async () => {
     if (threadId === undefined || threadId === "") return;
@@ -91,7 +94,12 @@ export default function ThreadDetail() {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (fbUser === null || threadId === undefined || commentBody.trim() === "" || canWrite === false)
+    if (
+      fbUser === null ||
+      threadId === undefined ||
+      commentBody.trim() === "" ||
+      canCommentInThread === false
+    )
       return;
 
     setSubmitting(true);
@@ -142,7 +150,7 @@ export default function ThreadDetail() {
         canVote={canVote}
         onVote={handleVote}
         fbUser={fbUser}
-        canWrite={canWrite}
+        canComment={canCommentInThread}
         isFetching={loading}
         commentBody={commentBody}
         onCommentBodyChange={setCommentBody}

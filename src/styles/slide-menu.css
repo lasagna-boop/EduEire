@@ -1,3 +1,5 @@
+/* Slide menu - hamburger button + left panel */
+
 .slide-menu__trigger {
   display: flex;
   align-items: center;
@@ -23,6 +25,7 @@
   object-fit: contain;
 }
 
+/* Overlay */
 .slide-menu__overlay {
   position: fixed;
   inset: 0;
@@ -46,6 +49,7 @@
   visibility: visible;
 }
 
+/* Panel */
 .slide-menu__panel {
   position: fixed;
   top: 0;

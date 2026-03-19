@@ -13,7 +13,7 @@ export type ThreadDetailBodyProps = {
   canVote: boolean;
   onVote: (newVote: Vote) => void;
   fbUser: User | null;
-  canWrite: boolean;
+  canComment: boolean;
   isFetching: boolean;
   commentBody: string;
   onCommentBodyChange: (value: string) => void;
@@ -32,7 +32,7 @@ export function ThreadDetailBody({
   canVote,
   onVote,
   fbUser,
-  canWrite,
+  canComment,
   isFetching,
   commentBody,
   onCommentBodyChange,
@@ -120,7 +120,7 @@ export function ThreadDetailBody({
         </div>
       </div>
 
-      {fbUser && canWrite ? (
+      {fbUser && canComment ? (
         <form onSubmit={onSubmitComment} className="comment-form">
           <textarea
             className="comment-form__input"
@@ -143,10 +143,10 @@ export function ThreadDetailBody({
         </form>
       ) : null}
 
-      {fbUser && canWrite === false ? (
+      {fbUser && canComment === false ? (
         <div className="comment-form">
           <p className="comments-section__empty">
-            Your account is read-only. Confirm a student email to write comments.
+            Read-only accounts can comment only in Admissions or First Year/Transition threads.
           </p>
         </div>
       ) : null}

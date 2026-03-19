@@ -3,12 +3,15 @@ import type { User } from "firebase/auth";
 import { createThread, type Community } from "../lib/firestore";
 import { errorMessage } from "../lib/errors";
 import { moderateContent } from "../lib/moderation";
+import type { AccessMode } from "../lib/userAccess";
+import { hasReadOnlyAllowedTag, READ_ONLY_ALLOWED_SECTIONS } from "../lib/sectionAccess";
 
 type FlashDuration = "" | "1" | "3" | "24";
 
 type BaseProps = {
   fbUser: User | null;
   canWrite: boolean;
+  accessMode: AccessMode;
   onPosted: () => Promise<void>;
   onFormError: (message: string | null) => void;
   triggerLabel: string;
@@ -60,7 +63,8 @@ export function CreateThreadCard(props: Readonly<Props>) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!props.fbUser || !effectiveCommunityId || !props.canWrite) return;
+    const canCreate = props.canWrite || props.accessMode === "read_only";
+    if (!props.fbUser || !effectiveCommunityId || !canCreate) return;
 
     setBusy(true);
     props.onFormError(null);
@@ -76,6 +80,13 @@ export function CreateThreadCard(props: Readonly<Props>) {
 
     try {
       const tagList = selectedTag ? [selectedTag] : [];
+      if (props.accessMode === "read_only" && !hasReadOnlyAllowedTag(tagList)) {
+        props.onFormError(
+          "Read-only accounts can create threads only in Admissions or First Year/Transition."
+        );
+        setBusy(false);
+        return;
+      }
 
       let flashExpiresAt: Date | null = null;
       if (flashDuration) {
@@ -113,7 +124,8 @@ export function CreateThreadCard(props: Readonly<Props>) {
 
   if (!props.fbUser) return null;
 
-  if (!props.canWrite) {
+  const canCreateThread = props.canWrite || props.accessMode === "read_only";
+  if (!canCreateThread) {
     return (
       <div className="feed-page__create-card">
         <div className="feed-page__empty">{props.readOnlyMessage}</div>
@@ -142,7 +154,7 @@ export function CreateThreadCard(props: Readonly<Props>) {
       onChange={(e) => setSelectedTag(e.target.value)}
     >
       <option value="">Select Tag</option>
-      {TAG_OPTIONS.map((tag) => (
+      {(props.accessMode === "read_only" ? READ_ONLY_ALLOWED_SECTIONS : TAG_OPTIONS).map((tag) => (
         <option key={tag} value={tag}>
           {tag}
         </option>

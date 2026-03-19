@@ -20,7 +20,7 @@ import { useLogout } from "../hooks/useLogout";
 import type { PostCardPost } from "../types/postCard";
 
 export default function Feed() {
-  const { user: fbUser, canWrite } = useAuth();
+  const { user: fbUser, canWrite, accessMode } = useAuth();
   const handleLogout = useLogout();
 
   const [posts, setPosts] = useState<PostCardPost[]>([]);
@@ -172,13 +172,15 @@ export default function Feed() {
               mode="feed"
               fbUser={fbUser}
               canWrite={canWrite}
+              accessMode={accessMode}
               communities={communities}
               communityId={communityId}
               onCommunityIdChange={setCommunityId}
               onPosted={load}
               onFormError={setError}
               triggerLabel="Create Post"
-              readOnlyMessage="Your account is in read-only mode. Confirm a student email to create threads and comments."
+              readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
+              presentation="overlay"
             />
           </div>
 
@@ -220,13 +222,15 @@ export default function Feed() {
               mode="feed"
               fbUser={fbUser}
               canWrite={canWrite}
+              accessMode={accessMode}
               communities={communities}
               communityId={communityId}
               onCommunityIdChange={setCommunityId}
               onPosted={load}
               onFormError={setError}
               triggerLabel="Create Post"
-              readOnlyMessage="Your account is in read-only mode. Confirm a student email to create threads and comments."
+              readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
+              presentation="overlay"
             />
           </div>
         </aside>
