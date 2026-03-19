@@ -1,0 +1,179 @@
+import { Link } from "react-router-dom";
+import type { User } from "firebase/auth";
+import { CommentItem } from "./CommentItem";
+import { formatFirestoreDay } from "../lib/firestoreFormat";
+import { useFlashCountdown } from "../hooks/useFlashCountdown";
+import type { Post, Thread, Vote } from "../lib/firestore";
+
+export type ThreadDetailBodyProps = {
+  thread: Thread;
+  threadId: string;
+  score: number;
+  vote: Vote;
+  canVote: boolean;
+  onVote: (newVote: Vote) => void;
+  fbUser: User | null;
+  canWrite: boolean;
+  isFetching: boolean;
+  commentBody: string;
+  onCommentBodyChange: (value: string) => void;
+  onSubmitComment: (e: React.FormEvent) => void;
+  submitting: boolean;
+  error: string | null;
+  comments: Post[];
+  onCommentFlagged: (commentId: string) => void;
+};
+
+export function ThreadDetailBody({
+  thread,
+  threadId,
+  score,
+  vote,
+  canVote,
+  onVote,
+  fbUser,
+  canWrite,
+  isFetching,
+  commentBody,
+  onCommentBodyChange,
+  onSubmitComment,
+  submitting,
+  error,
+  comments,
+  onCommentFlagged,
+}: ThreadDetailBodyProps) {
+  const flashRemaining = useFlashCountdown(thread);
+  const voteDisabledClass =
+    canVote && !isFetching ? "" : "post-card__vote-btn--disabled";
+  const upTitle = canVote ? "Upvote" : "Login to vote";
+  const downTitle = canVote ? "Downvote" : "Login to vote";
+
+  return (
+    <>
+      <div className={`thread-detail${flashRemaining ? " thread-detail--flash" : ""}`}>
+        <div className="thread-detail__votes">
+          <button
+            type="button"
+            className={[
+              "post-card__vote-btn",
+              vote === "up" ? "post-card__vote-btn--up" : "",
+              voteDisabledClass,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => onVote(vote === "up" ? null : "up")}
+            disabled={isFetching || canVote === false}
+            title={upTitle}
+          >
+            ▲
+          </button>
+          <div className="post-card__score">{score}</div>
+          <button
+            type="button"
+            className={[
+              "post-card__vote-btn",
+              vote === "down" ? "post-card__vote-btn--down" : "",
+              voteDisabledClass,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => onVote(vote === "down" ? null : "down")}
+            disabled={isFetching || canVote === false}
+            title={downTitle}
+          >
+            ▼
+          </button>
+        </div>
+
+        <div className="thread-detail__body">
+          {flashRemaining ? (
+            <div className="thread-detail__flash-bar">
+              <span className="post-card__flash-banner">
+                <span className="post-card__flash-dot" />
+                <span>Flash Thread</span>
+              </span>
+              <span className="thread-detail__flash-timer">
+                {flashRemaining === "Expired"
+                  ? "Expired"
+                  : `${flashRemaining} remaining`}
+              </span>
+            </div>
+          ) : null}
+          <div className="post-card__meta">
+            <Link to={`/c/${thread.communityId}`} className="post-card__community">
+              c/{thread.communityId}
+            </Link>
+            <span>
+              {" "}
+              @{thread.authorName} • {formatFirestoreDay(thread.createdAt)}
+            </span>
+          </div>
+          <h1 className="thread-detail__title">{thread.title}</h1>
+          <p className="thread-detail__text">{thread.body}</p>
+          <div className="post-card__tags">
+            {thread.tags?.map((t) => (
+              <span key={t} className="post-card__tag">
+                #{t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {fbUser && canWrite ? (
+        <form onSubmit={onSubmitComment} className="comment-form">
+          <textarea
+            className="comment-form__input"
+            placeholder="Write a comment..."
+            value={commentBody}
+            onChange={(e) => onCommentBodyChange(e.target.value)}
+            rows={3}
+            required
+            disabled={isFetching}
+          />
+          <div className="comment-form__actions">
+            <button
+              type="submit"
+              className="feed-page__btn feed-page__btn--filled"
+              disabled={isFetching || submitting || commentBody.trim() === ""}
+            >
+              {submitting ? "Posting..." : "Comment"}
+            </button>
+          </div>
+        </form>
+      ) : null}
+
+      {fbUser && canWrite === false ? (
+        <div className="comment-form">
+          <p className="comments-section__empty">
+            Your account is read-only. Confirm a student email to write comments.
+          </p>
+        </div>
+      ) : null}
+
+      {error ? <p className="feed-page__error">{error}</p> : null}
+
+      <div className="comments-section">
+        <h2 className="comments-section__heading">
+          {comments.length} {comments.length === 1 ? "Comment" : "Comments"}
+        </h2>
+
+        {comments.length === 0 ? (
+          <p className="comments-section__empty">No comments yet. Be the first to reply!</p>
+        ) : (
+          <div className="comments-list">
+            {comments.map((c) => (
+              <CommentItem
+                key={c.id}
+                comment={c}
+                threadId={threadId}
+                onFlagged={() => onCommentFlagged(c.id)}
+                disabled={isFetching}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}

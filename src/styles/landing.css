@@ -1,4 +1,3 @@
-/* Landing page - Reddit-style layout */
 .landing {
   min-height: 100vh;
   background: #dae0e6;
@@ -6,7 +5,6 @@
   flex-direction: column;
 }
 
-/* Top Header Bar */
 .landing__header {
   display: flex;
   align-items: center;
@@ -20,7 +18,6 @@
   height: 64px;
 }
 
-/* Logo */
 .landing__logo {
   display: flex;
   align-items: center;
@@ -34,7 +31,6 @@
   width: auto;
 }
 
-/* Search Bar */
 .landing__search {
   flex: 1;
   max-width: 600px;
@@ -71,7 +67,6 @@
   color: #878a8c;
 }
 
-/* Auth Buttons */
 .landing__auth {
   display: flex;
   gap: 8px;
@@ -104,10 +99,6 @@
   color: white;
 }
 
-.landing__btn--filled:hover {
-  background: #157347;
-}
-
 .landing__btn--large {
   padding: 12px 32px;
   font-size: 1rem;
@@ -115,11 +106,11 @@
   color: white;
 }
 
+.landing__btn--filled:hover,
 .landing__btn--large:hover {
   background: #157347;
 }
 
-/* Main Content */
 .landing__main {
   flex: 1;
   padding: 24px;
@@ -128,7 +119,6 @@
   width: 100%;
 }
 
-/* Hero Section */
 .landing__hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -169,7 +159,6 @@
   margin-bottom: 24px;
 }
 
-/* Features */
 .landing__features {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -205,7 +194,6 @@
   margin: 0;
 }
 
-/* Responsive */
 @media (max-width: 900px) {
   .landing__hero {
     grid-template-columns: 1fr;

@@ -8,6 +8,7 @@ import {
   type Flair,
   type Vote,
 } from "../lib/firestore";
+import { voteScoreDelta } from "../lib/voteScoreDelta";
 
 function formatCreatedAt(createdAt: unknown): string {
   try {
@@ -19,7 +20,7 @@ function formatCreatedAt(createdAt: unknown): string {
   return "just now";
 }
 
-export default function FlairCard({ flair }: { flair: Flair }) {
+export default function FlairCard({ flair }: Readonly<{ flair: Flair }>) {
   const { user: fbUser } = useAuth();
 
   const [score, setScore] = useState(flair.score ?? 0);
@@ -28,7 +29,7 @@ export default function FlairCard({ flair }: { flair: Flair }) {
   const [admin, setAdmin] = useState(false);
   const [flagged, setFlagged] = useState(false);
 
-  const canVote = !!fbUser;
+  const canVote = fbUser !== null;
 
   useEffect(() => {
     if (fbUser) {
@@ -61,13 +62,7 @@ export default function FlairCard({ flair }: { flair: Flair }) {
     const oldVote = vote;
     const oldScore = score;
 
-    let scoreChange = 0;
-    if (oldVote === null && newVote === "up") scoreChange = 1;
-    else if (oldVote === null && newVote === "down") scoreChange = -1;
-    else if (oldVote === "up" && newVote === null) scoreChange = -1;
-    else if (oldVote === "up" && newVote === "down") scoreChange = -2;
-    else if (oldVote === "down" && newVote === null) scoreChange = 1;
-    else if (oldVote === "down" && newVote === "up") scoreChange = 2;
+    const scoreChange = voteScoreDelta(oldVote, newVote);
 
     setVote(newVote);
     setScore((s) => s + scoreChange);
@@ -94,19 +89,24 @@ export default function FlairCard({ flair }: { flair: Flair }) {
     else handleVote("down");
   };
 
+  const voteDisabledClass = canVote ? "" : "post-card__vote-btn--disabled";
+
   return (
     <div className="post-card">
       <div className="post-card__votes">
         <button
+          type="button"
           className={[
             "post-card__vote-btn",
             vote === "up" ? "post-card__vote-btn--up" : "",
-            !canVote ? "post-card__vote-btn--disabled" : "",
-          ].join(" ")}
+            voteDisabledClass,
+          ]
+            .filter(Boolean)
+            .join(" ")}
           onClick={handleUpvote}
-          disabled={!canVote}
+          disabled={canVote === false}
           aria-label="Upvote"
-          title={!canVote ? "Login to vote" : "Upvote"}
+          title={canVote ? "Upvote" : "Login to vote"}
         >
           ▲
         </button>
@@ -114,15 +114,18 @@ export default function FlairCard({ flair }: { flair: Flair }) {
         <div className="post-card__score">{score}</div>
 
         <button
+          type="button"
           className={[
             "post-card__vote-btn",
             vote === "down" ? "post-card__vote-btn--down" : "",
-            !canVote ? "post-card__vote-btn--disabled" : "",
-          ].join(" ")}
+            voteDisabledClass,
+          ]
+            .filter(Boolean)
+            .join(" ")}
           onClick={handleDownvote}
-          disabled={!canVote}
+          disabled={canVote === false}
           aria-label="Downvote"
-          title={!canVote ? "Login to vote" : "Downvote"}
+          title={canVote ? "Downvote" : "Login to vote"}
         >
           ▼
         </button>

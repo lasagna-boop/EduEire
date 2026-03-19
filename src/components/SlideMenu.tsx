@@ -25,10 +25,13 @@ export default function SlideMenu() {
         <img src="/menu-icon.png" alt="" className="slide-menu__icon" />
       </button>
 
-      <div
+      <button
+        type="button"
         className={`slide-menu__overlay ${open ? "slide-menu__overlay--visible" : ""}`}
         onClick={close}
+        aria-label="Close menu"
         aria-hidden={!open}
+        tabIndex={-1}
       />
 
       <aside className={`slide-menu__panel ${open ? "slide-menu__panel--open" : ""}`}>

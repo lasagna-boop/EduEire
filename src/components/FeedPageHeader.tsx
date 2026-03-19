@@ -12,7 +12,7 @@ type Props = {
   actions?: React.ReactNode;
 };
 
-export function FeedPageHeader({ search, actions }: Props) {
+export function FeedPageHeader({ search, actions }: Readonly<Props>) {
   return (
     <header className="feed-page__header">
       <SlideMenu />

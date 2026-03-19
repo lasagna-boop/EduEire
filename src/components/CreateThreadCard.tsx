@@ -36,7 +36,7 @@ const FLASH_OPTIONS: { value: FlashDuration; label: string }[] = [
   { value: "24", label: "Flash: 24 hours" },
 ];
 
-export function CreateThreadCard(props: Props) {
+export function CreateThreadCard(props: Readonly<Props>) {
   const [showNew, setShowNew] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -129,16 +129,7 @@ export function CreateThreadCard(props: Props) {
 
   return (
     <div className="feed-page__create-card">
-      {!showNew ? (
-        <button
-          type="button"
-          className="feed-page__create-trigger"
-          onClick={() => setShowNew(true)}
-        >
-          <span className="feed-page__create-icon">✏️</span>
-          <span>{props.triggerLabel}</span>
-        </button>
-      ) : (
+      {showNew ? (
         <form onSubmit={handleSubmit} className="feed-page__create-form">
           <input
             className="feed-page__input"
@@ -207,6 +198,15 @@ export function CreateThreadCard(props: Props) {
             </button>
           </div>
         </form>
+      ) : (
+        <button
+          type="button"
+          className="feed-page__create-trigger"
+          onClick={() => setShowNew(true)}
+        >
+          <span className="feed-page__create-icon">✏️</span>
+          <span>{props.triggerLabel}</span>
+        </button>
       )}
     </div>
   );

@@ -9,21 +9,28 @@ import {
 } from "../lib/firestore";
 import { useAuth } from "../context/useAuth";
 import { timeAgoFromFirestore } from "../lib/firestoreFormat";
+import { voteScoreDelta } from "../lib/voteScoreDelta";
 
 type Props = {
   comment: Post;
   threadId: string;
   onFlagged?: () => void;
+  disabled?: boolean;
 };
 
-export function CommentItem({ comment, threadId, onFlagged }: Props) {
+export function CommentItem({
+  comment,
+  threadId,
+  onFlagged,
+  disabled = false,
+}: Readonly<Props>) {
   const { user: fbUser } = useAuth();
   const [score, setScore] = useState(comment.score ?? 0);
   const [vote, setVote] = useState<Vote>(null);
   const [voting, setVoting] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [flagged, setFlagged] = useState(false);
-  const canVote = !!fbUser;
+  const canVote = fbUser !== null;
 
   useEffect(() => {
     if (fbUser) {
@@ -35,6 +42,7 @@ export function CommentItem({ comment, threadId, onFlagged }: Props) {
   }, [fbUser, threadId, comment.id]);
 
   const handleFlag = async () => {
+    if (disabled) return;
     if (!admin || flagged) return;
     try {
       await setModerationStatus(
@@ -49,17 +57,12 @@ export function CommentItem({ comment, threadId, onFlagged }: Props) {
   };
 
   const handleVote = async (newVote: Vote) => {
+    if (disabled) return;
     if (!canVote || !fbUser || voting) return;
     const oldVote = vote;
     const oldScore = score;
 
-    let scoreChange = 0;
-    if (oldVote === null && newVote === "up") scoreChange = 1;
-    else if (oldVote === null && newVote === "down") scoreChange = -1;
-    else if (oldVote === "up" && newVote === null) scoreChange = -1;
-    else if (oldVote === "up" && newVote === "down") scoreChange = -2;
-    else if (oldVote === "down" && newVote === null) scoreChange = 1;
-    else if (oldVote === "down" && newVote === "up") scoreChange = 2;
+    const scoreChange = voteScoreDelta(oldVote, newVote);
 
     setVote(newVote);
     setScore((s) => s + scoreChange);
@@ -76,6 +79,9 @@ export function CommentItem({ comment, threadId, onFlagged }: Props) {
     }
   };
 
+  const voteDisabledClass =
+    canVote && !disabled ? "" : "comment__vote-btn--disabled";
+
   return (
     <div className="comment">
       <div className="comment__votes">
@@ -84,10 +90,13 @@ export function CommentItem({ comment, threadId, onFlagged }: Props) {
           className={[
             "comment__vote-btn",
             vote === "up" ? "comment__vote-btn--up" : "",
-            !canVote ? "comment__vote-btn--disabled" : "",
-          ].join(" ")}
+            voteDisabledClass,
+          ]
+            .filter(Boolean)
+            .join(" ")}
           onClick={() => handleVote(vote === "up" ? null : "up")}
-          disabled={!canVote}
+          disabled={disabled || canVote === false}
+          title={canVote ? "Upvote" : "Login to vote"}
         >
           ▲
         </button>
@@ -97,10 +106,13 @@ export function CommentItem({ comment, threadId, onFlagged }: Props) {
           className={[
             "comment__vote-btn",
             vote === "down" ? "comment__vote-btn--down" : "",
-            !canVote ? "comment__vote-btn--disabled" : "",
-          ].join(" ")}
+            voteDisabledClass,
+          ]
+            .filter(Boolean)
+            .join(" ")}
           onClick={() => handleVote(vote === "down" ? null : "down")}
-          disabled={!canVote}
+          disabled={disabled || canVote === false}
+          title={canVote ? "Downvote" : "Login to vote"}
         >
           ▼
         </button>
@@ -121,7 +133,7 @@ export function CommentItem({ comment, threadId, onFlagged }: Props) {
             type="button"
             className={`post-card__flag-btn${flagged ? " post-card__flag-btn--flagged" : ""}`}
             onClick={handleFlag}
-            disabled={flagged}
+            disabled={disabled || flagged}
             title={flagged ? "Flagged for review" : "Flag for review"}
             style={{ marginTop: 4 }}
           >

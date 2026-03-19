@@ -8,7 +8,7 @@ type Props = {
   activeCommunityId?: string;
 };
 
-export function CommunitiesSidebar({ communities, activeCommunityId }: Props) {
+export function CommunitiesSidebar({ communities, activeCommunityId }: Readonly<Props>) {
   return (
     <aside className="feed-page__left-sidebar">
       <div className="feed-page__sidebar-card">

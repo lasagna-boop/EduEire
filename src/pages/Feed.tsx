@@ -135,17 +135,19 @@ export default function Feed() {
 
           {error && <p className="feed-page__error">{error}</p>}
 
-          {loading ? (
+          {loading && filteredPosts.length === 0 ? (
             <div className="feed-page__loading">Loading posts…</div>
-          ) : filteredPosts.length === 0 ? (
+          ) : null}
+          {!loading && filteredPosts.length === 0 ? (
             <div className="feed-page__empty">No posts yet. Be the first to post!</div>
-          ) : (
+          ) : null}
+          {filteredPosts.length > 0 ? (
             <div className="feed-page__list">
               {filteredPosts.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
             </div>
-          )}
+          ) : null}
         </div>
 
         <aside className="feed-page__right-sidebar">

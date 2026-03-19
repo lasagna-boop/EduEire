@@ -115,9 +115,10 @@ export default function Profile() {
 
           <h2 className="profile-posts__heading">My Posts</h2>
 
-          {postsLoading ? (
+          {postsLoading && myPosts.length === 0 ? (
             <div className="feed-page__loading">Loading posts...</div>
-          ) : myPosts.length === 0 ? (
+          ) : null}
+          {!postsLoading && myPosts.length === 0 ? (
             <div className="feed-page__empty">
               You haven&apos;t posted anything yet.
               <br />
@@ -129,28 +130,31 @@ export default function Profile() {
                 Go to Feed
               </Link>
             </div>
-          ) : (
+          ) : null}
+          {myPosts.length > 0 ? (
             <div className="feed-page__list">
               {myPosts.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
             </div>
-          )}
+          ) : null}
         </div>
 
         <aside className="feed-page__right-sidebar profile-sidebar">
           <div className="feed-page__sidebar-card">
             <h3>My Communities</h3>
-            {loading ? (
+            {loading && subscriptions.length === 0 ? (
               <p className="profile-sidebar-loading">Loading...</p>
-            ) : subscriptions.length === 0 ? (
+            ) : null}
+            {!loading && subscriptions.length === 0 ? (
               <div className="profile-empty">
                 <p>You haven&apos;t joined any communities yet.</p>
                 <Link to="/feed" className="feed-page__btn feed-page__btn--filled">
                   Browse Feed
                 </Link>
               </div>
-            ) : (
+            ) : null}
+            {subscriptions.length > 0 ? (
               <ul className="profile-subscriptions">
                 {subscriptions.map((c) => (
                   <li key={c.id} className="profile-subscription-item">
@@ -172,7 +176,7 @@ export default function Profile() {
                   </li>
                 ))}
               </ul>
-            )}
+            ) : null}
           </div>
         </aside>
       </main>

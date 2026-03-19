@@ -2,12 +2,12 @@
 
 import { onAuthStateChanged } from "firebase/auth";
 import type { User } from "firebase/auth";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { auth } from "../lib/firebase";
 import { ensureUserProfile, type AccessMode } from "../lib/userAccess";
 import { AuthContext } from "./auth-context";
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessMode, setAccessMode] = useState<AccessMode>("read_only");
@@ -44,15 +44,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, []);
 
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      accessMode,
+      studentEmailConfirmed,
+      canWrite: accessMode === "full",
+    }),
+    [user, loading, accessMode, studentEmailConfirmed]
+  );
+
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        accessMode,
-        studentEmailConfirmed,
-        canWrite: accessMode === "full",
-      }}
+      value={value}
     >
       {children}
     </AuthContext.Provider>

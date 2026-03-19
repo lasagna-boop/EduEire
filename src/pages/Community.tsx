@@ -21,6 +21,12 @@ import { useAuth } from "../context/useAuth";
 import { useLogout } from "../hooks/useLogout";
 import type { PostCardPost } from "../types/postCard";
 
+function communityJoinButtonLabel(subLoading: boolean, isSubscribed: boolean): string {
+  if (subLoading) return "...";
+  if (isSubscribed) return "Joined";
+  return "Join";
+}
+
 export default function Community() {
   const { communityId } = useParams<{ communityId: string }>();
   const { user: fbUser, canWrite } = useAuth();
@@ -163,7 +169,7 @@ export default function Community() {
                 disabled={subLoading}
                 className={`feed-page__btn ${isSubscribed ? "feed-page__btn--outline" : "feed-page__btn--filled"}`}
               >
-                {subLoading ? "..." : isSubscribed ? "Joined" : "Join"}
+                {communityJoinButtonLabel(subLoading, isSubscribed)}
               </button>
             )}
           </div>
@@ -181,19 +187,21 @@ export default function Community() {
 
           {error && <p className="feed-page__error">{error}</p>}
 
-          {loading ? (
+          {loading && filteredPosts.length === 0 ? (
             <div className="feed-page__loading">Loading posts…</div>
-          ) : filteredPosts.length === 0 ? (
+          ) : null}
+          {!loading && filteredPosts.length === 0 ? (
             <div className="feed-page__empty">
               No posts in c/{communityId} yet. Be the first to post!
             </div>
-          ) : (
+          ) : null}
+          {filteredPosts.length > 0 ? (
             <div className="feed-page__list">
               {filteredPosts.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
             </div>
-          )}
+          ) : null}
         </div>
 
         <aside className="feed-page__right-sidebar">

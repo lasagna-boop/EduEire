@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getUserVote, voteOnThread, isAdmin, setModerationStatus, type Vote } from "../lib/firestore";
 import type { PostCardPost } from "../types/postCard";
+import { voteScoreDelta } from "../lib/voteScoreDelta";
 
-export default function PostCard({ post }: { post: PostCardPost }) {
+export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
   const { user: fbUser } = useAuth();
   
   const [score, setScore] = useState(post.score ?? 0);
@@ -13,7 +14,7 @@ export default function PostCard({ post }: { post: PostCardPost }) {
   const [admin, setAdmin] = useState(false);
   const [flagged, setFlagged] = useState(false);
 
-  const canVote = !!fbUser;
+  const canVote = fbUser !== null;
 
   useEffect(() => {
     if (fbUser) {
@@ -47,14 +48,7 @@ export default function PostCard({ post }: { post: PostCardPost }) {
     const oldVote = vote;
     const oldScore = score;
 
-    // optimistic update
-    let scoreChange = 0;
-    if (oldVote === null && newVote === "up") scoreChange = 1;
-    else if (oldVote === null && newVote === "down") scoreChange = -1;
-    else if (oldVote === "up" && newVote === null) scoreChange = -1;
-    else if (oldVote === "up" && newVote === "down") scoreChange = -2;
-    else if (oldVote === "down" && newVote === null) scoreChange = 1;
-    else if (oldVote === "down" && newVote === "up") scoreChange = 2;
+    const scoreChange = voteScoreDelta(oldVote, newVote);
 
     setVote(newVote);
     setScore((s) => s + scoreChange);
@@ -88,19 +82,24 @@ export default function PostCard({ post }: { post: PostCardPost }) {
     }
   };
 
+  const voteDisabledClass = canVote ? "" : "post-card__vote-btn--disabled";
+
   return (
     <div className={`post-card${post.isFlash ? " post-card--flash" : ""}`}>
       <div className="post-card__votes">
         <button
+          type="button"
           className={[
             "post-card__vote-btn",
             vote === "up" ? "post-card__vote-btn--up" : "",
-            !canVote ? "post-card__vote-btn--disabled" : "",
-          ].join(" ")}
+            voteDisabledClass,
+          ]
+            .filter(Boolean)
+            .join(" ")}
           onClick={handleUpvote}
-          disabled={!canVote}
+          disabled={canVote === false}
           aria-label="Upvote"
-          title={!canVote ? "Login to vote" : "Upvote"}
+          title={canVote ? "Upvote" : "Login to vote"}
         >
           ▲
         </button>
@@ -108,15 +107,18 @@ export default function PostCard({ post }: { post: PostCardPost }) {
         <div className="post-card__score">{score}</div>
 
         <button
+          type="button"
           className={[
             "post-card__vote-btn",
             vote === "down" ? "post-card__vote-btn--down" : "",
-            !canVote ? "post-card__vote-btn--disabled" : "",
-          ].join(" ")}
+            voteDisabledClass,
+          ]
+            .filter(Boolean)
+            .join(" ")}
           onClick={handleDownvote}
-          disabled={!canVote}
+          disabled={canVote === false}
           aria-label="Downvote"
-          title={!canVote ? "Login to vote" : "Downvote"}
+          title={canVote ? "Downvote" : "Login to vote"}
         >
           ▼
         </button>

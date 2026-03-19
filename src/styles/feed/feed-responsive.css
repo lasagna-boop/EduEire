@@ -1,0 +1,84 @@
+@media (max-width: 1100px) {
+  .feed-page__right-sidebar {
+    display: none;
+  }
+
+  .profile-main .feed-page__right-sidebar.profile-sidebar {
+    display: block;
+    width: 100%;
+    order: -1;
+  }
+
+  .profile-main {
+    flex-wrap: wrap;
+  }
+
+  .profile-main .feed-page__content {
+    max-width: none;
+    width: 100%;
+  }
+
+  .feed-page__content {
+    max-width: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .feed-page__left-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .feed-page__header {
+    padding: 8px 12px;
+  }
+
+  .feed-page__logo-img {
+    height: 44px;
+  }
+
+  .feed-page__user {
+    display: none;
+  }
+
+  .feed-page__main {
+    padding: 12px;
+  }
+
+  .feed-page__form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-header {
+    padding: 16px;
+  }
+
+  .profile-header__title {
+    font-size: 1.25rem;
+  }
+
+  .profile-posts__heading {
+    font-size: 1rem;
+  }
+
+  .thread-detail__title {
+    font-size: 18px;
+  }
+
+  .thread-detail__body {
+    padding: 12px 14px;
+  }
+
+  .thread-detail__votes {
+    width: 40px;
+  }
+
+  .comments-section {
+    padding: 14px;
+  }
+
+  .admin-card__actions {
+    flex-direction: column;
+  }
+}

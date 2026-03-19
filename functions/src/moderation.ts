@@ -10,15 +10,15 @@ const LEET_MAP: Record<string, string> = {
 
 export function normalise(text: string): string {
   let s = text.toLowerCase();
-  s = s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  s = s.normalize("NFKD").replaceAll(/[\u0300-\u036f]/g, "");
   s = s.split("").map((ch) => LEET_MAP[ch] ?? ch).join("");
-  s = s.replace(/(.)\1{2,}/g, "$1");
-  s = s.replace(/\b(\w)\s+(?=\w\b)/g, "$1");
+  s = s.replaceAll(/(.)\1{2,}/g, "$1");
+  s = s.replaceAll(/\b(\w)\s+(?=\w\b)/g, "$1");
   return s;
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export type ModerationVerdict = "approved" | "rejected" | "pending_review";
@@ -62,7 +62,7 @@ export function moderateKeywords(text: string): ModerationResult {
   const matches: string[] = [];
 
   for (const word of BANNED_WORDS) {
-    const pattern = new RegExp(`\\b${escapeRegex(word)}\\b`, "gi");
+    const pattern = new RegExp(String.raw`\b${escapeRegex(word)}\b`, "gi");
     if (pattern.test(normalised)) {
       matches.push(word);
     }

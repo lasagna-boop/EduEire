@@ -22,6 +22,7 @@ import {
 import type { DocumentData, QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { getUserAccessProfile } from "./userAccess";
+import { voteScoreDelta } from "./voteScoreDelta";
 
 function firestoreMillis(ts: unknown): number {
   if (
@@ -519,24 +520,8 @@ export async function voteOnThread(
   // get current vote
   const currentSnap = await getDoc(voteRef);
   const currentVote: Vote = currentSnap.exists() ? currentSnap.data()?.vote : null;
-  
-  // calculate score change
-  let scoreChange = 0;
-  
-  if (currentVote === null && newVote === "up") {
-    scoreChange = 1;
-  } else if (currentVote === null && newVote === "down") {
-    scoreChange = -1;
-  } else if (currentVote === "up" && newVote === null) {
-    scoreChange = -1;
-  } else if (currentVote === "up" && newVote === "down") {
-    scoreChange = -2;
-  } else if (currentVote === "down" && newVote === null) {
-    scoreChange = 1;
-  } else if (currentVote === "down" && newVote === "up") {
-    scoreChange = 2;
-  }
-  
+  const scoreChange = voteScoreDelta(currentVote, newVote);
+
   // update vote document
   if (newVote === null) {
     // remove vote by setting to null (or we could delete the doc)
@@ -579,14 +564,7 @@ export async function voteOnComment(
 
   const currentSnap = await getDoc(voteRef);
   const currentVote: Vote = currentSnap.exists() ? currentSnap.data()?.vote : null;
-
-  let scoreChange = 0;
-  if (currentVote === null && newVote === "up") scoreChange = 1;
-  else if (currentVote === null && newVote === "down") scoreChange = -1;
-  else if (currentVote === "up" && newVote === null) scoreChange = -1;
-  else if (currentVote === "up" && newVote === "down") scoreChange = -2;
-  else if (currentVote === "down" && newVote === null) scoreChange = 1;
-  else if (currentVote === "down" && newVote === "up") scoreChange = 2;
+  const scoreChange = voteScoreDelta(currentVote, newVote);
 
   await setDoc(voteRef, { vote: newVote });
 
@@ -696,14 +674,7 @@ export async function voteOnFlair(flairId: string, userId: string, newVote: Vote
 
   const currentSnap = await getDoc(voteRef);
   const currentVote: Vote = currentSnap.exists() ? currentSnap.data()?.vote : null;
-
-  let scoreChange = 0;
-  if (currentVote === null && newVote === "up") scoreChange = 1;
-  else if (currentVote === null && newVote === "down") scoreChange = -1;
-  else if (currentVote === "up" && newVote === null) scoreChange = -1;
-  else if (currentVote === "up" && newVote === "down") scoreChange = -2;
-  else if (currentVote === "down" && newVote === null) scoreChange = 1;
-  else if (currentVote === "down" && newVote === "up") scoreChange = 2;
+  const scoreChange = voteScoreDelta(currentVote, newVote);
 
   if (newVote === null) {
     await setDoc(voteRef, { vote: null });

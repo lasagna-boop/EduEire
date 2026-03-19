@@ -1,0 +1,66 @@
+.feed-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feed-page__sidebar-card {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.feed-page__sidebar-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1b;
+  margin: 0 0 8px 0;
+}
+
+.feed-page__sidebar-card p {
+  font-size: 0.875rem;
+  color: #576f76;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.feed-page__community-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.feed-page__community-list li {
+  margin-bottom: 2px;
+}
+
+.feed-page__community-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.feed-page__community-link:hover {
+  background: #e8e8e8;
+}
+
+.feed-page__community-link--active {
+  background: #e8e8e8;
+  border-left: 3px solid #198754;
+}
+
+.feed-page__community-icon {
+  font-size: 1.2rem;
+}
+
+.feed-page__community-name {
+  font-weight: 500;
+  color: #1a1a1b;
+  font-size: 0.9rem;
+}

@@ -31,7 +31,7 @@ export function normalise(text: string): string {
   s = s.toLowerCase();
 
   // 2. Unicode NFKD decomposition — strip diacritics (e.g. é → e)
-  s = s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  s = s.normalize("NFKD").replaceAll(/[\u0300-\u036f]/g, "");
 
   // 3. leet-speak substitution
   s = s
@@ -40,10 +40,10 @@ export function normalise(text: string): string {
     .join("");
 
   // 4. collapse repeated characters (e.g. "fuuuck" → "fuck")
-  s = s.replace(/(.)\1{2,}/g, "$1");
+  s = s.replaceAll(/(.)\1{2,}/g, "$1");
 
   // 5. strip inserted whitespace/punctuation between letters ("f u c k" → "fuck")
-  s = s.replace(/\b(\w)\s+(?=\w\b)/g, "$1");
+  s = s.replaceAll(/\b(\w)\s+(?=\w\b)/g, "$1");
 
   return s;
 }
@@ -61,7 +61,7 @@ export function checkProfanity(text: string): ModerationResult {
 
   for (const word of BANNED_WORDS) {
     // word-boundary regex to avoid false positives (e.g. "class" not matching "ass")
-    const pattern = new RegExp(`\\b${escapeRegex(word)}\\b`, "gi");
+    const pattern = new RegExp(String.raw`\b${escapeRegex(word)}\b`, "gi");
     if (pattern.test(normalised)) {
       matches.push(word);
     }
@@ -74,7 +74,7 @@ export function checkProfanity(text: string): ModerationResult {
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // ==================== COMBINED CHECK ====================

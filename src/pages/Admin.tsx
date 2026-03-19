@@ -16,6 +16,24 @@ function formatDate(ts: unknown): string {
   return s === "just now" ? "—" : s;
 }
 
+function moderationDocPath(item: FlaggedItem): string {
+  if (item.type === "thread") return `threads/${item.threadId}`;
+  if (item.type === "flair") return `flairs/${item.id}`;
+  return `threads/${item.threadId}/posts/${item.id}`;
+}
+
+function flaggedItemTypeLabel(type: FlaggedItem["type"]): string {
+  if (type === "thread") return "Thread";
+  if (type === "flair") return "Flair";
+  return "Comment";
+}
+
+function toxicityScoreColor(score: number): string {
+  if (score >= 0.7) return "#d32f2f";
+  if (score >= 0.4) return "#e65100";
+  return "#2e7d32";
+}
+
 export default function Admin() {
   const { user: fbUser } = useAuth();
 
@@ -54,13 +72,7 @@ export default function Admin() {
   const handleAction = async (item: FlaggedItem, action: "approved" | "rejected") => {
     setActing(item.id);
     try {
-      const path =
-        item.type === "thread"
-          ? `threads/${item.threadId}`
-          : item.type === "flair"
-            ? `flairs/${item.id}`
-            : `threads/${item.threadId}/posts/${item.id}`;
-      await setModerationStatus(path, action);
+      await setModerationStatus(moderationDocPath(item), action);
       setItems((prev) => prev.filter((i) => i.id !== item.id));
     } catch (e) {
       console.error("Failed to update moderation status", e);
@@ -131,20 +143,18 @@ export default function Admin() {
 
           {loading ? (
             <div className="feed-page__loading">Loading flagged content...</div>
-          ) : items.length === 0 ? (
+          ) : null}
+          {!loading && items.length === 0 ? (
             <div className="feed-page__empty">
               No content pending review. All clear!
             </div>
-          ) : (
+          ) : null}
+          {!loading && items.length > 0 ? (
             <div className="admin-queue">
               {items.map((item) => (
                 <div key={`${item.type}-${item.id}`} className="admin-card">
                   <div className="admin-card__badge">
-                    {item.type === "thread"
-                      ? "Thread"
-                      : item.type === "flair"
-                        ? "Flair"
-                        : "Comment"}
+                    {flaggedItemTypeLabel(item.type)}
                   </div>
 
                   <div className="admin-card__meta">
@@ -165,16 +175,16 @@ export default function Admin() {
                     </div>
                   )}
 
-                  {item.toxicityScore != null && (
+                  {item.toxicityScore != null ? (
                     <div
                       className="admin-card__toxicity"
                       style={{
-                        color: item.toxicityScore >= 0.7 ? "#d32f2f" : item.toxicityScore >= 0.4 ? "#e65100" : "#2e7d32",
+                        color: toxicityScoreColor(item.toxicityScore),
                       }}
                     >
                       ML Toxicity Score: {(item.toxicityScore * 100).toFixed(1)}%
                     </div>
-                  )}
+                  ) : null}
 
                   <div className="admin-card__actions">
                     <button
@@ -195,7 +205,7 @@ export default function Admin() {
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
         </div>
       </main>
     </div>

@@ -33,7 +33,7 @@ export default function Flairs() {
   }, []);
 
   useEffect(() => {
-    void load();
+    load().catch((err) => console.error("Failed to load flairs", err));
   }, [load]);
 
   const filtered = useMemo(() => {
@@ -162,13 +162,15 @@ export default function Flairs() {
           {error && <p className="feed-page__error">{error}</p>}
 
           <div className="feed-page__list">
-            {loading ? (
+            {loading && filtered.length === 0 ? (
               <div className="feed-page__loading">Loading flairs…</div>
-            ) : filtered.length === 0 ? (
+            ) : null}
+            {!loading && filtered.length === 0 ? (
               <div className="feed-page__empty">No flairs yet. Be the first to propose one!</div>
-            ) : (
-              filtered.map((f) => <FlairCard key={f.id} flair={f} />)
-            )}
+            ) : null}
+            {filtered.length > 0
+              ? filtered.map((f) => <FlairCard key={f.id} flair={f} />)
+              : null}
           </div>
         </div>
       </main>
