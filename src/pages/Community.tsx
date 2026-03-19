@@ -12,8 +12,11 @@ import {
   getUserSubscriptions,
   countPosts,
   type Community as CommunityType,
+  type Thread,
 } from "../lib/firestore";
-import { useAuth } from "../context/AuthContext";
+import { errorMessage } from "../lib/errors";
+import { formatFirestoreDay, threadVisibleInFeed } from "../lib/firestoreFormat";
+import { useAuth } from "../context/useAuth";
 import { logout } from "../lib/auth";
 import { moderateContent } from "../lib/moderation";
 
@@ -29,13 +32,6 @@ type PostCardPost = {
   postCount?: number;
   isFlash?: boolean;
 };
-
-function formatCreatedAt(createdAt: any): string {
-  try {
-    if (createdAt?.toDate) return createdAt.toDate().toISOString().slice(0, 10);
-  } catch {}
-  return "just now";
-}
 
 export default function Community() {
   const { communityId } = useParams<{ communityId: string }>();
@@ -55,7 +51,7 @@ export default function Community() {
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
   const [busy, setBusy] = useState(false);
-const [flashDuration, setFlashDuration] = useState<"" | "1" | "3" | "24">("");
+  const [flashDuration, setFlashDuration] = useState<"" | "1" | "3" | "24">("");
 
   const loadCommunity = async () => {
     if (!communityId) return;
@@ -86,36 +82,26 @@ const [flashDuration, setFlashDuration] = useState<"" | "1" | "3" | "24">("");
     try {
       const { threads: allThreads } = await listThreads({ communityId, pageSize: 30 });
       const now = Date.now();
-      const threads = allThreads.filter((t: any) => {
-        if (t.moderationStatus && t.moderationStatus !== "approved") return false;
-        const expires = t.flashExpiresAt;
-        if (!expires) return true;
-        try {
-          const date = expires.toDate ? expires.toDate() : expires;
-          return date.getTime() > now;
-        } catch {
-          return true;
-        }
-      });
+      const threads = allThreads.filter((t: Thread) => threadVisibleInFeed(t, now));
 
       const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
 
-      const mapped: PostCardPost[] = threads.map((t: any, i: number) => ({
+      const mapped: PostCardPost[] = threads.map((t: Thread, i: number) => ({
         id: t.id,
         title: t.title,
         body: t.body ?? "",
         communityId: t.communityId ?? "",
         tags: Array.isArray(t.tags) ? t.tags : [],
         author: t.authorName || "anon",
-        createdAt: formatCreatedAt(t.createdAt),
+        createdAt: formatFirestoreDay(t.createdAt),
         score: t.score ?? 0,
         postCount: counts[i],
         isFlash: !!t.flashExpiresAt,
       }));
 
       setPosts(mapped);
-    } catch (e: any) {
-      setError(e?.message ?? "failed to load posts");
+    } catch (e) {
+      setError(errorMessage(e) || "failed to load posts");
     } finally {
       setLoading(false);
     }
@@ -137,6 +123,8 @@ const [flashDuration, setFlashDuration] = useState<"" | "1" | "3" | "24">("");
     loadCommunities();
     loadPosts();
     checkSubscription();
+    // Functions close over latest communityId / fbUser via deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communityId, fbUser?.uid]);
 
   const handleSubscribe = async () => {
@@ -202,8 +190,8 @@ const [flashDuration, setFlashDuration] = useState<"" | "1" | "3" | "24">("");
       setShowNew(false);
 
       await loadPosts();
-    } catch (e: any) {
-      setError(e?.message ?? "failed to create post");
+    } catch (e) {
+      setError(errorMessage(e) || "failed to create post");
     } finally {
       setBusy(false);
     }

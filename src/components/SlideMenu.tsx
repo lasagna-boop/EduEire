@@ -38,6 +38,13 @@ export default function SlideMenu() {
           </button>
         </div>
         <nav className="slide-menu__nav">
+          <Link
+            to="/flairs"
+            className="slide-menu__item slide-menu__item--link"
+            onClick={close}
+          >
+            Flair Topics
+          </Link>
           <h3 className="slide-menu__title">Communities</h3>
           {communities.map((c) => (
             <Link

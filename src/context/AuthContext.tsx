@@ -1,27 +1,11 @@
-// src/context/AuthContext.tsx
-// provides firebase auth state (user + loading) to the whole app
+// Auth provider + context value (hook lives in useAuth.ts for react-refresh / ESLint)
 
 import { onAuthStateChanged } from "firebase/auth";
 import type { User } from "firebase/auth";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { auth } from "../lib/firebase";
 import { ensureUserProfile, type AccessMode } from "../lib/userAccess";
-
-type AuthCtx = {
-  user: User | null;
-  loading: boolean;
-  accessMode: AccessMode;
-  studentEmailConfirmed: boolean;
-  canWrite: boolean;
-};
-
-const AuthContext = createContext<AuthCtx>({
-  user: null,
-  loading: true,
-  accessMode: "read_only",
-  studentEmailConfirmed: false,
-  canWrite: false,
-});
+import { AuthContext } from "./auth-context";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -29,7 +13,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessMode, setAccessMode] = useState<AccessMode>("read_only");
   const [studentEmailConfirmed, setStudentEmailConfirmed] = useState(false);
 
-  // listen for login/logout/refresh and keep context in sync
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setLoading(true);
@@ -58,7 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // clean up listener when provider unmounts
     return () => unsub();
   }, []);
 
@@ -75,9 +57,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-// small helper hook so components can access auth state easily
-export function useAuth() {
-  return useContext(AuthContext);
 }

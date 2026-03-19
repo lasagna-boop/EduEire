@@ -1,0 +1,82 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function hasStudentEmail() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && (
+          request.auth.token.email.matches('(?i).*@mytudublin\\.ie') ||
+          request.auth.token.email.matches('(?i).*@tcd\\.ie') ||
+          request.auth.token.email.matches('(?i).*@ucdconnect\\.ie')
+        );
+    }
+
+    function isAdmin() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    match /communities/{communityId} {
+      allow read: if true;
+      allow create, update: if request.auth != null;
+      allow delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    match /threads/{threadId} {
+      allow read: if true;
+      allow create: if hasStudentEmail();
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['score', 'postCount', 'lastActivityAt', 'moderationStatus', 'moderationMatches']);
+      allow delete: if false;
+
+      match /votes/{odineuserId} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == odineuserId;
+      }
+
+      match /posts/{postId} {
+        allow read: if true;
+        allow create: if hasStudentEmail();
+        allow update: if request.auth != null
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['score', 'moderationStatus', 'moderationMatches']);
+        allow delete: if false;
+
+        match /votes/{odineuserId} {
+          allow read: if true;
+          allow write: if request.auth != null && request.auth.uid == odineuserId;
+        }
+      }
+    }
+
+    match /flairs/{flairId} {
+      allow read: if true;
+      allow create: if hasStudentEmail();
+      // Voters: score only. Admins: moderationStatus (flag / approve / reject queue).
+      allow update: if request.auth != null && (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score'])
+        || (isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['moderationStatus']))
+      );
+      allow delete: if false;
+
+      match /votes/{odineuserId} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == odineuserId;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -15,33 +15,11 @@ import {
   type Post,
   type Vote,
 } from "../lib/firestore";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
+import { errorMessage } from "../lib/errors";
+import { formatFirestoreDay, parseFirestoreDate, timeAgoFromFirestore } from "../lib/firestoreFormat";
 import { logout } from "../lib/auth";
 import { checkProfanity } from "../lib/moderation";
-
-function formatDate(ts: any): string {
-  try {
-    if (ts?.toDate) return ts.toDate().toISOString().slice(0, 10);
-  } catch {}
-  return "just now";
-}
-
-function timeAgo(ts: any): string {
-  try {
-    const date = ts?.toDate ? ts.toDate() : new Date(ts);
-    const diff = Date.now() - date.getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    if (days < 30) return `${days}d ago`;
-    return date.toISOString().slice(0, 10);
-  } catch {
-    return "just now";
-  }
-}
 
 function CommentItem({ comment, threadId, onFlagged }: { comment: Post; threadId: string; onFlagged?: () => void }) {
   const { user: fbUser } = useAuth();
@@ -133,7 +111,7 @@ function CommentItem({ comment, threadId, onFlagged }: { comment: Post; threadId
       <div className="comment__body">
         <div className="comment__header">
           <span className="comment__author">@{comment.authorName}</span>
-          <span className="comment__time">{timeAgo(comment.createdAt)}</span>
+          <span className="comment__time">{timeAgoFromFirestore(comment.createdAt)}</span>
         </div>
         <p className="comment__text">{comment.body}</p>
         {admin && (
@@ -175,10 +153,10 @@ export default function ThreadDetail() {
     if (flashTimer.current) clearInterval(flashTimer.current);
     if (!thread) { setFlashRemaining(null); return; }
 
-    const raw = (thread as any).flashExpiresAt;
+    const raw = thread.flashExpiresAt;
     if (!raw) { setFlashRemaining(null); return; }
 
-    const expiresMs = (raw.toDate ? raw.toDate() : new Date(raw)).getTime();
+    const expiresMs = parseFirestoreDate(raw).getTime();
 
     const tick = () => {
       const diff = expiresMs - Date.now();
@@ -205,7 +183,7 @@ export default function ThreadDetail() {
         listPosts(threadId),
       ]);
       setThread(t);
-      setComments(posts.filter((p: any) => !p.moderationStatus || p.moderationStatus === "approved"));
+      setComments(posts.filter((p) => !p.moderationStatus || p.moderationStatus === "approved"));
       if (t) setScore(t.score ?? 0);
     } catch (e) {
       console.error("Failed to load thread", e);
@@ -217,6 +195,7 @@ export default function ThreadDetail() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 
   useEffect(() => {
@@ -277,9 +256,9 @@ export default function ThreadDetail() {
       });
       setCommentBody("");
       const posts = await listPosts(threadId);
-      setComments(posts.filter((p: any) => !p.moderationStatus || p.moderationStatus === "approved"));
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to add comment");
+      setComments(posts.filter((p) => !p.moderationStatus || p.moderationStatus === "approved"));
+    } catch (e) {
+      setError(errorMessage(e) || "Failed to add comment");
     } finally {
       setSubmitting(false);
     }
@@ -367,7 +346,7 @@ export default function ThreadDetail() {
                     <Link to={`/c/${thread.communityId}`} className="post-card__community">
                       c/{thread.communityId}
                     </Link>
-                    <span> @{thread.authorName} • {formatDate(thread.createdAt)}</span>
+                    <span> @{thread.authorName} • {formatFirestoreDay(thread.createdAt)}</span>
                   </div>
                   <h1 className="thread-detail__title">{thread.title}</h1>
                   <p className="thread-detail__text">{thread.body}</p>

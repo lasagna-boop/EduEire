@@ -10,8 +10,11 @@ import {
   countPosts,
   isAdmin,
   type Community,
+  type Thread,
 } from "../lib/firestore";
-import { useAuth } from "../context/AuthContext";
+import { errorMessage } from "../lib/errors";
+import { formatFirestoreDay, threadVisibleInFeed } from "../lib/firestoreFormat";
+import { useAuth } from "../context/useAuth";
 import { logout } from "../lib/auth";
 import { moderateContent } from "../lib/moderation";
 
@@ -27,13 +30,6 @@ type PostCardPost = {
   postCount?: number;
   isFlash?: boolean;
 };
-
-function formatCreatedAt(createdAt: any): string {
-  try {
-    if (createdAt?.toDate) return createdAt.toDate().toISOString().slice(0, 10);
-  } catch {}
-  return "just now";
-}
 
 export default function Feed() {
   const { user: fbUser, canWrite } = useAuth();
@@ -82,36 +78,26 @@ export default function Feed() {
       const { threads: allThreads } = await listThreads({ pageSize: 30 });
 
       const now = Date.now();
-      const threads = allThreads.filter((t: any) => {
-        if (t.moderationStatus && t.moderationStatus !== "approved") return false;
-        const expires = t.flashExpiresAt;
-        if (!expires) return true;
-        try {
-          const date = expires.toDate ? expires.toDate() : expires;
-          return date.getTime() > now;
-        } catch {
-          return true;
-        }
-      });
+      const threads = allThreads.filter((t: Thread) => threadVisibleInFeed(t, now));
 
       const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
 
-      const mapped: PostCardPost[] = threads.map((t: any, i: number) => ({
+      const mapped: PostCardPost[] = threads.map((t: Thread, i: number) => ({
         id: t.id,
         title: t.title,
         body: t.body ?? "",
         communityId: t.communityId ?? t.university ?? "",
         tags: Array.isArray(t.tags) ? t.tags : [],
         author: t.authorName || "anon",
-        createdAt: formatCreatedAt(t.createdAt),
+        createdAt: formatFirestoreDay(t.createdAt),
         score: t.score ?? 0,
         postCount: counts[i],
         isFlash: !!t.flashExpiresAt,
       }));
 
       setPosts(mapped);
-    } catch (e: any) {
-      setError(e?.message ?? "failed to load threads");
+    } catch (e) {
+      setError(errorMessage(e) || "failed to load threads");
     } finally {
       setLoading(false);
     }
@@ -121,6 +107,8 @@ export default function Feed() {
     loadCommunities();
     load();
     if (fbUser) isAdmin(fbUser.uid).then(setAdminUser);
+    // Mount + initial load only; loadCommunities sets communityId from API once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -166,8 +154,8 @@ export default function Feed() {
       setShowNew(false);
 
       await load();
-    } catch (e: any) {
-      setError(e?.message ?? "failed to create thread");
+    } catch (e) {
+      setError(errorMessage(e) || "failed to create thread");
     } finally {
       setBusy(false);
     }

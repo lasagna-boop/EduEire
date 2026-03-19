@@ -9,8 +9,10 @@ import {
   listThreads,
   countPosts,
   type Community as CommunityType,
+  type Thread,
 } from "../lib/firestore";
-import { useAuth } from "../context/AuthContext";
+import { formatFirestoreDay, threadVisibleOnProfile } from "../lib/firestoreFormat";
+import { useAuth } from "../context/useAuth";
 import { logout } from "../lib/auth";
 
 type PostCardPost = {
@@ -25,13 +27,6 @@ type PostCardPost = {
   postCount?: number;
   isFlash?: boolean;
 };
-
-function formatCreatedAt(createdAt: any): string {
-  try {
-    if (createdAt?.toDate) return createdAt.toDate().toISOString().slice(0, 10);
-  } catch {}
-  return "just now";
-}
 
 export default function Profile() {
   const { user: fbUser, studentEmailConfirmed, accessMode } = useAuth();
@@ -66,27 +61,17 @@ export default function Profile() {
     try {
       const { threads: allThreads } = await listThreads({ authorId: fbUser.uid, pageSize: 30 });
       const now = Date.now();
-      const threads = allThreads.filter((t: any) => {
-        if (t.moderationStatus === "rejected") return false;
-        const expires = t.flashExpiresAt;
-        if (!expires) return true;
-        try {
-          const date = expires.toDate ? expires.toDate() : expires;
-          return date.getTime() > now;
-        } catch {
-          return true;
-        }
-      });
+      const threads = allThreads.filter((t: Thread) => threadVisibleOnProfile(t, now));
       const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
 
-      const mapped: PostCardPost[] = threads.map((t: any, i: number) => ({
+      const mapped: PostCardPost[] = threads.map((t: Thread, i: number) => ({
         id: t.id,
         title: t.title,
         body: t.body ?? "",
         communityId: t.communityId ?? "",
         tags: Array.isArray(t.tags) ? t.tags : [],
         author: t.authorName || "anon",
-        createdAt: formatCreatedAt(t.createdAt),
+        createdAt: formatFirestoreDay(t.createdAt),
         score: t.score ?? 0,
         postCount: counts[i],
         isFlash: !!t.flashExpiresAt,
@@ -102,6 +87,7 @@ export default function Profile() {
   useEffect(() => {
     loadSubscriptions();
     loadMyPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fbUser?.uid]);
 
   const handleUnsubscribe = async (communityId: string) => {

@@ -19,9 +19,73 @@ import {
   where,
   startAfter,
 } from "firebase/firestore";
-import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
+import type { DocumentData, QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { getUserAccessProfile } from "./userAccess";
+
+function firestoreMillis(ts: unknown): number {
+  if (
+    typeof ts === "object" &&
+    ts !== null &&
+    "toMillis" in ts &&
+    typeof (ts as { toMillis: () => number }).toMillis === "function"
+  ) {
+    return (ts as { toMillis: () => number }).toMillis();
+  }
+  return 0;
+}
+
+function getDublinWeekKey(now: Date = new Date()): string {
+  // Week resets at Sunday 00:00 Europe/Dublin. We use a "week key" equal to the
+  // Dublin-local date (YYYY-MM-DD) of the most recent Sunday.
+  // This avoids tricky DST math and is stable across clients.
+  const tz = "Europe/Dublin";
+
+  const getDublinDateKey = (d: Date) => {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(d);
+    const year = parts.find((p) => p.type === "year")?.value ?? "0000";
+    const month = parts.find((p) => p.type === "month")?.value ?? "00";
+    const day = parts.find((p) => p.type === "day")?.value ?? "00";
+    return `${year}-${month}-${day}`;
+  };
+
+  const getDublinWeekday = (d: Date): number => {
+    // returns 0..6 where 0 is Sunday
+    const wd = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(d);
+    switch (wd) {
+      case "Sun":
+        return 0;
+      case "Mon":
+        return 1;
+      case "Tue":
+        return 2;
+      case "Wed":
+        return 3;
+      case "Thu":
+        return 4;
+      case "Fri":
+        return 5;
+      case "Sat":
+        return 6;
+      default:
+        return 0;
+    }
+  };
+
+  // Walk back to the most recent Sunday in Dublin-local calendar.
+  let cursor = now;
+  for (let i = 0; i < 7; i++) {
+    if (getDublinWeekday(cursor) === 0) break;
+    cursor = new Date(cursor.getTime() - 24 * 60 * 60 * 1000);
+  }
+
+  return getDublinDateKey(cursor);
+}
 
 // ==================== COMMUNITIES ====================
 
@@ -31,21 +95,25 @@ export type Community = {
   fullName: string;
   description: string;
   memberCount: number;
-  createdAt?: any;
+  createdAt?: unknown;
 };
 
 // get a single community by ID
 export async function getCommunity(communityId: string): Promise<Community | null> {
   const snap = await getDoc(doc(db, "communities", communityId));
   if (!snap.exists()) return null;
-  return { id: snap.id, ...(snap.data() as any) };
+  const data = snap.data() as Omit<Community, "id">;
+  return { id: snap.id, ...data };
 }
 
 // list all communities
 export async function listCommunities(): Promise<Community[]> {
   const q = query(collection(db, "communities"), orderBy("name", "asc"));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+  return snap.docs.map((d) => {
+    const data = d.data() as Omit<Community, "id">;
+    return { id: d.id, ...data };
+  });
 }
 
 // create a community (used for seeding)
@@ -129,8 +197,9 @@ export async function isAdmin(userId: string): Promise<boolean> {
 
 export type FlaggedItem = {
   id: string;
-  type: "thread" | "comment";
-  threadId: string;
+  type: "thread" | "comment" | "flair";
+  /** Thread id (for threads: same as id; for comments: parent thread) */
+  threadId?: string;
   title?: string;
   body: string;
   authorName: string;
@@ -138,7 +207,37 @@ export type FlaggedItem = {
   moderationStatus: string;
   moderationMatches: string[];
   toxicityScore?: number;
-  createdAt?: any;
+  createdAt?: unknown;
+};
+
+type FlaggedThreadDoc = {
+  title?: string;
+  body?: string;
+  authorName?: string;
+  communityId?: string;
+  moderationStatus?: string;
+  moderationMatches?: string[];
+  toxicityScore?: number;
+  createdAt?: unknown;
+};
+
+type FlaggedCommentDoc = {
+  body?: string;
+  authorName?: string;
+  moderationStatus?: string;
+  moderationMatches?: string[];
+  toxicityScore?: number;
+  createdAt?: unknown;
+};
+
+type FlaggedFlairDoc = {
+  title?: string;
+  description?: string;
+  authorName?: string;
+  moderationStatus?: string;
+  moderationMatches?: string[];
+  toxicityScore?: number;
+  createdAt?: unknown;
 };
 
 export async function listFlaggedThreads(): Promise<FlaggedItem[]> {
@@ -150,7 +249,7 @@ export async function listFlaggedThreads(): Promise<FlaggedItem[]> {
   );
   const threadSnap = await getDocs(threadQ);
   for (const d of threadSnap.docs) {
-    const data = d.data() as any;
+    const data = d.data() as FlaggedThreadDoc;
     items.push({
       id: d.id,
       type: "thread",
@@ -159,7 +258,7 @@ export async function listFlaggedThreads(): Promise<FlaggedItem[]> {
       body: data.body ?? "",
       authorName: data.authorName ?? "unknown",
       communityId: data.communityId,
-      moderationStatus: data.moderationStatus,
+      moderationStatus: data.moderationStatus ?? "pending_review",
       moderationMatches: data.moderationMatches ?? [],
       toxicityScore: data.toxicityScore,
       createdAt: data.createdAt,
@@ -175,19 +274,40 @@ export async function listFlaggedThreads(): Promise<FlaggedItem[]> {
     );
     const commentSnap = await getDocs(commentQ);
     for (const d of commentSnap.docs) {
-      const data = d.data() as any;
+      const data = d.data() as FlaggedCommentDoc;
       items.push({
         id: d.id,
         type: "comment",
         threadId: tDoc.id,
         body: data.body ?? "",
         authorName: data.authorName ?? "unknown",
-        moderationStatus: data.moderationStatus,
+        moderationStatus: data.moderationStatus ?? "pending_review",
         moderationMatches: data.moderationMatches ?? [],
         toxicityScore: data.toxicityScore,
         createdAt: data.createdAt,
       });
     }
+  }
+
+  // Flagged flairs (discussion topics)
+  const flairQ = query(
+    collection(db, "flairs"),
+    where("moderationStatus", "==", "pending_review")
+  );
+  const flairSnap = await getDocs(flairQ);
+  for (const d of flairSnap.docs) {
+    const data = d.data() as FlaggedFlairDoc;
+    items.push({
+      id: d.id,
+      type: "flair",
+      title: data.title,
+      body: (data.description as string) ?? "",
+      authorName: data.authorName ?? "unknown",
+      moderationStatus: data.moderationStatus ?? "pending_review",
+      moderationMatches: data.moderationMatches ?? [],
+      toxicityScore: data.toxicityScore,
+      createdAt: data.createdAt,
+    });
   }
 
   return items;
@@ -211,10 +331,13 @@ export type Thread = {
   tags: string[];
   authorId: string;
   authorName: string;
-  createdAt?: any;
+  createdAt?: unknown;
   score?: number;
   // optional expiry for flash threads; when in the past, thread is hidden from feeds
-  flashExpiresAt?: any;
+  flashExpiresAt?: unknown;
+  moderationStatus?: string;
+  /** legacy field from older data */
+  university?: string;
 };
 
 // basic shape of a post doc in "threads/{threadId}/posts"
@@ -223,15 +346,20 @@ export type Post = {
   body: string;
   authorId: string;
   authorName: string;
-  createdAt?: any;
+  createdAt?: unknown;
   score?: number;
+  moderationStatus?: string;
 };
+
+type ThreadDocData = Omit<Thread, "id">;
+type PostDocData = Omit<Post, "id">;
 
 // get a single thread by ID
 export async function getThread(threadId: string): Promise<Thread | null> {
   const snap = await getDoc(doc(db, "threads", threadId));
   if (!snap.exists()) return null;
-  return { id: snap.id, ...(snap.data() as any) };
+  const data = snap.data() as ThreadDocData;
+  return { id: snap.id, ...data };
 }
 
 // creates a new thread document
@@ -274,24 +402,23 @@ export async function listThreads(opts: {
   // authorId filter skips orderBy to avoid needing a composite index;
   // results are sorted client-side instead
   if (opts.authorId) {
-    const parts: any[] = [where("authorId", "==", opts.authorId), limit(pageSize)];
+    const parts: QueryConstraint[] = [where("authorId", "==", opts.authorId), limit(pageSize)];
     if (opts.cursor) parts.push(startAfter(opts.cursor));
 
     const q = query(base, ...parts);
     const snap = await getDocs(q);
 
     const threads: Thread[] = snap.docs
-      .map((d) => ({ id: d.id, ...(d.data() as any) }))
-      .sort((a, b) => {
-        const ta = a.createdAt?.toMillis?.() ?? 0;
-        const tb = b.createdAt?.toMillis?.() ?? 0;
-        return tb - ta;
-      });
+      .map((d) => {
+        const data = d.data() as ThreadDocData;
+        return { id: d.id, ...data };
+      })
+      .sort((a, b) => firestoreMillis(b.createdAt) - firestoreMillis(a.createdAt));
     const nextCursor = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
     return { threads, nextCursor };
   }
 
-  const parts: any[] = [orderBy("lastActivityAt", "desc"), limit(pageSize)];
+  const parts: QueryConstraint[] = [orderBy("lastActivityAt", "desc"), limit(pageSize)];
 
   if (opts.communityId) {
     parts.unshift(where("communityId", "==", opts.communityId));
@@ -302,7 +429,10 @@ export async function listThreads(opts: {
   const q = query(base, ...parts);
   const snap = await getDocs(q);
 
-  const threads: Thread[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+  const threads: Thread[] = snap.docs.map((d) => {
+    const data = d.data() as ThreadDocData;
+    return { id: d.id, ...data };
+  });
   const nextCursor = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
 
   return { threads, nextCursor };
@@ -348,7 +478,10 @@ export async function listPosts(threadId: string, pageSize = 50) {
   );
   const snap = await getDocs(q);
 
-  const posts: Post[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+  const posts: Post[] = snap.docs.map((d) => {
+    const data = d.data() as PostDocData;
+    return { id: d.id, ...data };
+  });
   return posts;
 }
 
@@ -463,6 +596,123 @@ export async function voteOnComment(
     } catch (e) {
       console.warn("Could not update comment score", e);
     }
+  }
+
+  return { newVote, scoreChange };
+}
+
+// ==================== FLairs ====================
+// "Flairs" are discussion topics users can propose and vote on.
+// (In your current UI they likely map to what users previously entered as freeform tags.)
+
+export type Flair = {
+  id: string;
+  title: string;
+  description?: string;
+  authorId: string;
+  authorName: string;
+  createdAt?: unknown;
+  score?: number;
+  moderationStatus?: string;
+  moderationMatches?: string[];
+};
+
+export async function getFlair(flairId: string): Promise<Flair | null> {
+  const snap = await getDoc(doc(db, "flairs", flairId));
+  if (!snap.exists()) return null;
+  const data = snap.data() as Omit<Flair, "id">;
+  return { id: snap.id, ...data };
+}
+
+export async function listFlairs(opts?: { pageSize?: number }): Promise<Flair[]> {
+  const pageSize = opts?.pageSize ?? 50;
+  const q = query(collection(db, "flairs"), orderBy("score", "desc"), limit(pageSize));
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => {
+      const data = d.data() as Omit<Flair, "id">;
+      return { id: d.id, ...data };
+    })
+    .filter((f) => !f.moderationStatus || f.moderationStatus === "approved");
+}
+
+export async function createFlair(input: {
+  title: string;
+  description?: string;
+  authorId: string;
+  authorName: string;
+}) {
+  const access = await getUserAccessProfile(input.authorId);
+  if (access.accessMode !== "full") {
+    throw new Error("Only confirmed student emails can create flairs.");
+  }
+
+  // Weekly rate limit: 1 flair per user per Dublin-week (resets Sundays 00:00 Europe/Dublin).
+  const currentWeekKey = getDublinWeekKey(new Date());
+  const userRef = doc(db, "users", input.authorId);
+  const userSnap = await getDoc(userRef);
+  type UserFlairMeta = { lastFlairWeekKey?: string };
+  const lastWeekKey: string | null = userSnap.exists()
+    ? (userSnap.data() as UserFlairMeta).lastFlairWeekKey ?? null
+    : null;
+
+  if (lastWeekKey === currentWeekKey) {
+    throw new Error("You can propose only 1 flair per week. Limit resets Sunday 00:00 (Dublin).");
+  }
+
+  const ref = await addDoc(collection(db, "flairs"), {
+    title: input.title,
+    description: input.description ?? "",
+    authorId: input.authorId,
+    authorName: input.authorName,
+    score: 0,
+    moderationStatus: "approved",
+    createdAt: serverTimestamp(),
+  });
+
+  // Track user's weekly flair creation (for client-side enforcement + simple rules support).
+  await setDoc(
+    userRef,
+    {
+      lastFlairWeekKey: currentWeekKey,
+      lastFlairAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  return ref.id;
+}
+
+export async function getUserFlairVote(flairId: string, userId: string): Promise<Vote> {
+  const voteRef = doc(db, "flairs", flairId, "votes", userId);
+  const snap = await getDoc(voteRef);
+  if (!snap.exists()) return null;
+  return snap.data()?.vote || null;
+}
+
+export async function voteOnFlair(flairId: string, userId: string, newVote: Vote) {
+  const voteRef = doc(db, "flairs", flairId, "votes", userId);
+  const flairRef = doc(db, "flairs", flairId);
+
+  const currentSnap = await getDoc(voteRef);
+  const currentVote: Vote = currentSnap.exists() ? currentSnap.data()?.vote : null;
+
+  let scoreChange = 0;
+  if (currentVote === null && newVote === "up") scoreChange = 1;
+  else if (currentVote === null && newVote === "down") scoreChange = -1;
+  else if (currentVote === "up" && newVote === null) scoreChange = -1;
+  else if (currentVote === "up" && newVote === "down") scoreChange = -2;
+  else if (currentVote === "down" && newVote === null) scoreChange = 1;
+  else if (currentVote === "down" && newVote === "up") scoreChange = 2;
+
+  if (newVote === null) {
+    await setDoc(voteRef, { vote: null });
+  } else {
+    await setDoc(voteRef, { vote: newVote });
+  }
+
+  if (scoreChange !== 0) {
+    await updateDoc(flairRef, { score: increment(scoreChange) });
   }
 
   return { newVote, scoreChange };

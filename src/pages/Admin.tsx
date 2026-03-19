@@ -7,14 +7,13 @@ import {
   setModerationStatus,
   type FlaggedItem,
 } from "../lib/firestore";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
+import { formatFirestoreDay } from "../lib/firestoreFormat";
 import { logout } from "../lib/auth";
 
-function formatDate(ts: any): string {
-  try {
-    if (ts?.toDate) return ts.toDate().toISOString().slice(0, 10);
-  } catch {}
-  return "—";
+function formatDate(ts: unknown): string {
+  const s = formatFirestoreDay(ts);
+  return s === "just now" ? "—" : s;
 }
 
 export default function Admin() {
@@ -58,7 +57,9 @@ export default function Admin() {
       const path =
         item.type === "thread"
           ? `threads/${item.threadId}`
-          : `threads/${item.threadId}/posts/${item.id}`;
+          : item.type === "flair"
+            ? `flairs/${item.id}`
+            : `threads/${item.threadId}/posts/${item.id}`;
       await setModerationStatus(path, action);
       setItems((prev) => prev.filter((i) => i.id !== item.id));
     } catch (e) {
@@ -137,16 +138,20 @@ export default function Admin() {
           ) : (
             <div className="admin-queue">
               {items.map((item) => (
-                <div key={item.id} className="admin-card">
+                <div key={`${item.type}-${item.id}`} className="admin-card">
                   <div className="admin-card__badge">
-                    {item.type === "thread" ? "Thread" : "Comment"}
+                    {item.type === "thread"
+                      ? "Thread"
+                      : item.type === "flair"
+                        ? "Flair"
+                        : "Comment"}
                   </div>
 
                   <div className="admin-card__meta">
                     {item.communityId && (
                       <span className="admin-card__community">c/{item.communityId}</span>
                     )}
-                    {" • "}@{item.authorName} • {formatDate(item.createdAt)}
+                    {item.communityId ? " • " : ""}@{item.authorName} • {formatDate(item.createdAt)}
                   </div>
 
                   {item.title && (

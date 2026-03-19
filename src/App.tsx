@@ -6,7 +6,8 @@ import Community from "./pages/Community";
 import Profile from "./pages/Profile";
 import ThreadDetail from "./pages/ThreadDetail";
 import Admin from "./pages/Admin";
-import { useAuth } from "./context/AuthContext";
+import Flairs from "./pages/Flairs";
+import { useAuth } from "./context/useAuth";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -41,6 +42,10 @@ export default function App() {
       <Route
         path="/admin"
         element={user ? <Admin /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/flairs"
+        element={user ? <Flairs /> : <Navigate to="/login" replace />}
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

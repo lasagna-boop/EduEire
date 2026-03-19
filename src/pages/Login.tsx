@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { login, register } from "../lib/auth";
-import { useAuth } from "../context/AuthContext";
+import { errorMessage } from "../lib/errors";
+import { useAuth } from "../context/useAuth";
 import SlideMenu from "../components/SlideMenu";
 
 export default function Login() {
@@ -33,8 +34,8 @@ export default function Login() {
       } else {
         await login(email.trim(), password);
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Authentication failed");
+    } catch (err) {
+      setError(errorMessage(err) || "Authentication failed");
     } finally {
       setBusy(false);
     }
