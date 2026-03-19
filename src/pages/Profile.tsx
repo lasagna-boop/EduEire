@@ -1,35 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import SlideMenu from "../components/SlideMenu";
 import PostCard from "../components/PostCard";
+import { FeedPageHeader } from "../components/FeedPageHeader";
 import {
   getUserSubscriptions,
   getCommunity,
   unsubscribeFromCommunity,
   listThreads,
-  countPosts,
   type Community as CommunityType,
   type Thread,
 } from "../lib/firestore";
-import { formatFirestoreDay, threadVisibleOnProfile } from "../lib/firestoreFormat";
+import { threadVisibleOnProfile } from "../lib/firestoreFormat";
+import { threadsToPostCardPosts } from "../lib/threadPostMap";
 import { useAuth } from "../context/useAuth";
-import { logout } from "../lib/auth";
-
-type PostCardPost = {
-  id: string;
-  title: string;
-  body: string;
-  communityId: string;
-  tags: string[];
-  author: string;
-  createdAt: string;
-  score?: number;
-  postCount?: number;
-  isFlash?: boolean;
-};
+import { useLogout } from "../hooks/useLogout";
+import type { PostCardPost } from "../types/postCard";
 
 export default function Profile() {
   const { user: fbUser, studentEmailConfirmed, accessMode } = useAuth();
+  const handleLogout = useLogout();
 
   const [subscriptions, setSubscriptions] = useState<CommunityType[]>([]);
   const [myPosts, setMyPosts] = useState<PostCardPost[]>([]);
@@ -62,20 +51,7 @@ export default function Profile() {
       const { threads: allThreads } = await listThreads({ authorId: fbUser.uid, pageSize: 30 });
       const now = Date.now();
       const threads = allThreads.filter((t: Thread) => threadVisibleOnProfile(t, now));
-      const counts = await Promise.all(threads.map((t) => countPosts(t.id)));
-
-      const mapped: PostCardPost[] = threads.map((t: Thread, i: number) => ({
-        id: t.id,
-        title: t.title,
-        body: t.body ?? "",
-        communityId: t.communityId ?? "",
-        tags: Array.isArray(t.tags) ? t.tags : [],
-        author: t.authorName || "anon",
-        createdAt: formatFirestoreDay(t.createdAt),
-        score: t.score ?? 0,
-        postCount: counts[i],
-        isFlash: !!t.flashExpiresAt,
-      }));
+      const mapped = await threadsToPostCardPosts(threads, "default");
       setMyPosts(mapped);
     } catch (e) {
       console.error("Failed to load user posts", e);
@@ -103,37 +79,26 @@ export default function Profile() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (e) {
-      console.error("Logout failed", e);
-    }
-  };
-
   return (
     <div className="feed-page">
-      <header className="feed-page__header">
-        <SlideMenu />
-        <Link to="/" className="feed-page__logo">
-          <img src="/logo.png" alt="EduÉire" className="feed-page__logo-img" />
-        </Link>
-
-        <div className="feed-page__search" style={{ flex: 1 }} />
-
-        <div className="feed-page__actions">
-          {fbUser && (
+      <FeedPageHeader
+        actions={
+          fbUser ? (
             <>
               <Link to="/feed" className="feed-page__btn feed-page__btn--outline">
                 Feed
               </Link>
-              <button onClick={handleLogout} className="feed-page__btn feed-page__btn--outline">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="feed-page__btn feed-page__btn--outline"
+              >
                 Log Out
               </button>
             </>
-          )}
-        </div>
-      </header>
+          ) : null
+        }
+      />
 
       <main className="feed-page__main profile-main">
         <div className="feed-page__content">
@@ -154,9 +119,13 @@ export default function Profile() {
             <div className="feed-page__loading">Loading posts...</div>
           ) : myPosts.length === 0 ? (
             <div className="feed-page__empty">
-              You haven't posted anything yet.
+              You haven&apos;t posted anything yet.
               <br />
-              <Link to="/feed" className="feed-page__btn feed-page__btn--filled" style={{ marginTop: 16, display: "inline-block" }}>
+              <Link
+                to="/feed"
+                className="feed-page__btn feed-page__btn--filled"
+                style={{ marginTop: 16, display: "inline-block" }}
+              >
                 Go to Feed
               </Link>
             </div>
@@ -176,7 +145,7 @@ export default function Profile() {
               <p className="profile-sidebar-loading">Loading...</p>
             ) : subscriptions.length === 0 ? (
               <div className="profile-empty">
-                <p>You haven't joined any communities yet.</p>
+                <p>You haven&apos;t joined any communities yet.</p>
                 <Link to="/feed" className="feed-page__btn feed-page__btn--filled">
                   Browse Feed
                 </Link>
@@ -193,6 +162,7 @@ export default function Profile() {
                       </div>
                     </Link>
                     <button
+                      type="button"
                       onClick={() => handleUnsubscribe(c.id)}
                       disabled={unsubbing === c.id}
                       className="profile-subscription-unsub"

@@ -2,22 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { getUserVote, voteOnThread, isAdmin, setModerationStatus, type Vote } from "../lib/firestore";
+import type { PostCardPost } from "../types/postCard";
 
-type Post = {
-  id: string;
-  title: string;
-  body: string;
-  communityId: string;
-  tags: string[];
-  author: string;
-  createdAt: string;
-  score?: number;
-  postCount?: number;
-  // optional flag for flash threads; mapped in parent pages
-  isFlash?: boolean;
-};
-
-export default function PostCard({ post }: { post: Post }) {
+export default function PostCard({ post }: { post: PostCardPost }) {
   const { user: fbUser } = useAuth();
   
   const [score, setScore] = useState(post.score ?? 0);
