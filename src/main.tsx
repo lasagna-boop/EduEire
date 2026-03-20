@@ -7,7 +7,7 @@ import { BrowserRouter } from "react-router-dom"; // SPA routе
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext"; //global auth state
 import "./styles/feed.css";
-import "./styles/landing.css";
+import "./styles/tailwind.css";
 import "./styles/login.css";
 import "./styles/slide-menu.css";
 

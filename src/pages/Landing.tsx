@@ -1,13 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { collection, getCountFromServer, query, where } from "firebase/firestore";
 import { useAuth } from "../context/useAuth";
 import { logout } from "../lib/auth";
 import SlideMenu from "../components/SlideMenu";
+import PostCard from "../components/PostCard";
+import "../styles/landing.css";
+import {
+  getUserSubscriptions,
+  listCommunities,
+  listThreads,
+  seedCommunities,
+  subscribeToCommunity,
+  type Community,
+  type Thread,
+  unsubscribeFromCommunity,
+} from "../lib/firestore";
+import { db } from "../lib/firebase";
+import { threadVisibleInFeed } from "../lib/firestoreFormat";
+import { threadsToPostCardPosts } from "../lib/threadPostMap";
+import type { PostCardPost } from "../types/postCard";
 
 export default function Landing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [popularUniversities, setPopularUniversities] = useState<Community[]>([]);
+  const [subscriptionIds, setSubscriptionIds] = useState<string[]>([]);
+  const [pendingCommunityId, setPendingCommunityId] = useState<string | null>(null);
+  const [registeredUsersCount, setRegisteredUsersCount] = useState<number | null>(null);
+  const [verifiedStudentsCount, setVerifiedStudentsCount] = useState<number | null>(null);
+  const [discussionsCount, setDiscussionsCount] = useState<number | null>(null);
+  const [trendingPost, setTrendingPost] = useState<PostCardPost | null>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,95 +48,390 @@ export default function Landing() {
     }
   };
 
+  useEffect(() => {
+    const loadPopularUniversities = async () => {
+      try {
+        let communities = await listCommunities();
+        if (communities.length === 0) {
+          await seedCommunities();
+          communities = await listCommunities();
+        }
+
+        const topUniversities = communities
+          .sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0))
+          .slice(0, 3);
+
+        setPopularUniversities(topUniversities);
+      } catch (e) {
+        console.error("Failed to load universities", e);
+      }
+    };
+
+    void loadPopularUniversities();
+  }, []);
+
+  useEffect(() => {
+    const loadTrendingThread = async () => {
+      try {
+        const { threads: allThreads } = await listThreads({ pageSize: 50 });
+        const now = Date.now();
+        const visibleThreads = allThreads.filter((t: Thread) => threadVisibleInFeed(t, now));
+        if (visibleThreads.length === 0) {
+          setTrendingPost(null);
+          return;
+        }
+
+        const topThread = visibleThreads.reduce((best, current) =>
+          (current.score ?? 0) > (best.score ?? 0) ? current : best
+        );
+        const mapped = await threadsToPostCardPosts([topThread], "feed");
+        setTrendingPost(mapped[0] ?? null);
+      } catch (e) {
+        console.error("Failed to load trending thread", e);
+      }
+    };
+
+    void loadTrendingThread();
+  }, []);
+
+  useEffect(() => {
+    const loadRegisteredUsersCount = async () => {
+      try {
+        const snap = await getCountFromServer(collection(db, "users"));
+        setRegisteredUsersCount(snap.data().count);
+      } catch (e) {
+        console.error("Failed to load registered users count", e);
+      }
+    };
+
+    void loadRegisteredUsersCount();
+  }, []);
+
+  useEffect(() => {
+    const loadLandingStats = async () => {
+      try {
+        const [verifiedUsersSnap, threadsSnap] = await Promise.all([
+          getCountFromServer(query(collection(db, "users"), where("studentEmailConfirmed", "==", true))),
+          getCountFromServer(collection(db, "threads")),
+        ]);
+
+        setVerifiedStudentsCount(verifiedUsersSnap.data().count);
+        setDiscussionsCount(threadsSnap.data().count);
+      } catch (e) {
+        console.error("Failed to load landing stats", e);
+      }
+    };
+
+    void loadLandingStats();
+  }, []);
+
+  useEffect(() => {
+    const loadSubscriptions = async () => {
+      if (!user) {
+        setSubscriptionIds([]);
+        return;
+      }
+
+      try {
+        const ids = await getUserSubscriptions(user.uid);
+        setSubscriptionIds(ids);
+      } catch (e) {
+        console.error("Failed to load subscriptions", e);
+      }
+    };
+
+    void loadSubscriptions();
+  }, [user]);
+
+  const handleToggleSubscription = async (community: Community) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    const isJoined = subscriptionIds.includes(community.id);
+    setPendingCommunityId(community.id);
+
+    try {
+      if (isJoined) {
+        await unsubscribeFromCommunity(user.uid, community.id);
+        setSubscriptionIds((prev) => prev.filter((id) => id !== community.id));
+        setPopularUniversities((prev) =>
+          prev.map((item) =>
+            item.id === community.id ? { ...item, memberCount: Math.max((item.memberCount || 0) - 1, 0) } : item
+          )
+        );
+      } else {
+        await subscribeToCommunity(user.uid, community.id);
+        setSubscriptionIds((prev) => [...prev, community.id]);
+        setPopularUniversities((prev) =>
+          prev.map((item) =>
+            item.id === community.id ? { ...item, memberCount: (item.memberCount || 0) + 1 } : item
+          )
+        );
+      }
+    } catch (e) {
+      console.error("Failed to update subscription", e);
+    } finally {
+      setPendingCommunityId(null);
+    }
+  };
+
   return (
     <div className="landing">
-      {/* Top Header Bar - Reddit Style */}
       <header className="landing__header">
-        <SlideMenu />
-        <Link to="/" className="landing__logo">
-          <img src="/logo.png" alt="EduÉire" className="landing__logo-img" />
-        </Link>
+        <div className="landing__header-inner">
+          <div className="landing__header-left">
+            <SlideMenu />
+            <Link to="/" className="landing__logo">
+              <img src="/logo.png" alt="EduÉire" className="landing__logo-img" />
+            </Link>
+            <div className="landing__top-links">
+              <Link to="/feed">Communities</Link>
+              <Link to="/feed">Resources</Link>
+            </div>
+          </div>
 
-        <form className="landing__search" onSubmit={handleSearch}>
-          <span className="landing__search-icon">🔍</span>
-          <input
-            type="text"
-            placeholder="Search EduÉire"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="landing__search-input"
-          />
-        </form>
+          <form className="landing__search" onSubmit={handleSearch}>
+            <span className="landing__search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Search communities, notes, or universities..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="landing__search-input"
+            />
+          </form>
 
-        <div className="landing__auth">
-          {user ? (
-            <>
-              <Link to="/feed" className="landing__btn landing__btn--outline">
-                My Feed
-              </Link>
-              <Link to="/profile" className="landing__btn landing__btn--outline">
-                Profile
-              </Link>
-              <button onClick={handleLogout} className="landing__btn landing__btn--filled">
-                Log Out
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="landing__btn landing__btn--outline">
-                Log In
-              </Link>
-              <Link to="/login?mode=signup" className="landing__btn landing__btn--filled">
-                Sign Up
-              </Link>
-            </>
-          )}
+          <div className="landing__auth">
+            {user ? (
+              <>
+                <Link to="/feed" className="landing__btn landing__btn--ghost">
+                  My Feed
+                </Link>
+                <Link to="/profile" className="landing__btn landing__btn--ghost">
+                  Profile
+                </Link>
+                <button onClick={handleLogout} className="landing__btn landing__btn--filled" type="button">
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="landing__btn landing__btn--ghost">
+                  Log In
+                </Link>
+                <Link to="/login?mode=signup" className="landing__btn landing__btn--filled">
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="landing__main">
-        {/* Hero with Video */}
-        <section className="landing__hero">
-          <div className="landing__hero-video">
-            <video autoPlay loop muted playsInline>
-              <source src="/TestLogo.mp4" type="video/mp4" />
-            </video>
-          </div>
-          <div className="landing__hero-text">
-            <h1>Ireland's Education Community</h1>
-            <p>Join thousands of students and educators sharing knowledge, resources, and support.</p>
-            <Link to="/feed" className="landing__btn landing__btn--large">
-              Browse Feed
+      <div className="landing__layout">
+        <aside className="landing__sidebar landing__sidebar--left">
+          <div className="landing__panel">
+            <div className="landing__panel-head">
+              <div className="landing__panel-icon">🏫</div>
+              <div>
+                <h3>Communities</h3>
+                <p>Explore Irish Academia</p>
+              </div>
+            </div>
+
+            <nav className="landing__menu">
+              <Link to="/feed" className="landing__menu-item landing__menu-item--active">
+                <span>🏠</span> Home
+              </Link>
+              <Link to="/feed" className="landing__menu-item">
+                <span>📈</span> Popular
+              </Link>
+              <Link to="/feed" className="landing__menu-item">
+                <span>🎓</span> Leaving Cert
+              </Link>
+              <Link to="/feed" className="landing__menu-item">
+                <span>🏛️</span> University
+              </Link>
+              <Link to="/feed" className="landing__menu-item">
+                <span>🤝</span> Student Life
+              </Link>
+            </nav>
+
+            <Link to="/feed" className="landing__cta-btn">
+              Create Post
             </Link>
           </div>
-        </section>
 
-        {/* Features */}
-        <section className="landing__features">
-          <div className="landing__feature">
-            <span className="landing__feature-icon">📚</span>
+          <div className="landing__sidebar-footer">
+            <Link to="/feed">Rules</Link>
+            <Link to="/feed">Privacy</Link>
+            <Link to="/feed">Support</Link>
+          </div>
+        </aside>
+
+        <main className="landing__main">
+          <section className="landing__hero">
+            <div className="landing__hero-content">
+              <span className="landing__hero-badge">
+                <span className="landing__hero-dot" />
+                The Digital Cloister
+              </span>
+              <h1>
+                The heartbeat of <br />
+                <span>Irish Students.</span>
+              </h1>
+              <p>
+                Join {(registeredUsersCount ?? 10000).toLocaleString()}+ scholars across Ireland. Engage in high-level
+                discourse, share premium resources, and find your academic home.
+              </p>
+              <div className="landing__hero-actions">
+                <Link to="/feed" className="landing__btn landing__btn--hero-primary">
+                  Explore Communities
+                </Link>
+                <Link to="/feed" className="landing__btn landing__btn--hero-secondary">
+                  Start a Discussion
+                </Link>
+              </div>
+            </div>
+            <div className="landing__hero-glow" />
+          </section>
+
+          <section className="landing__stats">
+            <article className="landing__stat-card">
+              <div className="landing__stat-icon landing__stat-icon--blue">👥</div>
+              <div>
+                <div className="landing__stat-value">{(verifiedStudentsCount ?? 0).toLocaleString()}</div>
+                <div className="landing__stat-label">Verified Students</div>
+              </div>
+            </article>
+            <article className="landing__stat-card">
+              <div className="landing__stat-icon landing__stat-icon--green">📄</div>
+              <div>
+                <div className="landing__stat-value">{(registeredUsersCount ?? 0).toLocaleString()}</div>
+                <div className="landing__stat-label">Website Users</div>
+              </div>
+            </article>
+            <article className="landing__stat-card">
+              <div className="landing__stat-icon landing__stat-icon--rose">💬</div>
+              <div>
+                <div className="landing__stat-value">{(discussionsCount ?? 0).toLocaleString()}</div>
+                <div className="landing__stat-label">Discussions</div>
+              </div>
+            </article>
+          </section>
+
+          <div className="landing__section-head">
+            <h2>Trending Now</h2>
+            <button type="button" className="landing__icon-btn" aria-label="Filter trending">
+              ⛃
+            </button>
+          </div>
+
+          <section className="landing__feed">
+            {trendingPost ? (
+              <PostCard post={trendingPost} />
+            ) : (
+              <article className="landing__post">
+                <div className="landing__post-body">
+                  <h3>No trending discussions yet</h3>
+                  <p>Be the first one to start a discussion.</p>
+                </div>
+              </article>
+            )}
+          </section>
+        </main>
+
+        <aside className="landing__sidebar landing__sidebar--right">
+          <div className="landing__panel">
+            <div className="landing__widget-head">
+              <h3>Popular Universities</h3>
+              <span>📈</span>
+            </div>
+            <div className="landing__community-list">
+              {popularUniversities.map((community, index) => (
+                <div className="landing__community-item" key={community.id}>
+                  <div className="landing__community-info">
+                    <div className={`landing__community-badge ${index === 1 ? "landing__community-badge--blue" : ""}`}>
+                      🎓
+                    </div>
+                    <div className="landing__community-text">
+                      <div className="landing__community-name" title={community.fullName || community.name}>
+                        {community.fullName || community.name}
+                      </div>
+                      <div className="landing__community-members">
+                        {community.memberCount || 0} {(community.memberCount || 0) === 1 ? "member" : "members"}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleToggleSubscription(community)}
+                    disabled={pendingCommunityId === community.id}
+                    className={`landing__community-join-btn ${
+                      subscriptionIds.includes(community.id) ? "landing__community-join-btn--joined" : ""
+                    }`}
+                  >
+                    {pendingCommunityId === community.id
+                      ? "..."
+                      : subscriptionIds.includes(community.id)
+                        ? "Joined"
+                        : "Join"}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button type="button" className="landing__subtle-btn">
+              View All
+            </button>
+          </div>
+
+          <div className="landing__roadmap">
+            <h3>Academic Roadmap</h3>
+            <p>
+              Never miss a deadline. Sync your university calendar with EduÉire for automated alerts.
+            </p>
+            <button type="button">Get Started</button>
+            <div className="landing__roadmap-orb" />
+          </div>
+        </aside>
+      </div>
+
+      <footer className="landing__footer">
+        <div className="landing__footer-inner">
+          <div className="landing__footer-brand">
+            <div className="landing__footer-logo">EduÉire</div>
+            <p>
+              Designed for the next generation of Irish scholars. Promoting civil discourse and academic excellence
+              since 2023.
+            </p>
+          </div>
+
+          <div className="landing__footer-grid">
             <div>
-              <h3>Share Knowledge</h3>
-              <p>Post study tips, resources, and educational content</p>
+              <h4>Community</h4>
+              <Link to="/feed">Guidelines</Link>
+              <Link to="/feed">Moderator Team</Link>
+              <Link to="/feed">Campus Ambassadors</Link>
+            </div>
+            <div>
+              <h4>Resources</h4>
+              <Link to="/feed">Study Hub</Link>
+              <Link to="/feed">Past Papers</Link>
+              <Link to="/feed">Careers Portal</Link>
+            </div>
+            <div>
+              <h4>Stay Connected</h4>
+              <div className="landing__socials">
+                <button type="button">📱</button>
+                <button type="button">📧</button>
+              </div>
+              <p className="landing__copyright">© 2024 EduÉire Network. All rights reserved.</p>
             </div>
           </div>
-          <div className="landing__feature">
-            <span className="landing__feature-icon">🤝</span>
-            <div>
-              <h3>Connect</h3>
-              <p>Network with students and educators across Ireland</p>
-            </div>
-          </div>
-          <div className="landing__feature">
-            <span className="landing__feature-icon">💬</span>
-            <div>
-              <h3>Discuss</h3>
-              <p>Engage in conversations about education topics</p>
-            </div>
-          </div>
-        </section>
-      </main>
+        </div>
+      </footer>
     </div>
   );
 }
