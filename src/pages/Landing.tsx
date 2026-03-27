@@ -283,7 +283,7 @@ export default function Landing() {
                 <span>Irish Students.</span>
               </h1>
               <p>
-                Join {(registeredUsersCount ?? 10000).toLocaleString()}+ scholars across Ireland. Engage in high-level
+                Join {(registeredUsersCount ?? 0).toLocaleString()} scholars across Ireland. Engage in high-level
                 discourse, share premium resources, and find your academic home.
               </p>
               <div className="landing__hero-actions">

@@ -5,23 +5,24 @@
 }
 
 .feed-page__sidebar-card {
-  background: white;
+  background: #ffffff;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(26, 32, 44, 0.08);
+  border: 1px solid #e2e8f0;
 }
 
 .feed-page__sidebar-card h3 {
   font-size: 1rem;
   font-weight: 600;
-  color: #1a1a1b;
+  color: #1a202c;
   margin: 0 0 8px 0;
 }
 
 .feed-page__sidebar-card p {
   font-size: 0.875rem;
-  color: #576f76;
+  color: #4a5568;
   line-height: 1.5;
   margin: 0;
 }
@@ -60,12 +61,12 @@
 }
 
 .feed-page__community-link:hover {
-  background: #e8e8e8;
+  background: rgba(45, 106, 79, 0.12);
 }
 
 .feed-page__community-link--active {
-  background: #e8e8e8;
-  border-left: 3px solid #198754;
+  background: linear-gradient(90deg, rgba(45, 106, 79, 0.15), rgba(255, 159, 28, 0.08));
+  border-left: 3px solid #2d6a4f;
 }
 
 .feed-page__community-icon {
@@ -80,7 +81,7 @@
 
 .feed-page__community-name {
   font-weight: 500;
-  color: #1a1a1b;
+  color: #1a202c;
   font-size: 0.9rem;
   flex: 1;
   display: flex;
@@ -96,7 +97,7 @@
   width: 100%;
   margin-bottom: 10px;
   padding: 10px 12px;
-  border: 1px solid #edeff1;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #ffffff;
   display: flex;
@@ -105,6 +106,12 @@
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #1a1a1b;
+  color: #1a202c;
   cursor: pointer;
+  transition: all 0.15s;
+}
+
+.feed-mobile-sections__toggle:hover {
+  border-color: #2d6a4f;
+  background: rgba(45, 106, 79, 0.08);
 }

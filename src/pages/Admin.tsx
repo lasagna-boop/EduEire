@@ -29,15 +29,15 @@ function flaggedItemTypeLabel(type: FlaggedItem["type"]): string {
 }
 
 function toxicityScoreColor(score: number): string {
-  if (score >= 0.7) return "#d32f2f";
-  if (score >= 0.4) return "#e65100";
-  return "#2e7d32";
+  if (score >= 0.7) return "#ff9f1c";
+  if (score >= 0.4) return "#ff9f1c";
+  return "#2d6a4f";
 }
 
 function spamScoreColor(score: number): string {
-  if (score >= 0.7) return "#c62828";
-  if (score >= 0.4) return "#ef6c00";
-  return "#2e7d32";
+  if (score >= 0.7) return "#ff9f1c";
+  if (score >= 0.4) return "#ff9f1c";
+  return "#2d6a4f";
 }
 
 export default function Admin() {
@@ -188,20 +188,18 @@ export default function Admin() {
                         color: toxicityScoreColor(item.toxicityScore),
                       }}
                     >
-                      ML Toxicity Score: {(item.toxicityScore * 100).toFixed(1)}%
+                      Toxicity Score: {(item.toxicityScore * 100).toFixed(1)}%
                     </div>
                   ) : null}
 
-                  {item.spamScore != null ? (
-                    <div
-                      className="admin-card__toxicity"
-                      style={{
-                        color: spamScoreColor(item.spamScore),
-                      }}
-                    >
-                      Spam Score: {(item.spamScore * 100).toFixed(1)}%
-                    </div>
-                  ) : null}
+                  <div
+                    className="admin-card__toxicity"
+                    style={{
+                      color: spamScoreColor(item.spamScore ?? 0),
+                    }}
+                  >
+                    Spam Score: {((item.spamScore ?? 0) * 100).toFixed(1)}%
+                  </div>
 
                   <div className="admin-card__actions">
                     <button

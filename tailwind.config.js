@@ -8,7 +8,7 @@ export default {
     extend: {
       colors: {
         emerald: {
-          950: "#198754",
+          950: "#2d6a4f",
         },
       },
       fontFamily: {

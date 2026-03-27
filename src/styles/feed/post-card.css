@@ -4,13 +4,14 @@
   background: #ffffff;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(26, 32, 44, 0.08);
   transition: border-color 0.15s;
   border: 1px solid transparent;
 }
 
 .post-card:hover {
-  border-color: #898989;
+  border-color: #2d6a4f;
+  box-shadow: 0 6px 16px rgba(26, 32, 44, 0.12);
 }
 
 .post-card__votes {
@@ -19,7 +20,7 @@
   flex-direction: column;
   align-items: center;
   padding: 8px 4px;
-  background: #f8f9fa;
+  background: #faf9f6;
   gap: 2px;
 }
 
@@ -32,14 +33,14 @@
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
-  color: #878a8c;
+  color: #4a5568;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .post-card__vote-btn:hover {
-  background: #e5e5e5;
+  background: rgba(45, 106, 79, 0.08);
 }
 
 .post-card__vote-btn--disabled {
@@ -48,17 +49,17 @@
 }
 
 .post-card__vote-btn--up {
-  color: #198754;
+  color: #2d6a4f;
 }
 
 .post-card__vote-btn--down {
-  color: #dc3545;
+  color: #ff9f1c;
 }
 
 .post-card__score {
   font-weight: 700;
   font-size: 12px;
-  color: #1a1a1b;
+  color: #1a202c;
 }
 
 .post-card__content {
@@ -70,35 +71,36 @@
 .post-card__meta {
   margin-bottom: 6px;
   font-size: 12px;
-  color: #787c7e;
+  color: #4a5568;
 }
 
 .post-card__community {
-  color: #1a1a1b;
+  color: #1a202c;
   font-weight: 600;
   text-decoration: none;
 }
 
 .post-card__community:hover {
   text-decoration: underline;
+  color: #2d6a4f;
 }
 
 .post-card--flash {
-  border: 1px solid #ffc107;
-  box-shadow: 0 0 8px rgba(255, 193, 7, 0.25);
+  border: 1px solid #ff9f1c;
+  box-shadow: 0 0 8px rgba(255, 159, 28, 0.25);
 }
 
 .post-card--flash:hover {
-  border-color: #e0a800;
-  box-shadow: 0 0 12px rgba(255, 193, 7, 0.35);
+  border-color: #ff9f1c;
+  box-shadow: 0 0 12px rgba(255, 159, 28, 0.35);
 }
 
 .post-card__flash-banner {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #ffc107;
-  color: #1a1a1b;
+  background: #ff9f1c;
+  color: #1a202c;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -112,7 +114,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #fff;
+  background: #ffffff;
   flex-shrink: 0;
   box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
   animation: flash-pulse 1.4s infinite;
@@ -137,14 +139,14 @@
   margin: 0 0 8px 0;
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1b;
+  color: #1a202c;
   line-height: 1.3;
 }
 
 .post-card__body {
   margin: 0 0 10px 0;
   line-height: 1.5;
-  color: #1a1a1b;
+  color: #1a202c;
   font-size: 14px;
 }
 
@@ -158,9 +160,9 @@
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 12px;
-  background: #f6f7f8;
-  color: #1a1a1b;
-  border: none;
+  background: #faf9f6;
+  color: #1a202c;
+  border: 1px solid rgba(45, 106, 79, 0.24);
 }
 
 .post-card__title-link {
@@ -169,13 +171,13 @@
 }
 
 .post-card__title-link:hover .post-card__title {
-  color: #0079d3;
+  color: #2d6a4f;
 }
 
 .post-card__footer {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #edeff1;
+  border-top: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -184,9 +186,9 @@
 .post-card__flag-btn {
   font-size: 12px;
   font-weight: 600;
-  color: #878a8c;
+  color: #4a5568;
   background: none;
-  border: 1px solid #dae0e6;
+  border: 1px solid #e2e8f0;
   border-radius: 4px;
   padding: 2px 8px;
   cursor: pointer;
@@ -194,13 +196,13 @@
 }
 
 .post-card__flag-btn:hover:not(:disabled) {
-  color: #e8590c;
-  border-color: #e8590c;
+  color: #ff9f1c;
+  border-color: #ff9f1c;
 }
 
 .post-card__flag-btn--flagged {
-  color: #e8590c;
-  border-color: #e8590c;
+  color: #ff9f1c;
+  border-color: #ff9f1c;
   cursor: default;
   opacity: 0.7;
 }
@@ -208,7 +210,7 @@
 .post-card__comments-link {
   font-size: 12px;
   font-weight: 600;
-  color: #878a8c;
+  color: #4a5568;
   text-decoration: none;
   padding: 4px 8px;
   border-radius: 4px;
@@ -216,6 +218,6 @@
 }
 
 .post-card__comments-link:hover {
-  background: #f6f7f8;
-  color: #1a1a1b;
+  background: rgba(45, 106, 79, 0.08);
+  color: #2d6a4f;
 }

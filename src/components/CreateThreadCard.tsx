@@ -57,6 +57,7 @@ export function CreateThreadCard(props: Readonly<Props>) {
   const [selectedTag, setSelectedTag] = useState("");
   const [flashDuration, setFlashDuration] = useState<FlashDuration>("");
   const [busy, setBusy] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const effectiveCommunityId =
     props.mode === "community" ? props.fixedCommunityId : props.communityId;
@@ -67,13 +68,14 @@ export function CreateThreadCard(props: Readonly<Props>) {
     if (!props.fbUser || !effectiveCommunityId || !canCreate) return;
 
     setBusy(true);
+    setLocalError(null);
     props.onFormError(null);
 
     const modResult = moderateContent(title.trim(), body.trim());
     if (modResult.flagged) {
-      props.onFormError(
-        "Your post contains inappropriate language and cannot be published."
-      );
+      const message = "Your post contains inappropriate language and cannot be published.";
+      setLocalError(message);
+      props.onFormError(message);
       setBusy(false);
       return;
     }
@@ -81,9 +83,10 @@ export function CreateThreadCard(props: Readonly<Props>) {
     try {
       const tagList = selectedTag ? [selectedTag] : [];
       if (props.accessMode === "read_only" && !hasReadOnlyAllowedTag(tagList)) {
-        props.onFormError(
-          "Read-only accounts can create threads only in Admissions or First Year/Transition."
-        );
+        const message =
+          "Read-only accounts can create threads only in Admissions or First Year/Transition.";
+        setLocalError(message);
+        props.onFormError(message);
         setBusy(false);
         return;
       }
@@ -110,15 +113,17 @@ export function CreateThreadCard(props: Readonly<Props>) {
       setBody("");
       setSelectedTag("");
       setFlashDuration("");
+      setLocalError(null);
       setShowNew(false);
       await props.onPosted();
     } catch (err) {
-      props.onFormError(
+      const message =
         errorMessage(err) ||
-          (props.mode === "feed"
-            ? "failed to create thread"
-            : "failed to create post")
-      );
+        (props.mode === "feed"
+          ? "failed to create thread"
+          : "failed to create post");
+      setLocalError(message);
+      props.onFormError(message);
     } finally {
       setBusy(false);
     }
@@ -166,6 +171,7 @@ export function CreateThreadCard(props: Readonly<Props>) {
 
   const createForm = (
     <form onSubmit={handleSubmit} className="feed-page__create-form">
+      {localError ? <p className="feed-page__create-error">{localError}</p> : null}
       <input
         className="feed-page__input"
         placeholder="Title"
@@ -232,7 +238,10 @@ export function CreateThreadCard(props: Readonly<Props>) {
       <button
         type="button"
         className="feed-page__create-trigger"
-        onClick={() => setShowNew(true)}
+        onClick={() => {
+          setLocalError(null);
+          setShowNew(true);
+        }}
       >
         <span className="feed-page__create-icon">+</span>
         <span>{props.triggerLabel}</span>
@@ -252,7 +261,10 @@ export function CreateThreadCard(props: Readonly<Props>) {
                 type="button"
                 className="feed-page__create-overlay-close"
                 aria-label="Close create thread form"
-                onClick={() => setShowNew(false)}
+                onClick={() => {
+                  setLocalError(null);
+                  setShowNew(false);
+                }}
               >
                 ×
               </button>

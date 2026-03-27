@@ -1,6 +1,6 @@
 .feed-page {
   min-height: 100vh;
-  background: #dae0e6;
+  background: #faf9f6;
   display: flex;
   flex-direction: column;
 }
@@ -10,8 +10,8 @@
   align-items: center;
   gap: 16px;
   padding: 8px 20px;
-  background: white;
-  border-bottom: 1px solid #edeff1;
+  background: #ffffff;
+  border-bottom: 2px solid rgba(45, 106, 79, 0.24);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -50,21 +50,21 @@
 .feed-page__search-input {
   width: 100%;
   padding: 10px 16px 10px 42px;
-  border: 1px solid #edeff1;
+  border: 1px solid #e2e8f0;
   border-radius: 20px;
-  background: #f6f7f8;
+  background: #faf9f6;
   font-size: 0.95rem;
   transition: all 0.2s;
 }
 
 .feed-page__search-input:focus {
   outline: none;
-  border-color: #0079d3;
-  background: white;
+  border-color: #2d6a4f;
+  background: #ffffff;
 }
 
 .feed-page__search-input::placeholder {
-  color: #878a8c;
+  color: #4a5568;
 }
 
 .feed-page__actions {
@@ -76,7 +76,7 @@
 
 .feed-page__user {
   font-size: 0.875rem;
-  color: #1a1a1b;
+  color: #1a202c;
   font-weight: 500;
 }
 
@@ -85,7 +85,7 @@
 }
 
 .feed-page__user--link:hover {
-  color: #0079d3;
+  color: #2d6a4f;
 }
 
 .feed-page__btn {
@@ -101,21 +101,23 @@
 
 .feed-page__btn--outline {
   background: transparent;
-  color: #0079d3;
-  border: 1px solid #0079d3;
+  color: #2d6a4f;
+  border: 1px solid #2d6a4f;
 }
 
 .feed-page__btn--outline:hover {
-  background: rgba(0, 121, 211, 0.05);
+  background: rgba(45, 106, 79, 0.12);
+  color: #1a202c;
 }
 
 .feed-page__btn--filled {
-  background: #198754;
-  color: white;
+  background: #2d6a4f;
+  color: #ffffff;
 }
 
 .feed-page__btn--filled:hover:not(:disabled) {
-  background: #157347;
+  background: #2d6a4f;
+  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.24);
 }
 
 .feed-page__btn:disabled {

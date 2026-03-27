@@ -28,6 +28,7 @@ export const moderateThread = onDocumentCreated(
       moderationStatus: result.verdict,
       moderationMatches: result.matches,
       ...(result.toxicityScore != null && { toxicityScore: result.toxicityScore }),
+      ...(result.spamScore != null && { spamScore: result.spamScore }),
     });
   }
 );
@@ -50,6 +51,7 @@ export const moderatePost = onDocumentCreated(
         moderationStatus: result.verdict,
         moderationMatches: result.matches,
         ...(result.toxicityScore != null && { toxicityScore: result.toxicityScore }),
+        ...(result.spamScore != null && { spamScore: result.spamScore }),
       });
   }
 );
