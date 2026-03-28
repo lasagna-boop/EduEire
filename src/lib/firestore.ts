@@ -362,6 +362,10 @@ export type Post = {
   moderationStatus?: string;
   toxicityScore?: number;
   spamScore?: number;
+  /** If set, this comment is a reply to another post in the same thread */
+  parentPostId?: string | null;
+  /** Chain from root to parent (for ordering / analytics); recomputed from parent on write */
+  ancestorIds?: string[];
 };
 
 type ThreadDocData = Omit<Thread, "id">;
@@ -466,6 +470,7 @@ export async function addPost(
     authorName: string;
     toxicityScore?: number;
     spamScore?: number;
+    parentPostId?: string | null;
   }
 ) {
   const access = await getUserAccessProfile(input.authorId);
@@ -481,10 +486,30 @@ export async function addPost(
     }
   }
 
+  const parentPostId = input.parentPostId ?? null;
+  let ancestorIds: string[] = [];
+  if (parentPostId) {
+    const parentSnap = await getDoc(
+      doc(db, "threads", threadId, "posts", parentPostId)
+    );
+    if (!parentSnap.exists()) {
+      throw new Error("Parent comment not found.");
+    }
+    const pData = parentSnap.data() as { ancestorIds?: unknown };
+    const pAncestors = Array.isArray(pData.ancestorIds)
+      ? (pData.ancestorIds as string[])
+      : [];
+    ancestorIds = [...pAncestors, parentPostId];
+  }
+
   const ref = await addDoc(collection(doc(db, "threads", threadId), "posts"), {
-    ...input,
+    body: input.body,
+    authorId: input.authorId,
+    authorName: input.authorName,
     toxicityScore: input.toxicityScore ?? 0,
     spamScore: input.spamScore ?? 0,
+    parentPostId,
+    ancestorIds,
     score: 0,
     moderationStatus: "approved",
     createdAt: serverTimestamp(),
@@ -505,7 +530,7 @@ export async function addPost(
 
 // lists posts for a thread (oldest -> newest)
 // for now just returns first N posts (no pagination yet)
-export async function listPosts(threadId: string, pageSize = 50) {
+export async function listPosts(threadId: string, pageSize = 120) {
   const q = query(
     collection(doc(db, "threads", threadId), "posts"),
     orderBy("createdAt", "asc"),

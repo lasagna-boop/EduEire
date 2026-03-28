@@ -130,6 +130,44 @@ export default function ThreadDetail() {
     }
   };
 
+  const handleReplySubmit = async (parentPostId: string, body: string) => {
+    if (
+      fbUser === null ||
+      threadId === undefined ||
+      body.trim() === "" ||
+      canCommentInThread === false
+    )
+      return;
+
+    const modResult = moderateContent("", body.trim());
+    if (modResult.flagged) {
+      setError("Your reply looks like spam or contains inappropriate language.");
+      throw new Error("moderation");
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      await addPost(threadId, {
+        body: body.trim(),
+        authorId: fbUser.uid,
+        authorName: fbUser.displayName || fbUser.email || "user",
+        toxicityScore: modResult.toxicityScore ?? 0,
+        spamScore: modResult.spamScore ?? 0,
+        parentPostId,
+      });
+      const posts = await listPosts(threadId);
+      setComments(posts.filter(isApprovedPost));
+    } catch (e) {
+      if ((e as Error).message !== "moderation") {
+        setError(errorMessage(e) || "Failed to add reply");
+      }
+      throw e;
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCommentFlagged = (commentId: string) => {
     setComments((prev) => prev.filter((p) => p.id !== commentId));
   };
@@ -161,6 +199,7 @@ export default function ThreadDetail() {
         error={error}
         comments={comments}
         onCommentFlagged={handleCommentFlagged}
+        onReplySubmit={handleReplySubmit}
       />
     );
   }

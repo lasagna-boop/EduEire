@@ -14,6 +14,9 @@ import { voteScoreDelta } from "../lib/voteScoreDelta";
 type Props = {
   comment: Post;
   threadId: string;
+  canComment?: boolean;
+  submitting?: boolean;
+  onReplySubmit?: (parentPostId: string, body: string) => Promise<void>;
   onFlagged?: () => void;
   disabled?: boolean;
 };
@@ -21,6 +24,9 @@ type Props = {
 export function CommentItem({
   comment,
   threadId,
+  canComment = false,
+  submitting = false,
+  onReplySubmit,
   onFlagged,
   disabled = false,
 }: Readonly<Props>) {
@@ -30,7 +36,11 @@ export function CommentItem({
   const [voting, setVoting] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [flagged, setFlagged] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyBody, setReplyBody] = useState("");
+  const [replyBusy, setReplyBusy] = useState(false);
   const canVote = fbUser !== null;
+  const showReply = Boolean(fbUser && canComment && onReplySubmit);
 
   useEffect(() => {
     if (fbUser) {
@@ -76,6 +86,21 @@ export function CommentItem({
       setScore(oldScore);
     } finally {
       setVoting(false);
+    }
+  };
+
+  const handleReplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onReplySubmit || !replyBody.trim() || replyBusy || submitting) return;
+    setReplyBusy(true);
+    try {
+      await onReplySubmit(comment.id, replyBody.trim());
+      setReplyBody("");
+      setReplyOpen(false);
+    } catch {
+      // Parent sets global error; keep form open
+    } finally {
+      setReplyBusy(false);
     }
   };
 
@@ -128,18 +153,64 @@ export function CommentItem({
           </span>
         </div>
         <p className="comment__text">{comment.body}</p>
-        {admin && (
-          <button
-            type="button"
-            className={`post-card__flag-btn${flagged ? " post-card__flag-btn--flagged" : ""}`}
-            onClick={handleFlag}
-            disabled={disabled || flagged}
-            title={flagged ? "Flagged for review" : "Flag for review"}
-            style={{ marginTop: 4 }}
-          >
-            {flagged ? "🚩 Flagged" : "⚑ Flag"}
-          </button>
-        )}
+        <div className="comment__actions">
+          {showReply ? (
+            <button
+              type="button"
+              className="comment__reply-toggle"
+              onClick={() => setReplyOpen((v) => !v)}
+              disabled={disabled || submitting}
+            >
+              {replyOpen ? "Cancel reply" : "Reply"}
+            </button>
+          ) : null}
+          {admin ? (
+            <button
+              type="button"
+              className={`post-card__flag-btn${flagged ? " post-card__flag-btn--flagged" : ""}`}
+              onClick={handleFlag}
+              disabled={disabled || flagged}
+              title={flagged ? "Flagged for review" : "Flag for review"}
+            >
+              {flagged ? "🚩 Flagged" : "⚑ Flag"}
+            </button>
+          ) : null}
+        </div>
+        {showReply && replyOpen ? (
+          <form className="comment-reply-form" onSubmit={handleReplySubmit}>
+            <textarea
+              className="comment-reply-form__input"
+              placeholder={`Reply to @${comment.authorName}…`}
+              value={replyBody}
+              onChange={(e) => setReplyBody(e.target.value)}
+              rows={3}
+              required
+              disabled={disabled || submitting || replyBusy}
+            />
+            <div className="comment-reply-form__actions">
+              <button
+                type="button"
+                className="feed-page__btn feed-page__btn--outline"
+                onClick={() => {
+                  setReplyOpen(false);
+                  setReplyBody("");
+                }}
+                disabled={replyBusy}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="feed-page__btn feed-page__btn--filled"
+                disabled={
+                  disabled || submitting || replyBusy || replyBody.trim() === ""
+                }
+              >
+                {replyBusy ? "Posting…" : "Post reply"}
+              </button>
+            </div>
+          </form>
+        ) : null}
       </div>
     </div>
   );

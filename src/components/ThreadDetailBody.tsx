@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import type { User } from "firebase/auth";
-import { CommentItem } from "./CommentItem";
+import { CommentThread } from "./CommentThread";
 import { formatFirestoreDay } from "../lib/firestoreFormat";
 import { useFlashCountdown } from "../hooks/useFlashCountdown";
+import { buildCommentTree, countCommentsInTree } from "../lib/commentTree";
 import type { Post, Thread, Vote } from "../lib/firestore";
 
 export type ThreadDetailBodyProps = {
@@ -22,6 +24,7 @@ export type ThreadDetailBodyProps = {
   error: string | null;
   comments: Post[];
   onCommentFlagged: (commentId: string) => void;
+  onReplySubmit: (parentPostId: string, body: string) => Promise<void>;
 };
 
 export function ThreadDetailBody({
@@ -41,8 +44,14 @@ export function ThreadDetailBody({
   error,
   comments,
   onCommentFlagged,
+  onReplySubmit,
 }: ThreadDetailBodyProps) {
   const flashRemaining = useFlashCountdown(thread);
+  const commentRoots = useMemo(() => buildCommentTree(comments), [comments]);
+  const commentCount = useMemo(
+    () => countCommentsInTree(commentRoots),
+    [commentRoots]
+  );
   const voteDisabledClass =
     canVote && !isFetching ? "" : "post-card__vote-btn--disabled";
   const upTitle = canVote ? "Upvote" : "Login to vote";
@@ -155,20 +164,24 @@ export function ThreadDetailBody({
 
       <div className="comments-section">
         <h2 className="comments-section__heading">
-          {comments.length} {comments.length === 1 ? "Comment" : "Comments"}
+          {commentCount} {commentCount === 1 ? "Comment" : "Comments"}
         </h2>
 
-        {comments.length === 0 ? (
+        {commentCount === 0 ? (
           <p className="comments-section__empty">No comments yet. Be the first to reply!</p>
         ) : (
           <div className="comments-list">
-            {comments.map((c) => (
-              <CommentItem
-                key={c.id}
-                comment={c}
+            {commentRoots.map((node) => (
+              <CommentThread
+                key={node.id}
+                node={node}
                 threadId={threadId}
-                onFlagged={() => onCommentFlagged(c.id)}
+                depth={0}
+                canComment={canComment}
                 disabled={isFetching}
+                submitting={submitting}
+                onReplySubmit={onReplySubmit}
+                onCommentFlagged={onCommentFlagged}
               />
             ))}
           </div>
