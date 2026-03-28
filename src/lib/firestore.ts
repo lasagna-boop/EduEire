@@ -347,6 +347,8 @@ export type Thread = {
   moderationStatus?: string;
   toxicityScore?: number;
   spamScore?: number;
+  /** If true, UI shows "Anonymous" for non-admins; authorId/authorName still stored for moderation */
+  isAnonymous?: boolean;
   /** legacy field from older data */
   university?: string;
 };
@@ -390,6 +392,7 @@ export async function createThread(input: {
   flashExpiresAt?: Date | null;
   toxicityScore?: number;
   spamScore?: number;
+  isAnonymous?: boolean;
 }) {
   const access = await getUserAccessProfile(input.authorId);
   if (access.accessMode !== "full" && !hasReadOnlyAllowedTag(input.tags)) {
@@ -400,6 +403,7 @@ export async function createThread(input: {
 
   const ref = await addDoc(collection(db, "threads"), {
     ...input,
+    isAnonymous: input.isAnonymous === true,
     toxicityScore: input.toxicityScore ?? 0,
     spamScore: input.spamScore ?? 0,
     flashExpiresAt: input.flashExpiresAt ?? null,

@@ -25,6 +25,8 @@ export type ThreadDetailBodyProps = {
   comments: Post[];
   onCommentFlagged: (commentId: string) => void;
   onReplySubmit: (parentPostId: string, body: string) => Promise<void>;
+  /** null while resolving; anonymous label until admin check completes */
+  viewerIsAdmin: boolean | null;
 };
 
 export function ThreadDetailBody({
@@ -45,6 +47,7 @@ export function ThreadDetailBody({
   comments,
   onCommentFlagged,
   onReplySubmit,
+  viewerIsAdmin,
 }: ThreadDetailBodyProps) {
   const flashRemaining = useFlashCountdown(thread);
   const commentRoots = useMemo(() => buildCommentTree(comments), [comments]);
@@ -56,6 +59,10 @@ export function ThreadDetailBody({
     canVote && !isFetching ? "" : "post-card__vote-btn--disabled";
   const upTitle = canVote ? "Upvote" : "Login to vote";
   const downTitle = canVote ? "Downvote" : "Login to vote";
+  const authorLabel =
+    thread.isAnonymous && viewerIsAdmin !== true
+      ? "Anonymous"
+      : thread.authorName;
 
   return (
     <>
@@ -114,7 +121,7 @@ export function ThreadDetailBody({
             </Link>
             <span>
               {" "}
-              @{thread.authorName} • {formatFirestoreDay(thread.createdAt)}
+              @{authorLabel} • {formatFirestoreDay(thread.createdAt)}
             </span>
           </div>
           <h1 className="thread-detail__title">{thread.title}</h1>

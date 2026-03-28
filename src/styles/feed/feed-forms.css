@@ -150,6 +150,28 @@
   gap: 12px;
 }
 
+.feed-page__anon-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.feed-page__anon-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #2d6a4f;
+  flex-shrink: 0;
+}
+
+.feed-page__anon-label {
+  font-size: 0.9rem;
+  color: #4a5568;
+  cursor: pointer;
+  user-select: none;
+}
+
 .feed-page__form-actions {
   display: flex;
   justify-content: flex-end;

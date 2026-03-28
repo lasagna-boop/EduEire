@@ -22,6 +22,7 @@ export function threadToPostCardPost(
     score: t.score ?? 0,
     postCount,
     isFlash: !!t.flashExpiresAt,
+    isAnonymous: t.isAnonymous === true,
   };
 }
 

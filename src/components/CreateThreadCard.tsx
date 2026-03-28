@@ -56,6 +56,7 @@ export function CreateThreadCard(props: Readonly<Props>) {
   const [body, setBody] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
   const [flashDuration, setFlashDuration] = useState<FlashDuration>("");
+  const [postAnonymously, setPostAnonymously] = useState(false);
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -107,12 +108,14 @@ export function CreateThreadCard(props: Readonly<Props>) {
         flashExpiresAt,
         toxicityScore: modResult.toxicityScore ?? 0,
         spamScore: modResult.spamScore ?? 0,
+        isAnonymous: postAnonymously,
       });
 
       setTitle("");
       setBody("");
       setSelectedTag("");
       setFlashDuration("");
+      setPostAnonymously(false);
       setLocalError(null);
       setShowNew(false);
       await props.onPosted();
@@ -211,6 +214,18 @@ export function CreateThreadCard(props: Readonly<Props>) {
           {flashSelect}
         </>
       )}
+      <div className="feed-page__anon-row">
+        <input
+          id="create-thread-anonymous"
+          type="checkbox"
+          checked={postAnonymously}
+          onChange={(e) => setPostAnonymously(e.target.checked)}
+          disabled={busy}
+        />
+        <label htmlFor="create-thread-anonymous" className="feed-page__anon-label">
+          Post anonymously
+        </label>
+      </div>
       <div className="feed-page__form-actions">
         <button
           type="button"

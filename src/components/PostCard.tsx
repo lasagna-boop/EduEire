@@ -11,7 +11,8 @@ export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
   const [score, setScore] = useState(post.score ?? 0);
   const [vote, setVote] = useState<Vote>(null);
   const [voting, setVoting] = useState(false);
-  const [admin, setAdmin] = useState(false);
+  /** null = still checking (treat as non-admin for anonymous display until resolved) */
+  const [admin, setAdmin] = useState<boolean | null>(fbUser ? null : false);
   const [flagged, setFlagged] = useState(false);
 
   const canVote = fbUser !== null;
@@ -24,6 +25,7 @@ export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
       isAdmin(fbUser.uid).then(setAdmin);
     } else {
       setVote(null);
+      setAdmin(false);
     }
   }, [fbUser, post.id]);
 
@@ -84,6 +86,9 @@ export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
 
   const voteDisabledClass = canVote ? "" : "post-card__vote-btn--disabled";
 
+  const displayAuthor =
+    post.isAnonymous && admin !== true ? "Anonymous" : post.author;
+
   return (
     <div className={`post-card${post.isFlash ? " post-card--flash" : ""}`}>
       <div className="post-card__votes">
@@ -135,7 +140,7 @@ export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
           <Link to={`/c/${post.communityId}`} className="post-card__community">
             c/{post.communityId}
           </Link>
-          <span>@{post.author} • {post.createdAt}</span>
+          <span>@{displayAuthor} • {post.createdAt}</span>
         </div>
 
         <Link to={`/thread/${post.id}`} className="post-card__title-link">
@@ -155,7 +160,7 @@ export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
           <Link to={`/thread/${post.id}`} className="post-card__comments-link">
             💬 {post.postCount ?? 0} {(post.postCount ?? 0) === 1 ? "Comment" : "Comments"}
           </Link>
-          {admin && (
+          {admin === true && (
             <button
               className={`post-card__flag-btn${flagged ? " post-card__flag-btn--flagged" : ""}`}
               onClick={handleFlag}

@@ -8,6 +8,7 @@ import {
   addPost,
   getUserVote,
   voteOnThread,
+  isAdmin,
   type Thread,
   type Post,
   type Vote,
@@ -35,6 +36,9 @@ export default function ThreadDetail() {
   const [score, setScore] = useState(0);
   const [vote, setVote] = useState<Vote>(null);
   const [voting, setVoting] = useState(false);
+  const [viewerIsAdmin, setViewerIsAdmin] = useState<boolean | null>(
+    fbUser ? null : false
+  );
   const canVote = fbUser !== null;
   const canCommentInThread =
     canWrite || (accessMode === "read_only" && hasReadOnlyAllowedTag(thread?.tags));
@@ -70,6 +74,14 @@ export default function ThreadDetail() {
         .catch((e) => console.error("Failed to get vote", e));
     }
   }, [fbUser, threadId]);
+
+  useEffect(() => {
+    if (!fbUser) {
+      setViewerIsAdmin(false);
+      return;
+    }
+    isAdmin(fbUser.uid).then(setViewerIsAdmin);
+  }, [fbUser]);
 
   const handleVote = async (newVote: Vote) => {
     if (canVote === false || fbUser === null || voting || threadId === undefined) return;
@@ -200,6 +212,7 @@ export default function ThreadDetail() {
         comments={comments}
         onCommentFlagged={handleCommentFlagged}
         onReplySubmit={handleReplySubmit}
+        viewerIsAdmin={viewerIsAdmin}
       />
     );
   }
