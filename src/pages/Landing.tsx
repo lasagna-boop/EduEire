@@ -276,7 +276,7 @@ export default function Landing() {
             <div className="landing__hero-content">
               <span className="landing__hero-badge">
                 <span className="landing__hero-dot" />
-                The Digital Cloister
+                The Digital Cluster
               </span>
               <h1>
                 The heartbeat of <br />

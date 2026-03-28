@@ -10,7 +10,7 @@
   align-items: center;
   padding: 8px 20px;
   background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 2px solid rgba(45, 106, 79, 0.24);
   height: 64px;
 }
 
@@ -41,6 +41,7 @@
   width: 100%;
   max-width: 400px;
   box-shadow: 0 1px 3px rgba(26, 32, 44, 0.08);
+  border: 1px solid #e2e8f0;
 }
 
 .login-page__title {
@@ -83,6 +84,7 @@
 .login-page__input:focus {
   outline: none;
   border-color: #2d6a4f;
+  box-shadow: 0 0 0 4px rgba(45, 106, 79, 0.12);
   background: #ffffff;
 }
 
@@ -91,10 +93,13 @@
 }
 
 .login-page__error {
-  color: #ff9f1c;
+  color: #1a202c;
   font-size: 0.875rem;
   margin: 0;
-  padding: 0 4px;
+  padding: 10px 12px;
+  border: 1px solid #ff9f1c;
+  border-radius: 10px;
+  background: rgba(255, 159, 28, 0.12);
 }
 
 .login-page__submit {
@@ -106,12 +111,13 @@
   background: #2d6a4f;
   color: #ffffff;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.15s;
   margin-top: 8px;
 }
 
 .login-page__submit:hover:not(:disabled) {
   background: #2d6a4f;
+  box-shadow: 0 6px 14px rgba(45, 106, 79, 0.24);
 }
 
 .login-page__submit:disabled {
@@ -149,11 +155,13 @@
   background: transparent;
   color: #2d6a4f;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .login-page__switch:hover:not(:disabled) {
-  background: rgba(45, 106, 79, 0.08);
+  background: rgba(255, 159, 28, 0.12);
+  border-color: #ff9f1c;
+  color: #1a202c;
 }
 
 .login-page__switch:disabled {
