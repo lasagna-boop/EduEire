@@ -6,8 +6,7 @@ import { CreateThreadCard } from "../components/CreateThreadCard";
 import { FeedPageHeader } from "../components/FeedPageHeader";
 import {
   listThreads,
-  listCommunities,
-  seedCommunities,
+  ensureDefaultCommunities,
   isAdmin,
   type Community,
   type Thread,
@@ -36,13 +35,7 @@ export default function Feed() {
 
   const loadCommunities = async () => {
     try {
-      let list = await listCommunities();
-      if (list.length === 0) {
-        console.log("No communities found, seeding TUD, Trinity, UCD...");
-        await seedCommunities();
-        list = await listCommunities();
-        console.log("Communities seeded:", list);
-      }
+      const list = await ensureDefaultCommunities();
       setCommunities(list);
       if (list.length > 0 && !communityId) {
         setCommunityId(list[0].id);

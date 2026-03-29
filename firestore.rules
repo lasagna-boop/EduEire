@@ -7,9 +7,16 @@ service cloud.firestore {
       return request.auth != null
         && request.auth.token.email != null
         && (
+          request.auth.token.email.matches('(?i).*@dcu\\.ie') ||
+          request.auth.token.email.matches('(?i).*@mumail\\.ie') ||
           request.auth.token.email.matches('(?i).*@mytudublin\\.ie') ||
+          request.auth.token.email.matches('(?i).*@ncirl\\.ie') ||
+          request.auth.token.email.matches('(?i).*@rcsi\\.ie') ||
+          request.auth.token.email.matches('(?i).*@studentmail\\.ul\\.ie') ||
           request.auth.token.email.matches('(?i).*@tcd\\.ie') ||
-          request.auth.token.email.matches('(?i).*@ucdconnect\\.ie')
+          request.auth.token.email.matches('(?i).*@ucdconnect\\.ie') ||
+          request.auth.token.email.matches('(?i).*@ucc\\.ie') ||
+          request.auth.token.email.matches('(?i).*@universityofgalway\\.ie')
         );
     }
 

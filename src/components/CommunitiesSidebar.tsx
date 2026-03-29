@@ -1,8 +1,9 @@
 type CommunityRef = { id: string };
 
 type Props = {
-  communities: CommunityRef[];
-  /** When set, highlights the active community link */
+  /** Passed by parents for API consistency; reserved for future sidebar use */
+  communities?: CommunityRef[];
+  /** When set, highlights the active community link (reserved) */
   activeCommunityId?: string;
   activeSection?: string;
   onSectionSelect?: (section: string) => void;
@@ -19,8 +20,6 @@ export const SECTION_OPTIONS = [
 ] as const;
 
 export function CommunitiesSidebar({
-  communities: _communities,
-  activeCommunityId: _activeCommunityId,
   activeSection,
   onSectionSelect,
 }: Readonly<Props>) {

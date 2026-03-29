@@ -120,45 +120,117 @@ export async function listCommunities(): Promise<Community[]> {
 
 // create a community (used for seeding)
 
+type CommunitySeed = Pick<Community, "id" | "name" | "fullName" | "description">;
 
-// seed initial communities (safe to call multiple times - uses setDoc with merge)
+/** Default Irish university communities (Firestore doc id = `id`) */
+export const DEFAULT_COMMUNITY_SEEDS: readonly CommunitySeed[] = [
+  {
+    id: "tud",
+    name: "TUD",
+    fullName: "Technological University Dublin",
+    description: "Community for TU Dublin students and staff",
+  },
+  {
+    id: "trinity",
+    name: "Trinity",
+    fullName: "Trinity College Dublin",
+    description: "Community for Trinity College Dublin students and staff",
+  },
+  {
+    id: "ucd",
+    name: "UCD",
+    fullName: "University College Dublin",
+    description: "Community for UCD students and staff",
+  },
+  {
+    id: "ucc",
+    name: "UCC",
+    fullName: "University College Cork",
+    description:
+      "Community for UCC students and staff — a leading research-intensive university in Cork.",
+  },
+  {
+    id: "galway",
+    name: "Galway",
+    fullName: "University of Galway",
+    description:
+      "Community for University of Galway students and staff — global strengths in biomedical science and human rights research.",
+  },
+  {
+    id: "ul",
+    name: "UL",
+    fullName: "University of Limerick",
+    description:
+      "Community for UL students and staff — high graduate employability and a strong campus-based experience.",
+  },
+  {
+    id: "dcu",
+    name: "DCU",
+    fullName: "Dublin City University",
+    description:
+      "Community for DCU students and staff — Ireland's University of Enterprise; technology and business.",
+  },
+  {
+    id: "maynooth",
+    name: "Maynooth",
+    fullName: "Maynooth University",
+    description:
+      "Community for Maynooth students and staff — academic excellence in social sciences, humanities, and STEM.",
+  },
+  {
+    id: "rcsi",
+    name: "RCSI",
+    fullName: "RCSI University of Medicine and Health Sciences",
+    description:
+      "Community for RCSI students and staff — specialist medical education and research in Dublin.",
+  },
+  {
+    id: "nci",
+    name: "NCI",
+    fullName: "National College of Ireland",
+    description:
+      "Community for NCI students and staff — business, computing, and psychology in Dublin city centre.",
+  },
+] as const;
+
+// seed initial communities (safe to call multiple times)
+// Important: never merge `memberCount: 0` onto existing docs — that wiped real counts on every run.
 export async function seedCommunities() {
-  const communities = [
-    {
-      id: "tud",
-      name: "TUD",
-      fullName: "Technological University Dublin",
-      description: "Community for TU Dublin students and staff",
-    },
-    {
-      id: "trinity",
-      name: "Trinity",
-      fullName: "Trinity College Dublin",
-      description: "Community for Trinity College Dublin students and staff",
-    },
-    {
-      id: "ucd",
-      name: "UCD",
-      fullName: "University College Dublin",
-      description: "Community for UCD students and staff",
-    },
-  ];
-
-  for (const c of communities) {
-    await setDoc(
-      doc(db, "communities", c.id),
-      {
-        name: c.name,
-        fullName: c.fullName,
-        description: c.description,
+  for (const c of DEFAULT_COMMUNITY_SEEDS) {
+    const ref = doc(db, "communities", c.id);
+    const snap = await getDoc(ref);
+    const meta = {
+      name: c.name,
+      fullName: c.fullName,
+      description: c.description,
+    };
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        ...meta,
         memberCount: 0,
         createdAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+      });
+    } else {
+      await setDoc(ref, meta, { merge: true });
+    }
   }
 
-  return communities.map((c) => c.id);
+  return DEFAULT_COMMUNITY_SEEDS.map((c) => c.id);
+}
+
+/**
+ * Returns all communities, upserting any missing default seeds (for DBs created before new
+ * universities were added). Avoids an extra list round-trip when nothing was missing.
+ */
+export async function ensureDefaultCommunities(): Promise<Community[]> {
+  let list = await listCommunities();
+  const ids = new Set(list.map((c) => c.id));
+  const anyMissing = DEFAULT_COMMUNITY_SEEDS.some((c) => !ids.has(c.id));
+  if (anyMissing) {
+    await seedCommunities();
+    list = await listCommunities();
+  }
+  return list;
 }
 
 // ==================== USER SUBSCRIPTIONS ====================

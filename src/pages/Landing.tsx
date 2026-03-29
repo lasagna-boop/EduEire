@@ -7,10 +7,10 @@ import SlideMenu from "../components/SlideMenu";
 import PostCard from "../components/PostCard";
 import "../styles/landing.css";
 import {
+  DEFAULT_COMMUNITY_SEEDS,
   getUserSubscriptions,
-  listCommunities,
   listThreads,
-  seedCommunities,
+  ensureDefaultCommunities,
   subscribeToCommunity,
   type Community,
   type Thread,
@@ -21,11 +21,30 @@ import { threadVisibleInFeed } from "../lib/firestoreFormat";
 import { threadsToPostCardPosts } from "../lib/threadPostMap";
 import type { PostCardPost } from "../types/postCard";
 
+/** Higher member count first; ties use curated seed order so the list is stable when counts are 0. */
+const COMMUNITY_SEED_ORDER = new Map(
+  DEFAULT_COMMUNITY_SEEDS.map((c, index) => [c.id, index])
+);
+
+function sortCommunitiesByMembers(list: Community[]): Community[] {
+  return [...list].sort((a, b) => {
+    const ma = Number(a.memberCount) || 0;
+    const mb = Number(b.memberCount) || 0;
+    const byMembers = mb - ma;
+    if (byMembers !== 0) return byMembers;
+    const oa = COMMUNITY_SEED_ORDER.get(a.id) ?? 999;
+    const ob = COMMUNITY_SEED_ORDER.get(b.id) ?? 999;
+    if (oa !== ob) return oa - ob;
+    return (a.fullName || a.name).localeCompare(b.fullName || b.name);
+  });
+}
+
 export default function Landing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [popularUniversities, setPopularUniversities] = useState<Community[]>([]);
+  const [universitiesByMembers, setUniversitiesByMembers] = useState<Community[]>([]);
+  const [universitiesExpanded, setUniversitiesExpanded] = useState(false);
   const [subscriptionIds, setSubscriptionIds] = useState<string[]>([]);
   const [pendingCommunityId, setPendingCommunityId] = useState<string | null>(null);
   const [registeredUsersCount, setRegisteredUsersCount] = useState<number | null>(null);
@@ -51,17 +70,8 @@ export default function Landing() {
   useEffect(() => {
     const loadPopularUniversities = async () => {
       try {
-        let communities = await listCommunities();
-        if (communities.length === 0) {
-          await seedCommunities();
-          communities = await listCommunities();
-        }
-
-        const topUniversities = communities
-          .sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0))
-          .slice(0, 3);
-
-        setPopularUniversities(topUniversities);
+        const communities = await ensureDefaultCommunities();
+        setUniversitiesByMembers(sortCommunitiesByMembers(communities));
       } catch (e) {
         console.error("Failed to load universities", e);
       }
@@ -69,6 +79,11 @@ export default function Landing() {
 
     void loadPopularUniversities();
   }, []);
+
+  const displayedUniversities = universitiesExpanded
+    ? universitiesByMembers
+    : universitiesByMembers.slice(0, 3);
+  const canExpandUniversities = universitiesByMembers.length > 3;
 
   useEffect(() => {
     const loadTrendingThread = async () => {
@@ -156,17 +171,23 @@ export default function Landing() {
       if (isJoined) {
         await unsubscribeFromCommunity(user.uid, community.id);
         setSubscriptionIds((prev) => prev.filter((id) => id !== community.id));
-        setPopularUniversities((prev) =>
-          prev.map((item) =>
-            item.id === community.id ? { ...item, memberCount: Math.max((item.memberCount || 0) - 1, 0) } : item
+        setUniversitiesByMembers((prev) =>
+          sortCommunitiesByMembers(
+            prev.map((item) =>
+              item.id === community.id
+                ? { ...item, memberCount: Math.max((item.memberCount || 0) - 1, 0) }
+                : item
+            )
           )
         );
       } else {
         await subscribeToCommunity(user.uid, community.id);
         setSubscriptionIds((prev) => [...prev, community.id]);
-        setPopularUniversities((prev) =>
-          prev.map((item) =>
-            item.id === community.id ? { ...item, memberCount: (item.memberCount || 0) + 1 } : item
+        setUniversitiesByMembers((prev) =>
+          sortCommunitiesByMembers(
+            prev.map((item) =>
+              item.id === community.id ? { ...item, memberCount: (item.memberCount || 0) + 1 } : item
+            )
           )
         );
       }
@@ -347,13 +368,23 @@ export default function Landing() {
           <div className="landing__panel">
             <div className="landing__widget-head">
               <h3>Popular Universities</h3>
-              <span>📈</span>
+              <span aria-hidden>📈</span>
             </div>
-            <div className="landing__community-list">
-              {popularUniversities.map((community, index) => (
+            <div
+              className={[
+                "landing__community-list",
+                universitiesExpanded ? "landing__community-list--expanded" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {displayedUniversities.map((community, index) => (
                 <div className="landing__community-item" key={community.id}>
                   <div className="landing__community-info">
-                    <div className={`landing__community-badge ${index === 1 ? "landing__community-badge--blue" : ""}`}>
+                    <div
+                      className={`landing__community-badge ${index === 1 ? "landing__community-badge--blue" : ""}`}
+                      aria-hidden
+                    >
                       🎓
                     </div>
                     <div className="landing__community-text">
@@ -382,9 +413,18 @@ export default function Landing() {
                 </div>
               ))}
             </div>
-            <button type="button" className="landing__subtle-btn">
-              View All
-            </button>
+            {canExpandUniversities ? (
+              <button
+                type="button"
+                className="landing__subtle-btn"
+                aria-expanded={universitiesExpanded}
+                onClick={() => setUniversitiesExpanded((v) => !v)}
+              >
+                {universitiesExpanded
+                  ? "Show less"
+                  : `View all (${universitiesByMembers.length})`}
+              </button>
+            ) : null}
           </div>
 
           <div className="landing__roadmap">

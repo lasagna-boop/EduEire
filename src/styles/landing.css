@@ -543,6 +543,13 @@
   gap: 14px;
 }
 
+.landing__community-list--expanded {
+  max-height: min(52vh, 360px);
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-gutter: stable;
+}
+
 .landing__community-item {
   display: flex;
   justify-content: space-between;
@@ -629,11 +636,22 @@
   font-size: 0.74rem;
   font-weight: 800;
   padding: 10px;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .landing__subtle-btn:hover {
-  background: rgba(45, 106, 79, 0.08);
-  color: #2d6a4f;
+  background: rgba(255, 159, 28, 0.22);
+  color: #1a202c;
+}
+
+.landing__subtle-btn:focus {
+  outline: none;
+}
+
+.landing__subtle-btn:focus-visible {
+  outline: 2px solid rgba(255, 159, 28, 0.55);
+  outline-offset: 2px;
 }
 
 .landing__roadmap {

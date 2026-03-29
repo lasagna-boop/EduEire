@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { login, register } from "../lib/auth";
 import { errorMessage } from "../lib/errors";
 import { useAuth } from "../context/useAuth";
+import { STUDENT_EMAIL_DOMAINS } from "../lib/userAccess";
 import SlideMenu from "../components/SlideMenu";
 
 export default function Login() {
@@ -63,8 +64,9 @@ export default function Login() {
               : "Welcome back to EduÉire"}
           </p>
           {isRegister && (
-            <p className="login-page__subtitle" style={{ marginTop: 8 }}>
-              Student email domains (@mytudublin.ie, @tcd.ie, @ucdconnect.ie) get full posting access. Other emails are read-only.
+            <p className="login-page__subtitle login-page__subtitle--domains" style={{ marginTop: 8 }}>
+              {STUDENT_EMAIL_DOMAINS.length} recognised Irish university domains unlock full posting (e.g. @tcd.ie,
+              @ucdconnect.ie, @ucc.ie, @dcu.ie, @studentmail.ul.ie). Other emails stay read-only.
             </p>
           )}
 

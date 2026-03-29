@@ -4,9 +4,16 @@ import { db } from "./firebase";
 export type AccessMode = "full" | "read_only";
 
 export const STUDENT_EMAIL_DOMAINS = [
+  "dcu.ie",
+  "mumail.ie",
   "mytudublin.ie",
+  "ncirl.ie",
+  "rcsi.ie",
+  "studentmail.ul.ie",
   "tcd.ie",
   "ucdconnect.ie",
+  "ucc.ie",
+  "universityofgalway.ie",
 ] as const;
 
 export type UserAccessProfile = {
