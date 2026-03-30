@@ -21,6 +21,46 @@ export type UserAccessProfile = {
   accessMode: AccessMode;
 };
 
+export type UserCredibilityFields = {
+  approvedPostsCount: number;
+  approvedCommentsCount: number;
+  rejectedContentCount: number;
+  pendingReviewCount: number;
+  cumulativeCommentScore: number;
+  cumulativeThreadScore: number;
+  helpfulMarksCount: number;
+  totalThreadsCount: number;
+  totalCommentsCount: number;
+  lastContributionAt: unknown;
+  activeDays30d: number;
+  reportsAgainstCount: number;
+  confirmedReportsCount: number;
+  credibilityModelVersion: string;
+  credibilityScoreCached: number;
+  credibilityScoreUpdatedAt: unknown;
+};
+
+function defaultCredibilityFields(): UserCredibilityFields {
+  return {
+    approvedPostsCount: 0,
+    approvedCommentsCount: 0,
+    rejectedContentCount: 0,
+    pendingReviewCount: 0,
+    cumulativeCommentScore: 0,
+    cumulativeThreadScore: 0,
+    helpfulMarksCount: 0,
+    totalThreadsCount: 0,
+    totalCommentsCount: 0,
+    lastContributionAt: null,
+    activeDays30d: 0,
+    reportsAgainstCount: 0,
+    confirmedReportsCount: 0,
+    credibilityModelVersion: "v1",
+    credibilityScoreCached: 0,
+    credibilityScoreUpdatedAt: null,
+  };
+}
+
 function getEmailDomain(email?: string | null): string {
   if (!email) return "";
   const trimmed = email.trim().toLowerCase();
@@ -59,6 +99,7 @@ export async function ensureUserProfile(params: {
       displayName: displayName ?? null,
       studentEmailConfirmed: access.studentEmailConfirmed,
       accessMode: access.accessMode,
+      ...(!existing.exists() ? defaultCredibilityFields() : {}),
       updatedAt: serverTimestamp(),
       ...(existing.exists() ? {} : { createdAt: serverTimestamp() }),
     },

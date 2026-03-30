@@ -445,6 +445,58 @@ export type Post = {
 type ThreadDocData = Omit<Thread, "id">;
 type PostDocData = Omit<Post, "id">;
 
+function utcDayKey(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10);
+}
+
+function dayDistanceUtc(aDay: string, bDay: string): number {
+  const a = new Date(`${aDay}T00:00:00.000Z`).getTime();
+  const b = new Date(`${bDay}T00:00:00.000Z`).getTime();
+  return Math.floor((a - b) / (24 * 60 * 60 * 1000));
+}
+
+async function recordUserContribution(
+  userId: string,
+  kind: "thread" | "comment"
+) {
+  const updates =
+    kind === "thread"
+      ? {
+          totalThreadsCount: increment(1),
+        }
+      : {
+          totalCommentsCount: increment(1),
+        };
+
+  try {
+    const userRef = doc(db, "users", userId);
+    const snap = await getDoc(userRef);
+    const today = utcDayKey();
+    const existingKeys = snap.exists()
+      ? ((snap.data()?.activeDayKeys as unknown[]) ?? [])
+          .filter((v): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v))
+      : [];
+    const recentKeys = existingKeys.filter((key) => {
+      const distance = dayDistanceUtc(today, key);
+      return distance >= 0 && distance < 30;
+    });
+    const nextKeys = recentKeys.includes(today) ? recentKeys : [...recentKeys, today];
+
+    await setDoc(
+      userRef,
+      {
+        ...updates,
+        lastContributionAt: serverTimestamp(),
+        activeDayKeys: nextKeys,
+        activeDays30d: nextKeys.length,
+      },
+      { merge: true }
+    );
+  } catch (e) {
+    console.warn("Could not update user contribution stats", e);
+  }
+}
+
 // get a single thread by ID
 export async function getThread(threadId: string): Promise<Thread | null> {
   const snap = await getDoc(doc(db, "threads", threadId));
@@ -485,6 +537,7 @@ export async function createThread(input: {
     lastActivityAt: serverTimestamp(),
     postCount: 0,
   });
+  void recordUserContribution(input.authorId, "thread");
   return ref.id;
 }
 
@@ -590,6 +643,7 @@ export async function addPost(
     moderationStatus: "approved",
     createdAt: serverTimestamp(),
   });
+  void recordUserContribution(input.authorId, "comment");
 
   // best-effort: update thread stats; may fail if rules restrict thread updates
   try {
