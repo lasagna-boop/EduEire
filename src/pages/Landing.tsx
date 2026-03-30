@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { collection, getCountFromServer, query, where } from "firebase/firestore";
 import { useAuth } from "../context/useAuth";
-import { logout } from "../lib/auth";
-import SlideMenu from "../components/SlideMenu";
+import AppHeader from "../components/AppHeader";
 import PostCard from "../components/PostCard";
 import "../styles/landing.css";
 import {
@@ -51,21 +50,6 @@ export default function Landing() {
   const [verifiedStudentsCount, setVerifiedStudentsCount] = useState<number | null>(null);
   const [discussionsCount, setDiscussionsCount] = useState<number | null>(null);
   const [trendingPost, setTrendingPost] = useState<PostCardPost | null>(null);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/feed?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (e) {
-      console.error("Logout failed", e);
-    }
-  };
 
   useEffect(() => {
     const loadPopularUniversities = async () => {
@@ -200,56 +184,19 @@ export default function Landing() {
 
   return (
     <div className="landing">
-      <header className="landing__header">
-        <div className="landing__header-inner">
-          <div className="landing__header-left">
-            <SlideMenu />
-            <Link to="/" className="landing__logo">
-              <img src="/logo.png" alt="EduÉire" className="landing__logo-img" />
-            </Link>
-            <div className="landing__top-links">
-              <Link to="/feed">Communities</Link>
-              <Link to="/map">Map</Link>
-            </div>
-          </div>
-
-          <form className="landing__search" onSubmit={handleSearch}>
-            <span className="landing__search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="Search communities, notes, or universities..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="landing__search-input"
-            />
-          </form>
-
-          <div className="landing__auth">
-            {user ? (
-              <>
-                <Link to="/feed" className="landing__btn landing__btn--ghost">
-                  My Feed
-                </Link>
-                <Link to="/profile" className="landing__btn landing__btn--ghost">
-                  Profile
-                </Link>
-                <button onClick={handleLogout} className="landing__btn landing__btn--filled" type="button">
-                  Log Out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="landing__btn landing__btn--ghost">
-                  Log In
-                </Link>
-                <Link to="/login?mode=signup" className="landing__btn landing__btn--filled">
-                  Sign Up
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        activeTopLink="communities"
+        search={{
+          placeholder: "Search communities, notes, or universities...",
+          value: searchQuery,
+          onChange: setSearchQuery,
+          onSubmit: () => {
+            if (searchQuery.trim()) {
+              navigate(`/feed?q=${encodeURIComponent(searchQuery.trim())}`);
+            }
+          },
+        }}
+      />
 
       <div className="landing__layout">
         <aside className="landing__sidebar landing__sidebar--left">

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import { CommunitiesSidebar, SECTION_OPTIONS } from "../components/CommunitiesSidebar";
 import { CreateThreadCard } from "../components/CreateThreadCard";
-import { FeedPageHeader } from "../components/FeedPageHeader";
+import AppHeader from "../components/AppHeader";
 import {
   listThreads,
   ensureDefaultCommunities,
@@ -15,12 +15,10 @@ import { errorMessage } from "../lib/errors";
 import { threadVisibleInFeed } from "../lib/firestoreFormat";
 import { threadsToPostCardPosts } from "../lib/threadPostMap";
 import { useAuth } from "../context/useAuth";
-import { useLogout } from "../hooks/useLogout";
 import type { PostCardPost } from "../types/postCard";
 
 export default function Feed() {
   const { user: fbUser, canWrite, accessMode } = useAuth();
-  const handleLogout = useLogout();
 
   const [posts, setPosts] = useState<PostCardPost[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
@@ -81,37 +79,13 @@ export default function Feed() {
 
   return (
     <div className="feed-page">
-      <FeedPageHeader
+      <AppHeader
+        activeTopLink="communities"
         search={{
           placeholder: "Search posts",
           value: searchQuery,
           onChange: setSearchQuery,
         }}
-        actions={
-          fbUser ? (
-            <>
-              <Link to="/profile" className="feed-page__user feed-page__user--link">
-                {fbUser.displayName || fbUser.email}
-              </Link>
-              {adminUser && (
-                <Link
-                  to="/admin"
-                  className="feed-page__btn feed-page__btn--outline"
-                  style={{ fontSize: "0.8rem" }}
-                >
-                  Admin
-                </Link>
-              )}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="feed-page__btn feed-page__btn--outline"
-              >
-                Log Out
-              </button>
-            </>
-          ) : null
-        }
       />
 
       <main className="feed-page__main">
@@ -209,6 +183,11 @@ export default function Feed() {
               Ireland&apos;s community for students and educators to connect, share, and learn
               together.
             </p>
+            {adminUser ? (
+              <Link to="/admin" className="feed-page__btn feed-page__btn--outline" style={{ marginTop: 12 }}>
+                Admin
+              </Link>
+            ) : null}
           </div>
           <div className="feed-create-thread feed-create-thread--desktop">
             <CreateThreadCard

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { FeedPageHeader } from "../components/FeedPageHeader";
+import { useParams } from "react-router-dom";
+import AppHeader from "../components/AppHeader";
 import { ThreadDetailBody } from "../components/ThreadDetailBody";
 import {
   getThread,
@@ -15,7 +15,6 @@ import {
 } from "../lib/firestore";
 import { useAuth } from "../context/useAuth";
 import { errorMessage } from "../lib/errors";
-import { useLogout } from "../hooks/useLogout";
 import { isApprovedPost } from "../lib/postModeration";
 import { moderateContent } from "../lib/moderation";
 import { hasReadOnlyAllowedTag } from "../lib/sectionAccess";
@@ -24,7 +23,6 @@ import { voteScoreDelta } from "../lib/voteScoreDelta";
 export default function ThreadDetail() {
   const { threadId } = useParams<{ threadId: string }>();
   const { user: fbUser, canWrite, accessMode } = useAuth();
-  const handleLogout = useLogout();
 
   const [thread, setThread] = useState<Thread | null>(null);
   const [comments, setComments] = useState<Post[]>([]);
@@ -219,24 +217,7 @@ export default function ThreadDetail() {
 
   return (
     <div className="feed-page">
-      <FeedPageHeader
-        actions={
-          fbUser ? (
-            <>
-              <Link to="/feed" className="feed-page__btn feed-page__btn--outline">
-                Feed
-              </Link>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="feed-page__btn feed-page__btn--outline"
-              >
-                Log Out
-              </button>
-            </>
-          ) : null
-        }
-      />
+      <AppHeader activeTopLink="communities" />
 
       <main className="feed-page__main thread-detail-main">
         <div className="feed-page__content">{mainContent}</div>

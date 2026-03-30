@@ -57,6 +57,10 @@
   color: #2d6a4f;
 }
 
+.landing__top-link--active {
+  color: #2d6a4f !important;
+}
+
 .landing__search {
   flex: 1;
   max-width: 620px;
@@ -561,6 +565,7 @@
   display: flex;
   gap: 10px;
   min-width: 0;
+  flex: 1;
 }
 
 .landing__community-badge {
@@ -594,7 +599,8 @@
 
 .landing__community-text {
   min-width: 0;
-  max-width: 170px;
+  flex: 1;
+  max-width: none;
 }
 
 .landing__community-item button {

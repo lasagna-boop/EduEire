@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import { CommunitiesSidebar, SECTION_OPTIONS } from "../components/CommunitiesSidebar";
 import { CreateThreadCard } from "../components/CreateThreadCard";
-import { FeedPageHeader } from "../components/FeedPageHeader";
+import AppHeader from "../components/AppHeader";
 import {
   getCommunity,
   listThreads,
@@ -18,7 +18,6 @@ import { errorMessage } from "../lib/errors";
 import { threadVisibleInFeed } from "../lib/firestoreFormat";
 import { threadsToPostCardPosts } from "../lib/threadPostMap";
 import { useAuth } from "../context/useAuth";
-import { useLogout } from "../hooks/useLogout";
 import type { PostCardPost } from "../types/postCard";
 
 function communityJoinButtonLabel(subLoading: boolean, isSubscribed: boolean): string {
@@ -30,7 +29,6 @@ function communityJoinButtonLabel(subLoading: boolean, isSubscribed: boolean): s
 export default function Community() {
   const { communityId } = useParams<{ communityId: string }>();
   const { user: fbUser, canWrite, accessMode } = useAuth();
-  const handleLogout = useLogout();
 
   const [community, setCommunity] = useState<CommunityType | null>(null);
   const [communities, setCommunities] = useState<CommunityType[]>([]);
@@ -129,28 +127,13 @@ export default function Community() {
 
   return (
     <div className="feed-page">
-      <FeedPageHeader
+      <AppHeader
+        activeTopLink="communities"
         search={{
           placeholder: `Search in c/${communityId}`,
           value: searchQuery,
           onChange: setSearchQuery,
         }}
-        actions={
-          fbUser ? (
-            <>
-              <Link to="/profile" className="feed-page__user feed-page__user--link">
-                {fbUser.displayName || fbUser.email}
-              </Link>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="feed-page__btn feed-page__btn--outline"
-              >
-                Log Out
-              </button>
-            </>
-          ) : null
-        }
       />
 
       <main className="feed-page__main">

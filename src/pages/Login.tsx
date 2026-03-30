@@ -4,7 +4,7 @@ import { login, register } from "../lib/auth";
 import { errorMessage } from "../lib/errors";
 import { useAuth } from "../context/useAuth";
 import { STUDENT_EMAIL_DOMAINS } from "../lib/userAccess";
-import SlideMenu from "../components/SlideMenu";
+import AppHeader from "../components/AppHeader";
 
 export default function Login() {
   const { user } = useAuth();
@@ -44,13 +44,7 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      {/* Header */}
-      <header className="login-page__header">
-        <SlideMenu />
-        <Link to="/" className="login-page__logo">
-          <img src="/logo.png" alt="EduÉire" className="login-page__logo-img" />
-        </Link>
-      </header>
+      <AppHeader activeTopLink="communities" />
 
       {/* Main  */}
       <main className="login-page__main">

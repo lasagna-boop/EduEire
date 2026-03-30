@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PostCard from "../components/PostCard";
-import { FeedPageHeader } from "../components/FeedPageHeader";
+import AppHeader from "../components/AppHeader";
 import {
   getUserSubscriptions,
   getCommunity,
@@ -13,12 +13,10 @@ import {
 import { threadVisibleOnProfile } from "../lib/firestoreFormat";
 import { threadsToPostCardPosts } from "../lib/threadPostMap";
 import { useAuth } from "../context/useAuth";
-import { useLogout } from "../hooks/useLogout";
 import type { PostCardPost } from "../types/postCard";
 
 export default function Profile() {
   const { user: fbUser, studentEmailConfirmed, accessMode } = useAuth();
-  const handleLogout = useLogout();
   const eireversary = fbUser?.metadata?.creationTime
     ? new Date(fbUser.metadata.creationTime).toLocaleDateString("en-IE", {
         year: "numeric",
@@ -88,24 +86,7 @@ export default function Profile() {
 
   return (
     <div className="feed-page">
-      <FeedPageHeader
-        actions={
-          fbUser ? (
-            <>
-              <Link to="/feed" className="feed-page__btn feed-page__btn--outline">
-                Feed
-              </Link>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="feed-page__btn feed-page__btn--outline"
-              >
-                Log Out
-              </button>
-            </>
-          ) : null
-        }
-      />
+      <AppHeader activeTopLink="communities" />
 
       <main className="feed-page__main profile-main">
         <div className="feed-page__content">

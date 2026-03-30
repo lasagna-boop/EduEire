@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import SlideMenu from "../components/SlideMenu";
+import AppHeader from "../components/AppHeader";
 import {
   isAdmin,
   listFlaggedThreads,
@@ -9,7 +8,6 @@ import {
 } from "../lib/firestore";
 import { useAuth } from "../context/useAuth";
 import { formatFirestoreDay } from "../lib/firestoreFormat";
-import { logout } from "../lib/auth";
 
 function formatDate(ts: unknown): string {
   const s = formatFirestoreDay(ts);
@@ -87,14 +85,6 @@ export default function Admin() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (e) {
-      console.error("Logout failed", e);
-    }
-  };
-
   if (checking) {
     return (
       <div className="feed-page">
@@ -106,13 +96,7 @@ export default function Admin() {
   if (!authorized) {
     return (
       <div className="feed-page">
-        <header className="feed-page__header">
-          <SlideMenu />
-          <Link to="/" className="feed-page__logo">
-            <img src="/logo.png" alt="EduÉire" className="feed-page__logo-img" />
-          </Link>
-          <div style={{ flex: 1 }} />
-        </header>
+        <AppHeader activeTopLink="communities" />
         <main className="feed-page__main" style={{ justifyContent: "center" }}>
           <div className="feed-page__empty">Access denied. Admin privileges required.</div>
         </main>
@@ -122,21 +106,7 @@ export default function Admin() {
 
   return (
     <div className="feed-page">
-      <header className="feed-page__header">
-        <SlideMenu />
-        <Link to="/" className="feed-page__logo">
-          <img src="/logo.png" alt="EduÉire" className="feed-page__logo-img" />
-        </Link>
-        <div className="feed-page__search" style={{ flex: 1 }} />
-        <div className="feed-page__actions">
-          <Link to="/feed" className="feed-page__btn feed-page__btn--outline">
-            Feed
-          </Link>
-          <button onClick={handleLogout} className="feed-page__btn feed-page__btn--outline">
-            Log Out
-          </button>
-        </div>
-      </header>
+      <AppHeader activeTopLink="communities" />
 
       <main className="feed-page__main admin-main">
         <div className="feed-page__content">

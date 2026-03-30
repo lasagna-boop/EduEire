@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import FlairCard from "../components/FlairCard";
-import SlideMenu from "../components/SlideMenu";
+import AppHeader from "../components/AppHeader";
 import { useAuth } from "../context/useAuth";
-import { logout } from "../lib/auth";
 import { createFlair, listFlairs, type Flair } from "../lib/firestore";
 import { moderateContent } from "../lib/moderation";
 
@@ -79,46 +77,16 @@ export default function Flairs() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (e) {
-      console.error("Logout failed", e);
-    }
-  };
-
   return (
     <div className="feed-page">
-      <header className="feed-page__header">
-        <SlideMenu />
-        <Link to="/" className="feed-page__logo">
-          <img src="/logo.png" alt="EduÉire" className="feed-page__logo-img" />
-        </Link>
-
-        <form className="feed-page__search" onSubmit={(e) => e.preventDefault()}>
-          <span className="feed-page__search-icon">🔍</span>
-          <input
-            type="text"
-            placeholder="Search flairs"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="feed-page__search-input"
-          />
-        </form>
-
-        <div className="feed-page__actions">
-          {fbUser && (
-            <>
-              <Link to="/profile" className="feed-page__user feed-page__user--link">
-                {fbUser.displayName || fbUser.email}
-              </Link>
-              <button onClick={handleLogout} className="feed-page__btn feed-page__btn--outline">
-                Log Out
-              </button>
-            </>
-          )}
-        </div>
-      </header>
+      <AppHeader
+        activeTopLink="communities"
+        search={{
+          placeholder: "Search flairs",
+          value: searchQuery,
+          onChange: setSearchQuery,
+        }}
+      />
 
       <main className="feed-page__main">
         <div className="feed-page__content flairs-page">

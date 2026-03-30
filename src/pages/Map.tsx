@@ -7,12 +7,9 @@ import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-import "../styles/landing.css";
 import "../styles/map.css";
 import { listMapCommunityPoints, type MapCommunityPoint } from "../lib/mapData";
-import SlideMenu from "../components/SlideMenu";
-import { useAuth } from "../context/useAuth";
-import { logout } from "../lib/auth";
+import AppHeader from "../components/AppHeader";
 
 const IRELAND_CENTER: [number, number] = [53.35, -7.65];
 const IRELAND_ZOOM = 7;
@@ -47,18 +44,9 @@ function RemoveLeafletPrefix() {
 }
 
 export default function MapPage() {
-  const { user } = useAuth();
   const [points, setPoints] = useState<MapCommunityPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (e) {
-      console.error("Logout failed", e);
-    }
-  };
 
   useEffect(() => {
     const load = async () => {
@@ -81,49 +69,7 @@ export default function MapPage() {
 
   return (
     <div className="map-page">
-      <header className="landing__header">
-        <div className="landing__header-inner">
-          <div className="landing__header-left">
-            <SlideMenu />
-            <Link to="/" className="landing__logo">
-              <img src="/logo.png" alt="EduÉire" className="landing__logo-img" />
-            </Link>
-            <div className="landing__top-links">
-              <Link to="/feed">Communities</Link>
-              <Link to="/map" className="map-page__top-link--active">
-                Map
-              </Link>
-            </div>
-          </div>
-
-          <div className="map-page__nav-spacer" />
-
-          <div className="landing__auth">
-            {user ? (
-              <>
-                <Link to="/feed" className="landing__btn landing__btn--ghost">
-                  My Feed
-                </Link>
-                <Link to="/profile" className="landing__btn landing__btn--ghost">
-                  Profile
-                </Link>
-                <button onClick={handleLogout} className="landing__btn landing__btn--filled" type="button">
-                  Log Out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="landing__btn landing__btn--ghost">
-                  Log In
-                </Link>
-                <Link to="/login?mode=signup" className="landing__btn landing__btn--filled">
-                  Sign Up
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppHeader activeTopLink="map" />
 
       <header className="map-page__header">
         <div>

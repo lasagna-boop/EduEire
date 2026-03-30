@@ -61,14 +61,6 @@
   box-shadow: 0 1px 3px rgba(26, 32, 44, 0.08);
 }
 
-.map-page__nav-spacer {
-  flex: 1;
-}
-
-.map-page__top-link--active {
-  color: #2d6a4f !important;
-}
-
 .map-page__popup {
   min-width: 230px;
 }
