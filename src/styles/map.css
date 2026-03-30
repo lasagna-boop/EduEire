@@ -1,0 +1,149 @@
+.map-page {
+  min-height: 100vh;
+  background: #faf9f6;
+  color: #1a202c;
+}
+
+.map-page__header {
+  padding: 1rem 1rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.map-page__header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.map-page__header p {
+  margin: 0.35rem 0 0;
+  color: #4a5568;
+}
+
+.map-page__back-btn {
+  text-decoration: none;
+  background: #2d6a4f;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.5rem 0.85rem;
+  font-weight: 700;
+}
+
+.map-page__back-btn:hover {
+  background: #1f5b42;
+}
+
+.map-page__status {
+  padding: 0 1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.925rem;
+}
+
+.map-page__error {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.map-page__map {
+  margin: 0 1rem 1rem;
+  height: calc(100vh - 170px);
+  min-height: 500px;
+  width: calc(100% - 2rem);
+  border-radius: 0.85rem;
+  overflow: hidden;
+  border: 2px solid rgba(45, 106, 79, 0.24);
+  box-shadow: 0 1px 3px rgba(26, 32, 44, 0.08);
+}
+
+.map-page__nav-spacer {
+  flex: 1;
+}
+
+.map-page__top-link--active {
+  color: #2d6a4f !important;
+}
+
+.map-page__popup {
+  min-width: 230px;
+}
+
+.map-page__popup h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.map-page__popup p {
+  margin: 0;
+  color: #4a5568;
+}
+
+.map-page__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.55rem 0;
+}
+
+.map-page__tag {
+  font-size: 0.75rem;
+  background: rgba(45, 106, 79, 0.12);
+  color: #2d6a4f;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+}
+
+.map-page__threads h4 {
+  font-size: 0.85rem;
+  margin: 0.3rem 0;
+  color: #1a202c;
+}
+
+.map-page__threads ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1rem;
+}
+
+.map-page__threads li {
+  margin-bottom: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.map-page__threads li span {
+  font-size: 0.75rem;
+  color: #4a5568;
+}
+
+.map-page__community-link {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2d6a4f;
+}
+
+@media (max-width: 768px) {
+  .map-page__header {
+    padding: 0.75rem 0.75rem 0;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .map-page__status {
+    padding: 0 0.75rem;
+  }
+
+  .map-page__map {
+    margin: 0 0.75rem 0.75rem;
+    height: calc(100vh - 220px);
+    min-height: 440px;
+    width: calc(100% - 1.5rem);
+  }
+}

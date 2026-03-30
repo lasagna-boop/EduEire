@@ -209,7 +209,7 @@ export default function Landing() {
             </Link>
             <div className="landing__top-links">
               <Link to="/feed">Communities</Link>
-              <Link to="/feed">Resources</Link>
+              <Link to="/map">Map</Link>
             </div>
           </div>
 
@@ -457,9 +457,9 @@ export default function Landing() {
             </div>
             <div>
               <h4>Resources</h4>
-              <Link to="/feed">Study Hub</Link>
-              <Link to="/feed">Past Papers</Link>
-              <Link to="/feed">Careers Portal</Link>
+              <Link to="/map">Study Hub</Link>
+              <Link to="/map">Past Papers</Link>
+              <Link to="/map">Careers Portal</Link>
             </div>
             <div>
               <h4>Stay Connected</h4>
