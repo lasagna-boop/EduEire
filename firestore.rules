@@ -82,6 +82,12 @@ service cloud.firestore {
       }
     }
 
+    // Map POIs (imported CSV / edited in console). Client read-only; writes via Console or Admin SDK.
+    match /map_points/{pointId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

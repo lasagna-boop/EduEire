@@ -327,22 +327,28 @@ export default function Landing() {
             >
               {displayedUniversities.map((community, index) => (
                 <div className="landing__community-item" key={community.id}>
-                  <div className="landing__community-info">
-                    <div
-                      className={`landing__community-badge ${index === 1 ? "landing__community-badge--blue" : ""}`}
-                      aria-hidden
-                    >
-                      🎓
-                    </div>
-                    <div className="landing__community-text">
-                      <div className="landing__community-name" title={community.fullName || community.name}>
-                        {community.fullName || community.name}
+                  <Link
+                    to={`/c/${community.id}`}
+                    className="landing__community-item-link"
+                    aria-label={`Open discussions for ${community.fullName || community.name}`}
+                  >
+                    <div className="landing__community-info">
+                      <div
+                        className={`landing__community-badge ${index === 1 ? "landing__community-badge--blue" : ""}`}
+                        aria-hidden
+                      >
+                        🎓
                       </div>
-                      <div className="landing__community-members">
-                        {community.memberCount || 0} {(community.memberCount || 0) === 1 ? "member" : "members"}
+                      <div className="landing__community-text">
+                        <div className="landing__community-name" title={community.fullName || community.name}>
+                          {community.fullName || community.name}
+                        </div>
+                        <div className="landing__community-members">
+                          {community.memberCount || 0} {(community.memberCount || 0) === 1 ? "member" : "members"}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                   <button
                     type="button"
                     onClick={() => void handleToggleSubscription(community)}

@@ -1,5 +1,12 @@
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { COMMUNITY_LOCATION_BY_ID } from "./communityLocations";
-import { ensureDefaultCommunities, listThreads, type Community, type Thread } from "./firestore";
+import { db } from "./firebase";
+import {
+  ensureDefaultCommunities,
+  listThreads,
+  type Community,
+  type Thread,
+} from "./firestore";
 import { threadVisibleInFeed } from "./firestoreFormat";
 
 export type MapHotThread = {
@@ -9,13 +16,17 @@ export type MapHotThread = {
   tags: string[];
 };
 
-export type MapCommunityPoint = {
-  communityId: string;
+/** One marker on /map (Firestore `map_points` or legacy fallback). */
+export type MapPointForUi = {
+  id: string;
   name: string;
-  fullName: string;
-  city: string;
+  category: string;
+  communityId: string;
   lat: number;
   lng: number;
+  city: string;
+  /** Set when linked to a community (for subtitle + threads). */
+  communityFullName: string;
   hottestThreads: MapHotThread[];
   courseTags: string[];
 };
@@ -63,24 +74,26 @@ function byCommunityId(threads: Thread[]): Map<string, Thread[]> {
   return grouped;
 }
 
-function toPoint(community: Community, threads: Thread[]): MapCommunityPoint | null {
+function toLegacyPoint(community: Community, threads: Thread[]): MapPointForUi | null {
   const location = COMMUNITY_LOCATION_BY_ID.get(community.id);
   if (!location) return null;
 
   const hottest = pickHottestThreads(threads);
   return {
+    id: `legacy_${community.id}`,
+    name: community.fullName || community.name,
+    category: "university_campus",
     communityId: community.id,
-    name: community.name,
-    fullName: community.fullName || community.name,
-    city: location.city,
     lat: location.lat,
     lng: location.lng,
+    city: location.city,
+    communityFullName: community.fullName || community.name,
     hottestThreads: hottest.map(toMapHotThread),
     courseTags: getCourseTags(hottest),
   };
 }
 
-export async function listMapCommunityPoints(): Promise<MapCommunityPoint[]> {
+async function listMapPointsLegacy(): Promise<MapPointForUi[]> {
   const [communities, threadResult] = await Promise.all([
     ensureDefaultCommunities(),
     listThreads({ pageSize: 200 }),
@@ -90,6 +103,67 @@ export async function listMapCommunityPoints(): Promise<MapCommunityPoint[]> {
   const groupedThreads = byCommunityId(visible);
 
   return communities
-    .map((community) => toPoint(community, groupedThreads.get(community.id) ?? []))
-    .filter((point): point is MapCommunityPoint => point !== null);
+    .map((community) => toLegacyPoint(community, groupedThreads.get(community.id) ?? []))
+    .filter((point): point is MapPointForUi => point !== null);
 }
+
+/**
+ * Loads map markers: primary source Firestore `map_points` (hasCoordinates == true).
+ * If that collection is empty, falls back to one marker per seeded community (legacy).
+ */
+export async function listMapPointsForMap(): Promise<MapPointForUi[]> {
+  const q = query(collection(db, "map_points"), where("hasCoordinates", "==", true));
+  const snap = await getDocs(q);
+
+  const [communities, threadResult] = await Promise.all([
+    ensureDefaultCommunities(),
+    listThreads({ pageSize: 200 }),
+  ]);
+  const now = Date.now();
+  const visible = threadResult.threads.filter((thread) => threadVisibleInFeed(thread, now));
+  const groupedThreads = byCommunityId(visible);
+  const commById = new Map(communities.map((c) => [c.id, c]));
+
+  if (snap.empty) {
+    return listMapPointsLegacy();
+  }
+
+  const points: MapPointForUi[] = [];
+  for (const d of snap.docs) {
+    const data = d.data();
+    // Must match query + guard against bad data (manual edits / old merges).
+    if (data.hasCoordinates !== true) continue;
+
+    const lat = data.latitude as number | undefined;
+    const lng = data.longitude as number | undefined;
+    if (
+      typeof lat !== "number" ||
+      typeof lng !== "number" ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
+      continue;
+    }
+
+    const communityId = typeof data.communityId === "string" ? data.communityId.trim() : "";
+    const comm = communityId ? commById.get(communityId) : undefined;
+    const threadsForComm = communityId ? groupedThreads.get(communityId) ?? [] : [];
+    const hottest = pickHottestThreads(threadsForComm);
+
+    points.push({
+      id: d.id,
+      name: (data.name as string) || d.id,
+      category: (data.category as string) || "other",
+      communityId,
+      lat,
+      lng,
+      city: (data.city as string) || "",
+      communityFullName: comm ? comm.fullName || comm.name : "",
+      hottestThreads: hottest.map(toMapHotThread),
+      courseTags: getCourseTags(hottest),
+    });
+  }
+
+  return points.sort((a, b) => a.name.localeCompare(b.name));
+}
+
