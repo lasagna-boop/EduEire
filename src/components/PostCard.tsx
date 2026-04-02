@@ -5,6 +5,12 @@ import { getUserVote, voteOnThread, isAdmin, setModerationStatus, type Vote } fr
 import type { PostCardPost } from "../types/postCard";
 import { voteScoreDelta } from "../lib/voteScoreDelta";
 
+function credibilityScoreColor(score: number): string {
+  if (score >= 70) return "#2d6a4f";
+  if (score >= 40) return "#b08900";
+  return "#c1121f";
+}
+
 export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
   const { user: fbUser } = useAuth();
   
@@ -155,6 +161,24 @@ export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
             </span>
           ))}
         </div>
+
+        {admin === true ? (
+          <div
+            className="post-card__admin-credibility"
+            style={{
+              color:
+                post.credibilityScore != null
+                  ? credibilityScoreColor(post.credibilityScore)
+                  : "#718096",
+            }}
+          >
+            Credibility:{" "}
+            {post.credibilityScore != null
+              ? `${post.credibilityScore}/100`
+              : "—"}
+            {post.credibilityModelVersion ? ` · ${post.credibilityModelVersion}` : ""}
+          </div>
+        ) : null}
 
         <div className="post-card__footer">
           <Link to={`/thread/${post.id}`} className="post-card__comments-link">

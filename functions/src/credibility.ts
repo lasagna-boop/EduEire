@@ -80,6 +80,132 @@ export type CredibilityResult = {
   breakdown: CredibilityBreakdown;
 };
 
+/** Written on each thread/post so every input used for the last run lives on one document. */
+export type CredibilityInputsDocument = {
+  authorId: string;
+  kind: "thread" | "comment";
+  modelVersion: string;
+  threadId?: string;
+  postId?: string | null;
+
+  studentEmailConfirmed: boolean;
+  accessMode: "full" | "read_only";
+  authorCreatedAt: unknown | null;
+  subscriptions: string[];
+
+  approvedPostsCount: number;
+  approvedCommentsCount: number;
+  rejectedContentCount: number;
+  pendingReviewCount: number;
+
+  cumulativeThreadScore: number;
+  cumulativeCommentScore: number;
+  helpfulMarksCount: number;
+
+  totalThreadsCount: number;
+  totalCommentsCount: number;
+  lastContributionAt: unknown | null;
+
+  reportsAgainstCount: number;
+  confirmedReportsCount: number;
+
+  /** Parent thread community (for comments: thread’s communityId). */
+  threadCommunityId: string | null;
+  contentScore: number;
+  contentModerationStatus: string;
+  contentToxicityScore: number;
+  contentSpamScore: number;
+  contentCreatedAt: unknown | null;
+  /** 0 for threads; length of ancestorIds for comments. */
+  commentAncestorDepth: number;
+};
+
+export const CREDIBILITY_MODEL_VERSION = "v1";
+
+function num(v: unknown, fallback = 0): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+}
+
+export function serializeThreadCredibilityInput(
+  authorId: string,
+  threadId: string,
+  input: ThreadCredibilityInput
+): CredibilityInputsDocument {
+  const a = input.author;
+  const t = input.thread;
+  return {
+    authorId,
+    kind: "thread",
+    modelVersion: CREDIBILITY_MODEL_VERSION,
+    threadId,
+    postId: null,
+    studentEmailConfirmed: !!a.studentEmailConfirmed,
+    accessMode: a.accessMode === "read_only" ? "read_only" : "full",
+    authorCreatedAt: a.createdAt ?? null,
+    subscriptions: Array.isArray(a.subscriptions) ? [...a.subscriptions] : [],
+    approvedPostsCount: num(a.approvedPostsCount, 0),
+    approvedCommentsCount: num(a.approvedCommentsCount, 0),
+    rejectedContentCount: num(a.rejectedContentCount, 0),
+    pendingReviewCount: num(a.pendingReviewCount, 0),
+    cumulativeThreadScore: num(a.cumulativeThreadScore, 0),
+    cumulativeCommentScore: num(a.cumulativeCommentScore, 0),
+    helpfulMarksCount: num(a.helpfulMarksCount, 0),
+    totalThreadsCount: num(a.totalThreadsCount, 0),
+    totalCommentsCount: num(a.totalCommentsCount, 0),
+    lastContributionAt: a.lastContributionAt ?? null,
+    reportsAgainstCount: num(a.reportsAgainstCount, 0),
+    confirmedReportsCount: num(a.confirmedReportsCount, 0),
+    threadCommunityId: t.communityId ?? null,
+    contentScore: num(t.score, 0),
+    contentModerationStatus: String(t.moderationStatus ?? "approved"),
+    contentToxicityScore: num(t.toxicityScore, 0),
+    contentSpamScore: num(t.spamScore, 0),
+    contentCreatedAt: t.createdAt ?? null,
+    commentAncestorDepth: 0,
+  };
+}
+
+export function serializeCommentCredibilityInput(
+  authorId: string,
+  threadId: string,
+  postId: string,
+  input: CommentCredibilityInput
+): CredibilityInputsDocument {
+  const a = input.author;
+  const c = input.comment;
+  const depth = Array.isArray(c.ancestorIds) ? c.ancestorIds.length : 0;
+  return {
+    authorId,
+    kind: "comment",
+    modelVersion: CREDIBILITY_MODEL_VERSION,
+    threadId,
+    postId,
+    studentEmailConfirmed: !!a.studentEmailConfirmed,
+    accessMode: a.accessMode === "read_only" ? "read_only" : "full",
+    authorCreatedAt: a.createdAt ?? null,
+    subscriptions: Array.isArray(a.subscriptions) ? [...a.subscriptions] : [],
+    approvedPostsCount: num(a.approvedPostsCount, 0),
+    approvedCommentsCount: num(a.approvedCommentsCount, 0),
+    rejectedContentCount: num(a.rejectedContentCount, 0),
+    pendingReviewCount: num(a.pendingReviewCount, 0),
+    cumulativeThreadScore: num(a.cumulativeThreadScore, 0),
+    cumulativeCommentScore: num(a.cumulativeCommentScore, 0),
+    helpfulMarksCount: num(a.helpfulMarksCount, 0),
+    totalThreadsCount: num(a.totalThreadsCount, 0),
+    totalCommentsCount: num(a.totalCommentsCount, 0),
+    lastContributionAt: a.lastContributionAt ?? null,
+    reportsAgainstCount: num(a.reportsAgainstCount, 0),
+    confirmedReportsCount: num(a.confirmedReportsCount, 0),
+    threadCommunityId: input.threadContext?.communityId ?? null,
+    contentScore: num(c.score, 0),
+    contentModerationStatus: String(c.moderationStatus ?? "approved"),
+    contentToxicityScore: num(c.toxicityScore, 0),
+    contentSpamScore: num(c.spamScore, 0),
+    contentCreatedAt: c.createdAt ?? null,
+    commentAncestorDepth: depth,
+  };
+}
+
 function clamp01(v: number): number {
   if (Number.isNaN(v) || !Number.isFinite(v)) return 0;
   if (v <= 0) return 0;

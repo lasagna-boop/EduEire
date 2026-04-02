@@ -7,11 +7,7 @@ import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/fire
 import { initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { moderate } from "./moderation";
-import {
-  computeCommentCredibility,
-  computeThreadCredibility,
-  type UserCredibilitySnapshot,
-} from "./credibility";
+import { recalculateCommentCredibility, recalculateThreadCredibility } from "./credibilityRecalc";
 
 initializeApp();
 const db = getFirestore();
@@ -58,91 +54,6 @@ function sameStringArray(a: unknown, b: unknown): boolean {
 
 async function bumpUserStats(userId: string, updates: Record<string, unknown>) {
   await db.doc(`users/${userId}`).set(updates, { merge: true });
-}
-
-async function loadAuthorSnapshot(userId: string): Promise<UserCredibilitySnapshot | null> {
-  const snap = await db.doc(`users/${userId}`).get();
-  if (!snap.exists) return null;
-  return snap.data() as UserCredibilitySnapshot;
-}
-
-async function recalculateThreadCredibility(threadId: string): Promise<void> {
-  const threadRef = db.doc(`threads/${threadId}`);
-  const threadSnap = await threadRef.get();
-  if (!threadSnap.exists) return;
-
-  const threadData = threadSnap.data() as Record<string, unknown>;
-  const authorId = threadData.authorId as string | undefined;
-  if (!authorId) return;
-
-  const author = await loadAuthorSnapshot(authorId);
-  if (!author) return;
-
-  const result = computeThreadCredibility({
-    author,
-    thread: {
-      score: threadData.score as number | undefined,
-      moderationStatus: threadData.moderationStatus as string | undefined,
-      toxicityScore: threadData.toxicityScore as number | undefined,
-      spamScore: threadData.spamScore as number | undefined,
-      createdAt: threadData.createdAt,
-      communityId: threadData.communityId as string | undefined,
-    },
-  });
-
-  await threadRef.set(
-    {
-      credibilityScore: result.score,
-      credibilityModelVersion: "v1",
-      credibilityScoreUpdatedAt: FieldValue.serverTimestamp(),
-      credibilityBreakdown: result.breakdown,
-    },
-    { merge: true }
-  );
-}
-
-async function recalculateCommentCredibility(
-  threadId: string,
-  postId: string
-): Promise<void> {
-  const threadRef = db.doc(`threads/${threadId}`);
-  const postRef = db.doc(`threads/${threadId}/posts/${postId}`);
-
-  const [threadSnap, postSnap] = await Promise.all([threadRef.get(), postRef.get()]);
-  if (!threadSnap.exists || !postSnap.exists) return;
-
-  const threadData = threadSnap.data() as Record<string, unknown>;
-  const postData = postSnap.data() as Record<string, unknown>;
-  const authorId = postData.authorId as string | undefined;
-  if (!authorId) return;
-
-  const author = await loadAuthorSnapshot(authorId);
-  if (!author) return;
-
-  const result = computeCommentCredibility({
-    author,
-    threadContext: {
-      communityId: threadData.communityId as string | undefined,
-    },
-    comment: {
-      score: postData.score as number | undefined,
-      moderationStatus: postData.moderationStatus as string | undefined,
-      toxicityScore: postData.toxicityScore as number | undefined,
-      spamScore: postData.spamScore as number | undefined,
-      createdAt: postData.createdAt,
-      ancestorIds: postData.ancestorIds as string[] | undefined,
-    },
-  });
-
-  await postRef.set(
-    {
-      credibilityScore: result.score,
-      credibilityModelVersion: "v1",
-      credibilityScoreUpdatedAt: FieldValue.serverTimestamp(),
-      credibilityBreakdown: result.breakdown,
-    },
-    { merge: true }
-  );
 }
 
 async function updateUserModerationStats(
@@ -292,9 +203,11 @@ export const trackThreadModerationReports = onDocumentWritten(
       updates.confirmedReportsCount = FieldValue.increment(1);
     }
 
-    if (Object.keys(updates).length === 0) return;
-    updates.credibilityScoreUpdatedAt = FieldValue.serverTimestamp();
-    await bumpUserStats(authorId, updates);
+    if (Object.keys(updates).length > 0) {
+      updates.credibilityScoreUpdatedAt = FieldValue.serverTimestamp();
+      await bumpUserStats(authorId, updates);
+    }
+    // Always refresh credibility when moderation status changes (not only when report counters move).
     await recalculateThreadCredibility(event.params.threadId);
   }
 );
@@ -328,9 +241,10 @@ export const trackCommentModerationReports = onDocumentWritten(
       updates.confirmedReportsCount = FieldValue.increment(1);
     }
 
-    if (Object.keys(updates).length === 0) return;
-    updates.credibilityScoreUpdatedAt = FieldValue.serverTimestamp();
-    await bumpUserStats(authorId, updates);
+    if (Object.keys(updates).length > 0) {
+      updates.credibilityScoreUpdatedAt = FieldValue.serverTimestamp();
+      await bumpUserStats(authorId, updates);
+    }
     await recalculateCommentCredibility(event.params.threadId, event.params.postId);
   }
 );

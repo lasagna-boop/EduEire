@@ -1,0 +1,713 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.2821949,
+          53.3562487
+        ]
+      },
+      "properties": {
+        "id": "tud_grangegorman",
+        "name": "TU Dublin Grangegorman Campus",
+        "category": "university_campus",
+        "communityId": "tud",
+        "address": "TU Dublin, Grangegorman Lower",
+        "city": "Dublin 7",
+        "county": "Dublin",
+        "eircode": "D07 C972",
+        "source_url": "https://www.tudublin.ie/explore/our-campuses/grangegorman/getting-here/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.62,
+        "notes": "Official campus address; representative point for main Grangegorman campus (Central Quad area)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.277932,
+          53.353849
+        ]
+      },
+      "properties": {
+        "id": "tud_east_quad",
+        "name": "TU Dublin East Quad",
+        "category": "university_campus",
+        "communityId": "tud",
+        "address": "TU Dublin, East Quad, Grangegorman Lower",
+        "city": "Dublin 7",
+        "county": "Dublin",
+        "eircode": "D07 XFF2",
+        "source_url": "https://www.tudublin.ie/explore/our-campuses/grangegorman/getting-here/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-04-01",
+        "confidence_score": 0.9,
+        "notes": "Official campus address and coordinates provided."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.283511,
+          53.356395
+        ]
+      },
+      "properties": {
+        "id": "tud_academic_hub_library",
+        "name": "TU Dublin Academic Hub and Library",
+        "category": "public_library",
+        "communityId": "tud",
+        "address": "TU Dublin Academic Hub and Library, Grangegorman Lower",
+        "city": "Dublin 7",
+        "county": "Dublin",
+        "eircode": null,
+        "source_url": "https://www.tudublin.ie/for-students/student-services-and-support/library-services/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-04-01",
+        "confidence_score": 0.88,
+        "notes": "Grangegorman campus library / academic hub; coordinates provided for map marker."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.2665,
+          53.33851
+        ]
+      },
+      "properties": {
+        "id": "tud_aungier_street",
+        "name": "TU Dublin Aungier Street Campus",
+        "category": "university_campus",
+        "communityId": "tud",
+        "address": "TU Dublin, Aungier Street",
+        "city": "Dublin 2",
+        "county": "Dublin",
+        "eircode": "D02 HW71",
+        "source_url": "https://www.tudublin.ie/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-04-01",
+        "confidence_score": 0.85,
+        "notes": "City campus address and coordinates provided (Aungier St, Dublin 2)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.3634551,
+          53.2910768
+        ]
+      },
+      "properties": {
+        "id": "tud_tallaght",
+        "name": "TU Dublin Tallaght Campus",
+        "category": "university_campus",
+        "communityId": "tud",
+        "address": "TU Dublin, Blessington Road",
+        "city": "Tallaght, Dublin 24",
+        "county": "Dublin",
+        "eircode": "D24 FKT9",
+        "source_url": "https://www.tudublin.ie/explore/our-campuses/tallaght/getting-here/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.93,
+        "notes": "Address from official campus page; coordinates from the official page-linked Google Maps destination."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.378565,
+          53.405582
+        ]
+      },
+      "properties": {
+        "id": "tud_blanchardstown",
+        "name": "TU Dublin Blanchardstown Campus",
+        "category": "university_campus",
+        "communityId": "tud",
+        "address": "TU Dublin, Blanchardstown Road North",
+        "city": "Dublin 15",
+        "county": "Dublin",
+        "eircode": "D15 YV78",
+        "source_url": "https://www.tudublin.ie/explore/our-campuses/blanchardstown/transportparking/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.84,
+        "notes": "Official campus address; coordinates matched to same campus/eircode from a 2026 event listing using the exact TU Dublin sports hall address."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.2546,
+          53.3438
+        ]
+      },
+      "properties": {
+        "id": "trinity_main",
+        "name": "Trinity College Dublin Main Campus",
+        "category": "university_campus",
+        "communityId": "trinity",
+        "address": "Trinity College Dublin, College Green",
+        "city": "Dublin 2",
+        "county": "Dublin",
+        "eircode": null,
+        "source_url": "https://www.tcd.ie/contacts/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.72,
+        "notes": "Official main postal address confirmed; coordinate is a representative main-gate geocode and should be spot-checked against Trinity campus mapping before production import."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.2210844,
+          53.3070294
+        ]
+      },
+      "properties": {
+        "id": "ucd_belfield",
+        "name": "University College Dublin Belfield Campus",
+        "category": "university_campus",
+        "communityId": "ucd",
+        "address": "University College Dublin, Belfield",
+        "city": "Dublin 4",
+        "county": "Dublin",
+        "eircode": "D04 V1W8",
+        "source_url": "https://www.ucd.ie/contact-details/contact-ucd/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.9,
+        "notes": "Main campus address from official contact page; coordinates from the official UCD student-desk page's linked campus map (Tierney Building on Belfield campus)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -8.49197,
+          51.89304
+        ]
+      },
+      "properties": {
+        "id": "ucc_main",
+        "name": "University College Cork Main Campus",
+        "category": "university_campus",
+        "communityId": "ucc",
+        "address": "University College Cork, College Road",
+        "city": "Cork",
+        "county": "Cork",
+        "eircode": "T12 K8AF",
+        "source_url": "https://www.ucc.ie/en/sustainability-institute/contactus/maincampusucc/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.98,
+        "notes": "Official page provides address, eircode, and grid reference for UCC Main Campus."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.0594,
+          53.2796
+        ]
+      },
+      "properties": {
+        "id": "galway_main",
+        "name": "University of Galway Main Campus",
+        "category": "university_campus",
+        "communityId": "galway",
+        "address": "University of Galway",
+        "city": "Galway",
+        "county": "Galway",
+        "eircode": "H91 TK33",
+        "source_url": "https://www.universityofgalway.ie/media/buildingsoffice/files/EIRCODES-%28University-of-Galway%29-2025.pdf",
+        "source_type": "official university PDF",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.9,
+        "notes": "Main university eircode from official mail-services page; representative coordinate taken from the official 2025 campus eircodes-and-coordinates PDF (Arts/Science concourse cluster on main campus)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -8.57675,
+          52.672583
+        ]
+      },
+      "properties": {
+        "id": "ul_castletroy",
+        "name": "University of Limerick Main Campus",
+        "category": "university_campus",
+        "communityId": "ul",
+        "address": "University of Limerick",
+        "city": "Limerick",
+        "county": "Limerick",
+        "eircode": "V94 T9PX",
+        "source_url": "https://www.ul.ie/contact-information",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.76,
+        "notes": "Official main postal address confirmed; coordinate is a representative point near the main entrance/Kemmy Business School area and should be manually confirmed on the UL campus map."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "dcu_glasnevin",
+        "name": "Dublin City University Glasnevin Campus",
+        "category": "university_campus",
+        "communityId": "dcu",
+        "address": "John & Aileen O'Reilly Library, DCU Glasnevin Campus, Collins Avenue Extension",
+        "city": "Dublin 9",
+        "county": "Dublin",
+        "eircode": "D09 V209",
+        "source_url": "https://www.dcu.ie/ocoo/dcu-eircodes-postal-addresses",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.7,
+        "notes": "Official campus default eircode and postal address published; coordinate should be resolved from DCU campus map or exact library geocode before production import."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "dcu_stpatricks",
+        "name": "Dublin City University St Patrick's Campus",
+        "category": "university_campus",
+        "communityId": "dcu",
+        "address": "Reception, Block F, DCU St Patrick's Campus, Drumcondra Road Upper",
+        "city": "Dublin 9",
+        "county": "Dublin",
+        "eircode": "D09 YT18",
+        "source_url": "https://www.dcu.ie/ocoo/dcu-eircodes-postal-addresses",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.7,
+        "notes": "Official campus default eircode and reception address published; coordinate should be resolved from DCU campus mapping before production import."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "maynooth_north",
+        "name": "Maynooth University North Campus",
+        "category": "university_campus",
+        "communityId": "maynooth",
+        "address": "Iontas Building, North Campus, Maynooth University",
+        "city": "Maynooth",
+        "county": "Kildare",
+        "eircode": "W23 NPY6",
+        "source_url": "https://www.maynoothuniversity.ie/social-sciences-institute/contact-us",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.68,
+        "notes": "North Campus building/eircode verified from official university page; representative campus coordinate still needs manual confirmation."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "maynooth_south",
+        "name": "Maynooth University South Campus",
+        "category": "university_campus",
+        "communityId": "maynooth",
+        "address": "Maynooth University",
+        "city": "Maynooth",
+        "county": "Kildare",
+        "eircode": "W23 X021",
+        "source_url": "https://www.maynoothuniversity.ie/study-maynooth/undergraduate-studies/contact-us",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.55,
+        "notes": "Official university address/eircode verified; campus-side classification (south vs general university address) should be manually checked."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.261848,
+          53.339016
+        ]
+      },
+      "properties": {
+        "id": "rcsi_ststephensgreen",
+        "name": "RCSI 123 St Stephen's Green Campus",
+        "category": "university_campus",
+        "communityId": "rcsi",
+        "address": "123 St Stephen's Green, Dublin 2, D02 YN77",
+        "city": "Dublin 2",
+        "county": "Dublin",
+        "eircode": "D02 YN77",
+        "source_url": "https://www.rcsi.com/dublin/student-life/life-on-campus/our-campus/123-st-stephens-green",
+        "source_type": "official university site",
+        "last_verified_date": "2026-04-01",
+        "confidence_score": 0.78,
+        "notes": "Official campus address; coordinates provided for map marker."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "nci_ifsc",
+        "name": "National College of Ireland IFSC Campus",
+        "category": "university_campus",
+        "communityId": "nci",
+        "address": "National College of Ireland, Mayor Street, IFSC",
+        "city": "Dublin 1",
+        "county": "Dublin",
+        "eircode": "D01 K6W2",
+        "source_url": "https://www.vacancies.ncirl.ie/contact-us",
+        "source_type": "official college site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.77,
+        "notes": "Official IFSC campus address and eircode published; coordinate should be added from exact geocode before production import."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.24855,
+          53.34325
+        ]
+      },
+      "properties": {
+        "id": "library_dublin_city_archive",
+        "name": "Dublin City Library and Archive",
+        "category": "public_library",
+        "communityId": null,
+        "address": "139-144 Pearse Street",
+        "city": "Dublin 2",
+        "county": "Dublin",
+        "eircode": "D02 HE37",
+        "source_url": "https://support.librariesireland.ie/hc/en-ie/articles/18020129182225-Our-Location",
+        "source_type": "library authority / Libraries Ireland",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.89,
+        "notes": "Official library authority page states full address and eircode; representative geocode for building entrance (spot-check on map)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -8.47638,
+          51.89667
+        ]
+      },
+      "properties": {
+        "id": "library_cork_city",
+        "name": "Cork City Library",
+        "category": "public_library",
+        "communityId": null,
+        "address": "57-61 Grand Parade",
+        "city": "Cork",
+        "county": "Cork",
+        "eircode": "T12 NT99",
+        "source_url": "https://www.corkcitylibraries.ie/en/locations/city-library/adult-lending/",
+        "source_type": "city library authority",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.9,
+        "notes": "Official Cork City Libraries page gives branch address and eircode; representative geocode for Grand Parade branch (spot-check on map)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9.05305,
+          53.27219
+        ]
+      },
+      "properties": {
+        "id": "library_galway_city",
+        "name": "Galway City Library",
+        "category": "public_library",
+        "communityId": null,
+        "address": "St Augustine Street",
+        "city": "Galway",
+        "county": "Galway",
+        "eircode": "H91 R6WF",
+        "source_url": "https://www.galwaycity.ie/services/your-council/your-council-services/libraries",
+        "source_type": "local authority site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.82,
+        "notes": "Official city site confirms library branch address; representative geocode for St Augustine Street branch (spot-check on map)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -8.62495,
+          52.66385
+        ]
+      },
+      "properties": {
+        "id": "library_limerick_city",
+        "name": "Limerick City Library",
+        "category": "public_library",
+        "communityId": null,
+        "address": "Barrow House, Michael Street",
+        "city": "Limerick",
+        "county": "Limerick",
+        "eircode": "V94 RF63",
+        "source_url": "https://www.limerick.ie/discover/eat-see-do/family-friendly/fun-things-to-do/libraries/limerick-city-library",
+        "source_type": "local authority site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.92,
+        "notes": "Official Limerick.ie listing provides full address and eircode; representative geocode for Michael Street branch (spot-check on map)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.3739,
+          53.2858
+        ]
+      },
+      "properties": {
+        "id": "library_tallaght",
+        "name": "Tallaght Library",
+        "category": "public_library",
+        "communityId": null,
+        "address": "Library Square, The Square",
+        "city": "Tallaght, Dublin 24",
+        "county": "Dublin",
+        "eircode": null,
+        "source_url": "https://www.sdcc.ie/en/services/sport-and-recreation/libraries/find-a-library/tallaght-library/",
+        "source_type": "local authority site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.66,
+        "notes": "South Dublin County Council library branch chosen for student relevance; representative geocode for The Square / Library Square area (spot-check on map)."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.3634551,
+          53.2910768
+        ]
+      },
+      "properties": {
+        "id": "hub_tud_tallaght",
+        "name": "TU Dublin Student Hub Tallaght",
+        "category": "student_hub",
+        "communityId": "tud",
+        "address": "Tallaght Campus, ground floor",
+        "city": "Tallaght, Dublin 24",
+        "county": "Dublin",
+        "eircode": "D24 FKT9",
+        "source_url": "https://www.tudublin.ie/for-students/student-services-and-support/student-hubs/contact-student-hubs/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.81,
+        "notes": "Official student-services page confirms Student Hub presence on Tallaght campus ground floor; marker uses parent-campus coordinate until a desk-level point is confirmed."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.2210844,
+          53.3070294
+        ]
+      },
+      "properties": {
+        "id": "hub_ucd_student_centre",
+        "name": "UCD Student Centre",
+        "category": "student_hub",
+        "communityId": "ucd",
+        "address": "UCD Student Centre, Belfield Campus, Clonskeagh",
+        "city": "Dublin 4",
+        "county": "Dublin",
+        "eircode": null,
+        "source_url": "https://www.ucd.ie/studentcentre/newsopportunities/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.75,
+        "notes": "Official postal address confirmed; marker uses a representative Belfield-campus point pending exact building geocode."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "hub_dcu_advice_support",
+        "name": "DCU Student Advice & Support Centre",
+        "category": "student_hub",
+        "communityId": "dcu",
+        "address": "Ground floor, Henry Grattan Building, DCU Glasnevin Campus",
+        "city": "Dublin 9",
+        "county": "Dublin",
+        "eircode": "D09 Y074",
+        "source_url": "https://www.dcu.ie/studentsupport",
+        "source_type": "official university site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.83,
+        "notes": "Official page confirms building/location; exact marker should be taken from DCU building map or geocoder using the building eircode."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.2546,
+          53.3438
+        ]
+      },
+      "properties": {
+        "id": "study_trinity_ussher",
+        "name": "Ussher Library / Kinsella Hall",
+        "category": "study_zone",
+        "communityId": "trinity",
+        "address": "Trinity College Dublin Main Campus (Nassau Street side)",
+        "city": "Dublin 2",
+        "county": "Dublin",
+        "eircode": null,
+        "source_url": "https://www.tcd.ie/library/opening-hours/kinsella-hall/",
+        "source_type": "official university library site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.73,
+        "notes": "Official library site identifies Kinsella Hall as a 24/7 study space in the Ussher Library; marker uses representative main-campus coordinate until library-level geocode is confirmed."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.2210844,
+          53.3070294
+        ]
+      },
+      "properties": {
+        "id": "study_ucd_jamesjoyce",
+        "name": "UCD James Joyce Library Study Zones",
+        "category": "study_zone",
+        "communityId": "ucd",
+        "address": "James Joyce Library, University College Dublin, Belfield",
+        "city": "Dublin 4",
+        "county": "Dublin",
+        "eircode": null,
+        "source_url": "https://www.ucd.ie/library/use/studyzones/",
+        "source_type": "official university library site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.82,
+        "notes": "Official UCD Library page documents study zones in the James Joyce Library; marker uses representative Belfield-campus point pending exact library geocode."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.278209,
+          53.352484
+        ]
+      },
+      "properties": {
+        "id": "study_tud_lower_house",
+        "name": "Lower House",
+        "category": "study_zone",
+        "communityId": "tud",
+        "address": "TU Dublin, Grangegorman, Dublin 7, D07 N6R2",
+        "city": "Dublin 7",
+        "county": "Dublin",
+        "eircode": "D07 N6R2",
+        "source_url": "https://www.tudublin.ie/explore/our-campuses/grangegorman/getting-here/",
+        "source_type": "official university site",
+        "last_verified_date": "2026-04-01",
+        "confidence_score": 0.88,
+        "notes": "TU Dublin Grangegorman study zone (Lower House); coordinates provided for map marker."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "id": "study_dcu_oreilly",
+        "name": "DCU O'Reilly Library Study Spaces",
+        "category": "study_zone",
+        "communityId": "dcu",
+        "address": "O'Reilly Library, Glasnevin Campus",
+        "city": "Dublin 9",
+        "county": "Dublin",
+        "eircode": "D09 V209",
+        "source_url": "https://www.dcu.ie/library/floor-plan-oreilly-library",
+        "source_type": "official university library site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.84,
+        "notes": "Official DCU Library floor-plan page documents study spaces; exact marker should be derived from the O'Reilly Library map or eircode geocode."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -8.57675,
+          52.672583
+        ]
+      },
+      "properties": {
+        "id": "study_ul_glucksman",
+        "name": "UL Glucksman Library Bookable Student Spaces",
+        "category": "study_zone",
+        "communityId": "ul",
+        "address": "Glucksman Library, University of Limerick",
+        "city": "Limerick",
+        "county": "Limerick",
+        "eircode": "V94 T9PX",
+        "source_url": "https://www.ul.ie/library/use-the-library/book-a-room-in-the-library",
+        "source_type": "official university library site",
+        "last_verified_date": "2026-03-31",
+        "confidence_score": 0.74,
+        "notes": "Official UL Library page documents bookable student spaces; marker uses representative main-campus point until exact library coordinate is confirmed."
+      }
+    }
+  ]
+}

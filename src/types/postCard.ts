@@ -12,4 +12,7 @@ export type PostCardPost = {
   isFlash?: boolean;
   /** Thread posted with anonymous author (display only; real name for admins) */
   isAnonymous?: boolean;
+  /** Admin-only: Cloud Function credibility 0–100 */
+  credibilityScore?: number;
+  credibilityModelVersion?: string;
 };

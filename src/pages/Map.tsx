@@ -24,24 +24,49 @@ const CATEGORY_META: Record<MapCategory, { label: string; icon: string }> = {
   study_zone: { label: "Study Zones", icon: "🧠" },
 };
 
-const ORANGE_PIN_SVG = encodeURIComponent(`
+/** Pin fill colours — must match `.map-page__legend-item--*` in map.css */
+const CATEGORY_PIN_FILL: Record<MapCategory, string> = {
+  university_campus: "#ff9f1c",
+  public_library: "#2d6a4f",
+  student_hub: "#2563eb",
+  study_zone: "#7c3aed",
+};
+
+function encodePinSvg(fill: string): string {
+  const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41">
-  <path d="M12.5 0C5.596 0 0 5.596 0 12.5C0 22.2 12.5 41 12.5 41S25 22.2 25 12.5C25 5.596 19.404 0 12.5 0Z" fill="#FF9F1C"/>
+  <path d="M12.5 0C5.596 0 0 5.596 0 12.5C0 22.2 12.5 41 12.5 41S25 22.2 25 12.5C25 5.596 19.404 0 12.5 0Z" fill="${fill}"/>
   <circle cx="12.5" cy="12.5" r="5" fill="#FFFFFF"/>
-</svg>
-`);
+</svg>`;
+  return encodeURIComponent(svg.trim());
+}
 
-const defaultMarkerIcon = L.icon({
-  iconRetinaUrl: `data:image/svg+xml;charset=UTF-8,${ORANGE_PIN_SVG}`,
-  iconUrl: `data:image/svg+xml;charset=UTF-8,${ORANGE_PIN_SVG}`,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+function makeLeafletPinIcon(fill: string): L.Icon {
+  const encoded = encodePinSvg(fill);
+  return L.icon({
+    iconRetinaUrl: `data:image/svg+xml;charset=UTF-8,${encoded}`,
+    iconUrl: `data:image/svg+xml;charset=UTF-8,${encoded}`,
+    shadowUrl: markerShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  });
+}
 
-L.Marker.prototype.options.icon = defaultMarkerIcon;
+const MARKER_ICON_BY_CATEGORY: Record<MapCategory, L.Icon> = {
+  university_campus: makeLeafletPinIcon(CATEGORY_PIN_FILL.university_campus),
+  public_library: makeLeafletPinIcon(CATEGORY_PIN_FILL.public_library),
+  student_hub: makeLeafletPinIcon(CATEGORY_PIN_FILL.student_hub),
+  study_zone: makeLeafletPinIcon(CATEGORY_PIN_FILL.study_zone),
+};
+
+function markerIconForCategory(category: string): L.Icon {
+  if (CATEGORY_ORDER.includes(category as MapCategory)) {
+    return MARKER_ICON_BY_CATEGORY[category as MapCategory];
+  }
+  return MARKER_ICON_BY_CATEGORY.university_campus;
+}
 
 function RemoveLeafletPrefix() {
   const map = useMap();
@@ -187,7 +212,7 @@ export default function MapPage() {
 
           <MarkerClusterGroup chunkedLoading>
             {filteredPoints.map((point) => (
-            <Marker key={point.id} position={[point.lat, point.lng]}>
+            <Marker key={point.id} position={[point.lat, point.lng]} icon={markerIconForCategory(point.category)}>
               <Popup>
                 <div className="map-page__popup">
                   <p className="map-page__category">{point.category.replace(/_/g, " ")}</p>

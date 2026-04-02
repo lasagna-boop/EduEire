@@ -282,6 +282,9 @@ export type FlaggedItem = {
   moderationMatches: string[];
   toxicityScore?: number;
   spamScore?: number;
+  /** Cloud Function–computed credibility 0–100 (threads & comments only) */
+  credibilityScore?: number;
+  credibilityModelVersion?: string;
   createdAt?: unknown;
 };
 
@@ -294,6 +297,8 @@ type FlaggedThreadDoc = {
   moderationMatches?: string[];
   toxicityScore?: number;
   spamScore?: number;
+  credibilityScore?: number;
+  credibilityModelVersion?: string;
   createdAt?: unknown;
 };
 
@@ -304,6 +309,8 @@ type FlaggedCommentDoc = {
   moderationMatches?: string[];
   toxicityScore?: number;
   spamScore?: number;
+  credibilityScore?: number;
+  credibilityModelVersion?: string;
   createdAt?: unknown;
 };
 
@@ -340,6 +347,8 @@ export async function listFlaggedThreads(): Promise<FlaggedItem[]> {
       moderationMatches: data.moderationMatches ?? [],
       toxicityScore: data.toxicityScore,
       spamScore: data.spamScore,
+      credibilityScore: data.credibilityScore,
+      credibilityModelVersion: data.credibilityModelVersion,
       createdAt: data.createdAt,
     });
   }
@@ -364,6 +373,8 @@ export async function listFlaggedThreads(): Promise<FlaggedItem[]> {
         moderationMatches: data.moderationMatches ?? [],
         toxicityScore: data.toxicityScore,
         spamScore: data.spamScore,
+        credibilityScore: data.credibilityScore,
+        credibilityModelVersion: data.credibilityModelVersion,
         createdAt: data.createdAt,
       });
     }
@@ -423,6 +434,8 @@ export type Thread = {
   isAnonymous?: boolean;
   /** legacy field from older data */
   university?: string;
+  credibilityScore?: number;
+  credibilityModelVersion?: string;
 };
 
 // basic shape of a post doc in "threads/{threadId}/posts"

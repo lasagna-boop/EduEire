@@ -6,7 +6,7 @@ export type CommunityLocation = {
 };
 
 export const COMMUNITY_LOCATIONS: readonly CommunityLocation[] = [
-  { communityId: "tud", city: "Dublin", lat: 53.3377, lng: -6.2665 },
+  { communityId: "tud", city: "Dublin", lat: 53.3562487, lng: -6.2821949 },
   { communityId: "trinity", city: "Dublin", lat: 53.3438, lng: -6.2546 },
   { communityId: "ucd", city: "Dublin", lat: 53.3077, lng: -6.2229 },
   { communityId: "ucc", city: "Cork", lat: 51.8922, lng: -8.4923 },

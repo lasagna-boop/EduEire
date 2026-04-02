@@ -23,6 +23,8 @@ export function threadToPostCardPost(
     postCount,
     isFlash: !!t.flashExpiresAt,
     isAnonymous: t.isAnonymous === true,
+    credibilityScore: t.credibilityScore,
+    credibilityModelVersion: t.credibilityModelVersion,
   };
 }
 

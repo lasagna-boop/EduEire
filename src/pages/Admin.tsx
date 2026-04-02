@@ -38,6 +38,13 @@ function spamScoreColor(score: number): string {
   return "#2d6a4f";
 }
 
+/** 0–100: higher is more credible in the model */
+function credibilityScoreColor(score: number): string {
+  if (score >= 70) return "#2d6a4f";
+  if (score >= 40) return "#b08900";
+  return "#c1121f";
+}
+
 export default function Admin() {
   const { user: fbUser } = useAuth();
 
@@ -170,6 +177,26 @@ export default function Admin() {
                   >
                     Spam Score: {((item.spamScore ?? 0) * 100).toFixed(1)}%
                   </div>
+
+                  {item.type !== "flair" ? (
+                    <div
+                      className="admin-card__credibility"
+                      style={{
+                        color:
+                          item.credibilityScore != null
+                            ? credibilityScoreColor(item.credibilityScore)
+                            : "#718096",
+                      }}
+                    >
+                      Credibility score:{" "}
+                      {item.credibilityScore != null
+                        ? `${item.credibilityScore}/100`
+                        : "— (not computed yet)"}
+                      {item.credibilityModelVersion
+                        ? ` · model ${item.credibilityModelVersion}`
+                        : ""}
+                    </div>
+                  ) : null}
 
                   <div className="admin-card__actions">
                     <button
