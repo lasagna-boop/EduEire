@@ -18,15 +18,15 @@ export type UniversityOfficialSite = {
 
 export const UNIVERSITY_OFFICIAL_SITES: readonly UniversityOfficialSite[] = [
   {
-    id: "tcd",
-    shortName: "TCD",
-    name: "Trinity College Dublin",
-    officialUrl: "https://www.tcd.ie",
+    id: "tud",
+    shortName: "TU Dublin",
+    name: "Technological University Dublin",
+    officialUrl: "https://www.tudublin.ie",
     region: "dublin",
     description:
-      "Ireland's highest ranked university, in the heart of Dublin. A historic hub of excellence since 1592.",
-    badge: "popular",
-    storagePath: "universities/Trinity_College_-_Great_Court_02.jpg",
+      "Ireland's first technological university, spanning city-centre and campus locations with industry-focused programmes.",
+    storagePath:
+      "universities/Technological_University_Dublin_Desktop_984x398_Header_Banner_936256a319.webp",
     imageUrl: null,
   },
   {
@@ -41,6 +41,7 @@ export const UNIVERSITY_OFFICIAL_SITES: readonly UniversityOfficialSite[] = [
     storagePath: "universities/UCD-1000x500.jpg",
     imageUrl: null,
   },
+
   {
     id: "galway",
     shortName: "Galway",
@@ -53,6 +54,19 @@ export const UNIVERSITY_OFFICIAL_SITES: readonly UniversityOfficialSite[] = [
     storagePath: "universities/university_of_galway.png",
     imageUrl: null,
   },
+  {
+  id: "tcd",
+    shortName: "TCD",
+    name: "Trinity College Dublin",
+    officialUrl: "https://www.tcd.ie",
+    region: "dublin",
+    description:
+      "Ireland's highest ranked university, in the heart of Dublin. A historic hub of excellence since 1592.",
+    badge: "popular",
+    storagePath: "universities/Trinity_College_-_Great_Court_02.jpg",
+    imageUrl: null,
+  },
+
   {
     id: "ucc",
     shortName: "UCC",
@@ -98,18 +112,7 @@ export const UNIVERSITY_OFFICIAL_SITES: readonly UniversityOfficialSite[] = [
     storagePath: "universities/Maynooth-1000x500.jpg",
     imageUrl: null,
   },
-  {
-    id: "tud",
-    shortName: "TU Dublin",
-    name: "Technological University Dublin",
-    officialUrl: "https://www.tudublin.ie",
-    region: "dublin",
-    description:
-      "Ireland's first technological university, spanning city-centre and campus locations with industry-focused programmes.",
-    storagePath:
-      "universities/Technological_University_Dublin_Desktop_984x398_Header_Banner_936256a319.webp",
-    imageUrl: null,
-  },
+
   {
     id: "nci",
     shortName: "NCI",
