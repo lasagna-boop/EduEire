@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import { publicFirebaseStorageDownloadUrl } from "../lib/publicStorageUrl";
 import {
@@ -19,7 +18,6 @@ const SIDEBAR_ITEMS: { region: UniversityExplorerRegion | "all"; label: string; 
 export default function UniversityWebsites() {
   const [region, setRegion] = useState<UniversityExplorerRegion | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  /** Paths that 404 or fail to load — show placeholder (e.g. file not uploaded yet). */
   const [brokenStoragePaths, setBrokenStoragePaths] = useState<ReadonlySet<string>>(() => new Set());
 
   const markStorageImageBroken = useCallback((storagePath: string) => {
@@ -50,100 +48,96 @@ export default function UniversityWebsites() {
   };
 
   return (
-    <div className="feed-page university-explorer">
-      <AppHeader activeTopLink="communities" />
+    <div className="feed-page">
+      <AppHeader
+        activeTopLink="communities"
+        search={{
+          placeholder: "Search institutions…",
+          value: searchQuery,
+          onChange: setSearchQuery,
+        }}
+      />
 
-      <div className="university-explorer__layout">
-        <aside className="university-explorer__sidebar" aria-label="Region filters">
-          <div className="university-explorer__sidebar-head">
-            <h2 className="university-explorer__sidebar-title">EduÉire Explorer</h2>
-            <p className="university-explorer__sidebar-sub">Academic directory</p>
-          </div>
-          <nav className="university-explorer__sidebar-nav">
-            {SIDEBAR_ITEMS.map((item) => {
-              const active = region === item.region;
-              return (
-                <button
-                  key={item.region}
-                  type="button"
-                  className={`university-explorer__nav-item ${active ? "university-explorer__nav-item--active" : ""}`}
-                  onClick={() => setRegion(item.region)}
-                >
-                  <span className="material-symbols-outlined university-explorer__nav-icon" aria-hidden>
-                    {item.icon}
-                  </span>
-                  <span className="university-explorer__nav-label">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-          <div className="university-explorer__sidebar-foot">
-            <button type="button" className="university-explorer__filter-btn" onClick={resetFilters}>
+      <main className="feed-page__main">
+        <aside className="feed-page__left-sidebar" aria-label="Region filters">
+          <div className="universities-page__sidebar-card">
+            <div className="universities-page__sidebar-head">
+              <h2 className="universities-page__sidebar-title">Explorer</h2>
+              <p className="universities-page__sidebar-sub">Filter by region</p>
+            </div>
+            <nav className="universities-page__nav">
+              {SIDEBAR_ITEMS.map((item) => {
+                const active = region === item.region;
+                return (
+                  <button
+                    key={item.region}
+                    type="button"
+                    className={`universities-page__nav-item ${active ? "universities-page__nav-item--active" : ""}`}
+                    onClick={() => setRegion(item.region)}
+                  >
+                    <span className="material-symbols-outlined universities-page__nav-icon" aria-hidden>
+                      {item.icon}
+                    </span>
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+            <button
+              type="button"
+              className="feed-page__btn feed-page__btn--filled universities-page__reset-btn"
+              onClick={resetFilters}
+            >
               Reset filters
             </button>
           </div>
         </aside>
 
-        <div className="university-explorer__main-wrap">
-          <main className="university-explorer__main">
-            <section className="university-explorer__hero">
-              <h1 className="university-explorer__hero-title">University Explorer</h1>
-              <p className="university-explorer__hero-lead">
-                Discover Ireland&apos;s leading academic institutions — open official sites, compare campuses, and
-                connect with EduÉire communities.
-              </p>
-              <label className="university-explorer__search">
-                <span className="material-symbols-outlined university-explorer__search-icon" aria-hidden>
-                  search
-                </span>
-                <input
-                  type="search"
-                  className="university-explorer__search-input"
-                  placeholder="Search institutions…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoComplete="off"
-                />
-              </label>
+        <div className="feed-page__content universities-page">
+          <div className="flairs-page__header">
+            <h1 className="flairs-page__title">University Explorer</h1>
+            <p className="flairs-page__subtitle">
+              Open official college websites and browse campus photos in one place.
+            </p>
+          </div>
 
-              <div className="university-explorer__chips" role="tablist" aria-label="Filter by region">
-                {SIDEBAR_ITEMS.map((item) => {
-                  const active = region === item.region;
-                  return (
-                    <button
-                      key={`chip-${item.region}`}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      className={`university-explorer__chip ${active ? "university-explorer__chip--active" : ""}`}
-                      onClick={() => setRegion(item.region)}
-                    >
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
+          <div className="universities-page__chips" role="tablist" aria-label="Filter by region">
+            {SIDEBAR_ITEMS.map((item) => {
+              const active = region === item.region;
+              return (
+                <button
+                  key={`chip-${item.region}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  className={`universities-page__chip ${active ? "universities-page__chip--active" : ""}`}
+                  onClick={() => setRegion(item.region)}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
 
-            {filtered.length === 0 ? (
-              <p className="university-explorer__empty">No universities match your filters.</p>
-            ) : (
-              <div className="university-explorer__grid">
-                {filtered.map((u) => {
-                  const fromStorage = publicFirebaseStorageDownloadUrl(u.storagePath);
-                  const candidateSrc = u.imageUrl ?? fromStorage;
-                  const hideStorageImage =
-                    !u.imageUrl && fromStorage != null && brokenStoragePaths.has(u.storagePath);
-                  const imageSrc = hideStorageImage ? null : candidateSrc;
+          {filtered.length === 0 ? (
+            <p className="feed-page__empty universities-page__empty">No universities match your filters.</p>
+          ) : (
+            <div className="universities-page__grid">
+              {filtered.map((u) => {
+                const fromStorage = publicFirebaseStorageDownloadUrl(u.storagePath);
+                const candidateSrc = u.imageUrl ?? fromStorage;
+                const hideStorageImage =
+                  !u.imageUrl && fromStorage != null && brokenStoragePaths.has(u.storagePath);
+                const imageSrc = hideStorageImage ? null : candidateSrc;
 
-                  return (
-                  <article key={u.id} className="university-explorer__card">
-                    <div className="university-explorer__card-media">
+                return (
+                  <article key={u.id} className="universities-page__card">
+                    <div className="universities-page__card-media">
                       {imageSrc ? (
                         <img
                           src={imageSrc}
                           alt=""
-                          className="university-explorer__card-img"
+                          className="universities-page__card-img"
                           loading="lazy"
                           decoding="async"
                           onError={() => {
@@ -153,20 +147,20 @@ export default function UniversityWebsites() {
                           }}
                         />
                       ) : (
-                        <div className="university-explorer__card-placeholder" aria-hidden>
-                          <span className="material-symbols-outlined university-explorer__card-placeholder-icon">
+                        <div className="universities-page__card-placeholder" aria-hidden>
+                          <span className="material-symbols-outlined universities-page__card-placeholder-icon">
                             photo_camera
                           </span>
-                          <span className="university-explorer__card-placeholder-text">{u.storagePath}</span>
+                          <span className="universities-page__card-placeholder-text">{u.storagePath}</span>
                         </div>
                       )}
                       {u.badge ? (
-                        <div className="university-explorer__card-badges">
+                        <div className="universities-page__card-badges">
                           <span
                             className={
                               u.badge === "popular"
-                                ? "university-explorer__badge university-explorer__badge--popular"
-                                : "university-explorer__badge university-explorer__badge--new"
+                                ? "universities-page__badge universities-page__badge--popular"
+                                : "universities-page__badge universities-page__badge--new"
                             }
                           >
                             {u.badge === "popular" ? "Popular" : "New threads"}
@@ -174,53 +168,28 @@ export default function UniversityWebsites() {
                         </div>
                       ) : null}
                     </div>
-                    <div className="university-explorer__card-body">
-                      <h3 className="university-explorer__card-title">{u.name}</h3>
-                      <p className="university-explorer__card-desc">{u.description}</p>
-                      <div className="university-explorer__card-actions">
-                        <a
-                          href={u.officialUrl}
-                          className="university-explorer__card-cta"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Official website
-                          <span className="material-symbols-outlined university-explorer__card-cta-icon" aria-hidden>
-                            arrow_forward
-                          </span>
-                        </a>
-                      </div>
+                    <div className="universities-page__card-body">
+                      <h3 className="universities-page__card-title">{u.name}</h3>
+                      <p className="universities-page__card-desc">{u.description}</p>
+                      <a
+                        href={u.officialUrl}
+                        className="feed-page__btn feed-page__btn--filled universities-page__card-cta"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Official website
+                        <span className="material-symbols-outlined universities-page__card-cta-icon" aria-hidden>
+                          arrow_forward
+                        </span>
+                      </a>
                     </div>
                   </article>
-                  );
-                })}
-              </div>
-            )}
-
-            <footer className="university-explorer__footer">
-              <div className="university-explorer__footer-grid">
-                <div>
-                  <span className="university-explorer__footer-brand">EduÉire</span>
-                  <p className="university-explorer__footer-copy">
-                    Connecting students and campuses across Ireland. Match{" "}
-                    <code className="university-explorer__footer-code">storagePath</code> to files in Storage (public
-                    read for <code className="university-explorer__footer-code">universities/</code>) or set{" "}
-                    <code className="university-explorer__footer-code">imageUrl</code> for an external URL.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="university-explorer__footer-heading">Quick links</h4>
-                  <div className="university-explorer__footer-links">
-                    <Link to="/feed">Communities feed</Link>
-                    <Link to="/map">Study map</Link>
-                  </div>
-                </div>
-              </div>
-              <p className="university-explorer__footer-legal">EduÉire — student communities in Ireland</p>
-            </footer>
-          </main>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
