@@ -560,6 +560,7 @@ export async function listThreads(opts: {
   authorId?: string;
   pageSize?: number;
   cursor?: QueryDocumentSnapshot<DocumentData> | null;
+  sortBy?: "lastActivity" | "createdAt" | "score" | "credibilityScore";
 }) {
   const pageSize = opts.pageSize ?? 20;
   const base = collection(db, "threads");
@@ -583,7 +584,17 @@ export async function listThreads(opts: {
     return { threads, nextCursor };
   }
 
-  const parts: QueryConstraint[] = [orderBy("lastActivityAt", "desc"), limit(pageSize)];
+  const sortFieldMap: Record<
+    NonNullable<typeof opts.sortBy>,
+    "lastActivityAt" | "createdAt" | "score" | "credibilityScore"
+  > = {
+    lastActivity: "lastActivityAt",
+    createdAt: "createdAt",
+    score: "score",
+    credibilityScore: "credibilityScore",
+  };
+  const sortField = sortFieldMap[opts.sortBy ?? "lastActivity"];
+  const parts: QueryConstraint[] = [orderBy(sortField, "desc"), limit(pageSize)];
 
   if (opts.communityId) {
     parts.unshift(where("communityId", "==", opts.communityId));

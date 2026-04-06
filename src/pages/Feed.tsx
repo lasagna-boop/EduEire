@@ -17,6 +17,8 @@ import { threadsToPostCardPosts } from "../lib/threadPostMap";
 import { useAuth } from "../context/useAuth";
 import type { PostCardPost } from "../types/postCard";
 
+type FeedSort = "recent" | "mostLiked" | "credibility";
+
 export default function Feed() {
   const { user: fbUser, canWrite, accessMode } = useAuth();
 
@@ -27,6 +29,7 @@ export default function Feed() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
   const [mobileSectionsOpen, setMobileSectionsOpen] = useState(false);
+  const [feedSort, setFeedSort] = useState<FeedSort>("recent");
 
   const [adminUser, setAdminUser] = useState(false);
   const [communityId, setCommunityId] = useState("");
@@ -43,11 +46,17 @@ export default function Feed() {
     }
   };
 
-  const load = async () => {
+  const load = async (sortMode: FeedSort = feedSort) => {
     setError(null);
     setLoading(true);
     try {
-      const { threads: allThreads } = await listThreads({ pageSize: 30 });
+      const sortBy =
+        sortMode === "recent"
+          ? "createdAt"
+          : sortMode === "mostLiked"
+            ? "score"
+            : "credibilityScore";
+      const { threads: allThreads } = await listThreads({ pageSize: 30, sortBy });
       const now = Date.now();
       const threads = allThreads.filter((t: Thread) => threadVisibleInFeed(t, now));
       const mapped = await threadsToPostCardPosts(threads, "feed");
@@ -152,6 +161,54 @@ export default function Feed() {
           </div>
 
           {error && <p className="feed-page__error">{error}</p>}
+
+          <div className="feed-sort-switch" role="group" aria-label="Feed sort mode">
+            <button
+              type="button"
+              className={[
+                "feed-sort-switch__btn",
+                feedSort === "recent" ? "feed-sort-switch__btn--active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={() => {
+                setFeedSort("recent");
+                void load("recent");
+              }}
+            >
+              Recent
+            </button>
+            <button
+              type="button"
+              className={[
+                "feed-sort-switch__btn",
+                feedSort === "mostLiked" ? "feed-sort-switch__btn--active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={() => {
+                setFeedSort("mostLiked");
+                void load("mostLiked");
+              }}
+            >
+              Most Liked
+            </button>
+            <button
+              type="button"
+              className={[
+                "feed-sort-switch__btn",
+                feedSort === "credibility" ? "feed-sort-switch__btn--active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={() => {
+                setFeedSort("credibility");
+                void load("credibility");
+              }}
+            >
+              Credibility (beta)
+            </button>
+          </div>
 
           {selectedSection ? (
             <div className="feed-page__sidebar-card" style={{ marginBottom: 16 }}>

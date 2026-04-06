@@ -50,6 +50,12 @@
 }
 
 @media (max-width: 600px) {
+  .feed-sort-switch {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
   .feed-page__header {
     padding: 8px 12px;
   }
