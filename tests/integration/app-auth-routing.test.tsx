@@ -23,10 +23,9 @@ function renderAppAt(path: string, auth: Partial<AuthCtx>) {
   );
 }
 
-/**
- * Integration-level checks: React Router + auth gate + real route tree (no browser).
- * Complements isolated unit tests and Playwright e2e (real Chromium).
- */
+
+ //Integration-level checks of React Router + auth gate +real route tree (no browser).
+ //isolated unit tests and Playwright e2e (Chromium).
 describe("App routing with mocked auth", () => {
   it("sends unauthenticated users away from /feed to the login screen", async () => {
     renderAppAt("/feed", { user: null, loading: false });

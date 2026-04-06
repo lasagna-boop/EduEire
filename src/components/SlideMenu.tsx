@@ -48,6 +48,13 @@ export default function SlideMenu() {
           >
             Flair Topics
           </Link>
+          <Link
+            to="/universities"
+            className="slide-menu__item slide-menu__item--link"
+            onClick={close}
+          >
+            University Explorer
+          </Link>
           <h3 className="slide-menu__title">Communities</h3>
           {communities.map((c) => (
             <Link

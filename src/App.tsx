@@ -8,6 +8,7 @@ import ThreadDetail from "./pages/ThreadDetail";
 import Admin from "./pages/Admin";
 import Flairs from "./pages/Flairs";
 import MapPage from "./pages/Map";
+import UniversityWebsites from "./pages/UniversityWebsites";
 import { useAuth } from "./context/useAuth";
 
 export default function App() {
@@ -51,6 +52,10 @@ export default function App() {
       <Route
         path="/map"
         element={user ? <MapPage /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/universities"
+        element={user ? <UniversityWebsites /> : <Navigate to="/login" replace />}
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

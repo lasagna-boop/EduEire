@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// Deploy: firebase deploy --only storage
+// Campus hero images in /universities are public read; no client writes.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /universities/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
