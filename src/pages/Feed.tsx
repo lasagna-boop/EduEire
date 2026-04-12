@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import { CommunitiesSidebar, SECTION_OPTIONS } from "../components/CommunitiesSidebar";
 import { CreateThreadCard } from "../components/CreateThreadCard";
@@ -22,11 +22,14 @@ type FeedSort = "recent" | "mostLiked" | "credibility";
 export default function Feed() {
   const { user: fbUser, canWrite, accessMode } = useAuth();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const qFromUrl = searchParams.get("q") ?? "";
+
   const [posts, setPosts] = useState<PostCardPost[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(qFromUrl);
   const [selectedSection, setSelectedSection] = useState("");
   const [mobileSectionsOpen, setMobileSectionsOpen] = useState(false);
   const [feedSort, setFeedSort] = useState<FeedSort>("recent");
@@ -75,6 +78,24 @@ export default function Feed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    setSearchQuery(qFromUrl);
+  }, [qFromUrl]);
+
+  const handleSearchQueryChange = (value: string) => {
+    setSearchQuery(value);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        const trimmed = value.trim();
+        if (trimmed) next.set("q", trimmed);
+        else next.delete("q");
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
   const filteredPosts = posts.filter((p) => {
     const searchMatches =
       searchQuery.length === 0 ||
@@ -93,7 +114,7 @@ export default function Feed() {
         search={{
           placeholder: "Search posts",
           value: searchQuery,
-          onChange: setSearchQuery,
+          onChange: handleSearchQueryChange,
         }}
       />
 

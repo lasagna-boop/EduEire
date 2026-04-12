@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import { CommunitiesSidebar, SECTION_OPTIONS } from "../components/CommunitiesSidebar";
 import { CreateThreadCard } from "../components/CreateThreadCard";
@@ -28,6 +28,9 @@ function communityJoinButtonLabel(subLoading: boolean, isSubscribed: boolean): s
 
 export default function Community() {
   const { communityId } = useParams<{ communityId: string }>();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const qFromUrl = searchParams.get("q") ?? "";
   const { user: fbUser, canWrite, accessMode } = useAuth();
 
   const [community, setCommunity] = useState<CommunityType | null>(null);
@@ -37,7 +40,7 @@ export default function Community() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subLoading, setSubLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(qFromUrl);
   const [selectedSection, setSelectedSection] = useState("");
   const [mobileSectionsOpen, setMobileSectionsOpen] = useState(false);
 
@@ -95,6 +98,24 @@ export default function Community() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communityId, fbUser?.uid]);
 
+  useEffect(() => {
+    setSearchQuery(qFromUrl);
+  }, [qFromUrl]);
+
+  const handleSearchQueryChange = (value: string) => {
+    setSearchQuery(value);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        const trimmed = value.trim();
+        if (trimmed) next.set("q", trimmed);
+        else next.delete("q");
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
   const handleSubscribe = async () => {
     if (!fbUser || !communityId) return;
     setSubLoading(true);
@@ -132,7 +153,13 @@ export default function Community() {
         search={{
           placeholder: `Search in c/${communityId}`,
           value: searchQuery,
-          onChange: setSearchQuery,
+          onChange: handleSearchQueryChange,
+          onSubmit: () => {
+            if (!communityId) return;
+            const path = `/c/${communityId}`;
+            const q = searchQuery.trim();
+            navigate(q ? `${path}?q=${encodeURIComponent(q)}` : path, { replace: true });
+          },
         }}
       />
 
