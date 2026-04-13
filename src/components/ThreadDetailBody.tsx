@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import type { User } from "firebase/auth";
 import { CommentThread } from "./CommentThread";
+import { UserProfileLink } from "./UserProfileLink";
 import { formatFirestoreDay } from "../lib/firestoreFormat";
 import { useFlashCountdown } from "../hooks/useFlashCountdown";
 import { buildCommentTree, countCommentsInTree } from "../lib/commentTree";
@@ -121,7 +122,14 @@ export function ThreadDetailBody({
             </Link>
             <span>
               {" "}
-              @{authorLabel} • {formatFirestoreDay(thread.createdAt)}
+              <UserProfileLink
+                profileKey={thread.authorPublicHandle || thread.authorId}
+                label={authorLabel}
+                className="post-card__author-link"
+                anonymous={thread.isAnonymous === true}
+                viewerIsAdmin={viewerIsAdmin === true}
+              />{" "}
+              • {formatFirestoreDay(thread.createdAt)}
             </span>
           </div>
           <h1 className="thread-detail__title">{thread.title}</h1>

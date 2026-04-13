@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { UserProfileLink } from "./UserProfileLink";
 import { useAuth } from "../context/useAuth";
 import { getUserVote, voteOnThread, isAdmin, setModerationStatus, type Vote } from "../lib/firestore";
 import type { PostCardPost } from "../types/postCard";
@@ -146,7 +147,19 @@ export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
           <Link to={`/c/${post.communityId}`} className="post-card__community">
             c/{post.communityId}
           </Link>
-          <span>@{displayAuthor} • {post.createdAt}</span>
+          <span className="post-card__meta-detail">
+            <UserProfileLink
+              profileKey={post.authorProfileKey}
+              label={displayAuthor}
+              className="post-card__author-link"
+              anonymous={post.isAnonymous === true}
+              viewerIsAdmin={admin === true}
+            />
+            <span className="post-card__meta-separator" aria-hidden>
+              •
+            </span>
+            <span className="post-card__timestamp">{post.createdAt}</span>
+          </span>
         </div>
 
         <Link to={`/thread/${post.id}`} className="post-card__title-link">
@@ -182,7 +195,7 @@ export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
 
         <div className="post-card__footer">
           <Link to={`/thread/${post.id}`} className="post-card__comments-link">
-            💬 {post.postCount ?? 0} {(post.postCount ?? 0) === 1 ? "Comment" : "Comments"}
+            {post.postCount ?? 0} {(post.postCount ?? 0) === 1 ? "comment" : "comments"}
           </Link>
           {admin === true && (
             <button

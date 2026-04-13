@@ -86,6 +86,7 @@
   max-width: 620px;
   margin: 0 auto;
   position: relative;
+  min-width: 180px;
 }
 
 .landing__search-icon {
@@ -116,6 +117,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+}
+
+.landing__header-spacer {
+  flex: 1;
+  min-width: 0;
 }
 
 .landing__btn {
@@ -287,14 +294,51 @@
   border-radius: 24px;
   padding: 40px;
   color: #ffffff;
-  background: linear-gradient(135deg, #1a202c 0%, #2d6a4f 100%);
+  background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 45%, #1b4332 100%);
   box-shadow: 0 1px 3px rgba(26, 32, 44, 0.08);
+  isolation: isolate;
+}
+
+@keyframes landing-shader-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.landing__hero-shader {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  animation: landing-shader-fade-in 0.55s ease-out 0.12s forwards;
+}
+
+.landing__hero-canvas-root {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.landing__hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    rgba(27, 67, 50, 0.58) 0%,
+    rgba(45, 106, 79, 0.22) 42%,
+    rgba(255, 159, 28, 0.14) 100%
+  );
 }
 
 .landing__hero-content {
   max-width: 620px;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .landing__hero-badge {
@@ -371,7 +415,9 @@
   top: 0;
   width: 36%;
   height: 100%;
+  z-index: 1;
   background: linear-gradient(to left, rgba(255, 255, 255, 0.08), transparent);
+  pointer-events: none;
 }
 
 .landing__stats {
@@ -616,19 +662,41 @@
 }
 
 .landing__community-badge {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #2d6a4f;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #1b4332;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 8px rgba(26, 32, 44, 0.12);
 }
 
-.landing__community-badge--blue {
-  background: #2d6a4f;
+.landing__community-badge__shader-fallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 52%, #ff9f1c 100%);
+}
+
+.landing__community-badge-canvas {
+  border-radius: inherit;
+}
+
+.landing__community-badge canvas {
+  opacity: 0;
+  animation: landing-shader-fade-in 0.45s ease-out 0.1s forwards;
+}
+
+.landing__community-badge__emoji {
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
 
 .landing__community-name {
@@ -852,17 +920,32 @@
   .landing__top-links {
     display: none;
   }
+
+  .landing__btn--my-feed {
+    display: none;
+  }
 }
 
 @media (max-width: 900px) {
   .landing__header-inner {
-    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
+    flex-wrap: nowrap;
+  }
+
+  .landing__header-left {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .landing__logo-img {
+    height: 42px;
   }
 
   .landing__search {
-    order: 3;
-    width: 100%;
+    margin: 0;
     max-width: none;
+    min-width: 0;
   }
 
   .landing__layout {
@@ -888,21 +971,24 @@
 }
 
 @media (max-width: 640px) {
-  .landing__header-inner {
-    padding: 10px 12px;
-    gap: 10px;
+  .landing__search-icon {
+    left: 10px;
+    font-size: 0.82rem;
   }
 
-  .landing__logo-img {
-    height: 42px;
+  .landing__search-input {
+    font-size: 0.82rem;
+    padding: 9px 12px 9px 32px;
+  }
+
+  .landing__auth .landing__btn--ghost {
+    display: none;
   }
 
   .landing__auth {
-    width: 100%;
     justify-content: flex-end;
   }
 
-  .landing__btn--ghost,
   .landing__btn--filled {
     padding: 8px 12px;
     font-size: 0.78rem;
@@ -934,6 +1020,16 @@
 
   .landing__footer-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 440px) {
+  .landing__search--header {
+    display: none;
+  }
+
+  .landing__header--with-search .landing__header-spacer {
+    display: none;
   }
 }
 /* Landing page migrated to Tailwind utilities in src/pages/Landing.tsx */

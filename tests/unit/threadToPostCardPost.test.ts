@@ -25,6 +25,8 @@ describe("threadToPostCardPost", () => {
     expect(card.communityId).toBe("galway");
     expect(card.postCount).toBe(3);
     expect(card.author).toBe("Author");
+    expect(card.authorId).toBe("u1");
+    expect(card.authorProfileKey).toBe("u1");
   });
 
   it("uses communityId only when not in feed mode", () => {
@@ -36,5 +38,15 @@ describe("threadToPostCardPost", () => {
     });
     const card = threadToPostCardPost(t, 0, "default");
     expect(card.communityId).toBe("ucd");
+  });
+
+  it("uses authorPublicHandle for profile URL key when set", () => {
+    const t = thread({
+      id: "t3",
+      title: "Hi",
+      authorPublicHandle: "jane_doe",
+    });
+    const card = threadToPostCardPost(t, 0, "default");
+    expect(card.authorProfileKey).toBe("jane_doe");
   });
 });

@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { collection, getCountFromServer, query, where } from "firebase/firestore";
 import { useAuth } from "../context/useAuth";
 import AppHeader from "../components/AppHeader";
+import { LandingUniversityBadge } from "../components/LandingUniversityBadge";
 import PostCard from "../components/PostCard";
 import "../styles/landing.css";
 import {
@@ -19,6 +20,8 @@ import { db } from "../lib/firebase";
 import { threadVisibleInFeed } from "../lib/firestoreFormat";
 import { threadsToPostCardPosts } from "../lib/threadPostMap";
 import type { PostCardPost } from "../types/postCard";
+
+const LandingHeroShader = lazy(() => import("../components/LandingHeroShader"));
 
 /** Higher member count first; ties use curated seed order so the list is stable when counts are 0. */
 const COMMUNITY_SEED_ORDER = new Map(
@@ -50,6 +53,18 @@ export default function Landing() {
   const [verifiedStudentsCount, setVerifiedStudentsCount] = useState<number | null>(null);
   const [discussionsCount, setDiscussionsCount] = useState<number | null>(null);
   const [trendingPost, setTrendingPost] = useState<PostCardPost | null>(null);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setPrefersReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     const loadPopularUniversities = async () => {
@@ -241,6 +256,14 @@ export default function Landing() {
 
         <main className="landing__main">
           <section className="landing__hero">
+            {!prefersReducedMotion ? (
+              <div className="landing__hero-shader" aria-hidden>
+                <Suspense fallback={null}>
+                  <LandingHeroShader />
+                </Suspense>
+              </div>
+            ) : null}
+            {!prefersReducedMotion ? <div className="landing__hero-scrim" aria-hidden /> : null}
             <div className="landing__hero-content">
               <span className="landing__hero-badge">
                 <span className="landing__hero-dot" />
@@ -333,12 +356,10 @@ export default function Landing() {
                     aria-label={`Open discussions for ${community.fullName || community.name}`}
                   >
                     <div className="landing__community-info">
-                      <div
-                        className={`landing__community-badge ${index === 1 ? "landing__community-badge--blue" : ""}`}
-                        aria-hidden
-                      >
-                        🎓
-                      </div>
+                      <LandingUniversityBadge
+                        prefersReducedMotion={prefersReducedMotion}
+                        variantClass={index === 1 ? "landing__community-badge--blue" : ""}
+                      />
                       <div className="landing__community-text">
                         <div className="landing__community-name" title={community.fullName || community.name}>
                           {community.fullName || community.name}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { UserProfileLink } from "./UserProfileLink";
 import {
   getCommentVote,
   isAdmin,
@@ -147,7 +148,11 @@ export function CommentItem({
       </div>
       <div className="comment__body">
         <div className="comment__header">
-          <span className="comment__author">@{comment.authorName}</span>
+          <UserProfileLink
+            profileKey={comment.authorPublicHandle || comment.authorId}
+            label={comment.authorName}
+            className="comment__author comment__author--link"
+          />
           <span className="comment__time">
             {timeAgoFromFirestore(comment.createdAt)}
           </span>

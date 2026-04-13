@@ -423,6 +423,8 @@ export type Thread = {
   tags: string[];
   authorId: string;
   authorName: string;
+  /** Denormalized from users/{authorId}.publicHandle for clean profile URLs */
+  authorPublicHandle?: string;
   createdAt?: unknown;
   score?: number;
   // optional expiry for flash threads; when in the past, thread is hidden from feeds
@@ -444,6 +446,7 @@ export type Post = {
   body: string;
   authorId: string;
   authorName: string;
+  authorPublicHandle?: string;
   createdAt?: unknown;
   score?: number;
   moderationStatus?: string;
@@ -538,8 +541,15 @@ export async function createThread(input: {
     );
   }
 
+  const authorSnap = await getDoc(doc(db, "users", input.authorId));
+  const authorPublicHandle =
+    authorSnap.exists() && typeof authorSnap.data()?.publicHandle === "string"
+      ? (authorSnap.data()?.publicHandle as string)
+      : undefined;
+
   const ref = await addDoc(collection(db, "threads"), {
     ...input,
+    ...(authorPublicHandle ? { authorPublicHandle } : {}),
     isAnonymous: input.isAnonymous === true,
     toxicityScore: input.toxicityScore ?? 0,
     spamScore: input.spamScore ?? 0,
@@ -655,10 +665,17 @@ export async function addPost(
     ancestorIds = [...pAncestors, parentPostId];
   }
 
+  const authorSnap = await getDoc(doc(db, "users", input.authorId));
+  const authorPublicHandle =
+    authorSnap.exists() && typeof authorSnap.data()?.publicHandle === "string"
+      ? (authorSnap.data()?.publicHandle as string)
+      : undefined;
+
   const ref = await addDoc(collection(doc(db, "threads", threadId), "posts"), {
     body: input.body,
     authorId: input.authorId,
     authorName: input.authorName,
+    ...(authorPublicHandle ? { authorPublicHandle } : {}),
     toxicityScore: input.toxicityScore ?? 0,
     spamScore: input.spamScore ?? 0,
     parentPostId,

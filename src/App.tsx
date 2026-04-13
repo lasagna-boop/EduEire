@@ -4,6 +4,8 @@ import Login from "./pages/Login";
 import Feed from "./pages/Feed";
 import Community from "./pages/Community";
 import Profile from "./pages/Profile";
+import { LegacyUserProfileRedirect } from "./components/LegacyUserProfileRedirect";
+import UserProfile from "./pages/UserProfile";
 import ThreadDetail from "./pages/ThreadDetail";
 import Admin from "./pages/Admin";
 import Flairs from "./pages/Flairs";
@@ -40,6 +42,14 @@ export default function App() {
       <Route
         path="/profile"
         element={user ? <Profile /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/user/:userId"
+        element={user ? <LegacyUserProfileRedirect /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/u/:profileKey"
+        element={user ? <UserProfile /> : <Navigate to="/login" replace />}
       />
       <Route
         path="/admin"

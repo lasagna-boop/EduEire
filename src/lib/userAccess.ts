@@ -1,5 +1,10 @@
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import {
+  basePublicHandleFromUser,
+  isValidPublicHandle,
+  resolveUniquePublicHandle,
+} from "./publicProfileRoute";
 
 export type AccessMode = "full" | "read_only";
 
@@ -92,11 +97,20 @@ export async function ensureUserProfile(params: {
   const existing = await getDoc(userRef);
   const access = deriveAccessFromEmail(email);
 
+  const prev = existing.exists() ? existing.data() : {};
+  const prevHandle = typeof prev.publicHandle === "string" ? prev.publicHandle : null;
+  let publicHandle = prevHandle;
+  if (!publicHandle || !isValidPublicHandle(publicHandle)) {
+    const base = basePublicHandleFromUser(email, displayName);
+    publicHandle = await resolveUniquePublicHandle(uid, base);
+  }
+
   await setDoc(
     userRef,
     {
       email: email ?? null,
       displayName: displayName ?? null,
+      publicHandle,
       studentEmailConfirmed: access.studentEmailConfirmed,
       accessMode: access.accessMode,
       ...(!existing.exists() ? defaultCredibilityFields() : {}),

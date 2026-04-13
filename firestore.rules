@@ -31,9 +31,39 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    function userFlashStatusTextOk(data) {
+      return !data.keys().hasAny(['statusFlashText'])
+        || (data.statusFlashText is string && data.statusFlashText.size() <= 160);
+    }
+
+    function userProfileBioOk(data) {
+      return !data.keys().hasAny(['profileBio'])
+        || (data.profileBio is string && data.profileBio.size() <= 500);
+    }
+
+    function userPublicHandleOk() {
+      let after = request.resource.data;
+      return !after.keys().hasAny(['publicHandle'])
+        || (
+          after.publicHandle is string
+          && after.publicHandle.size() >= 2
+          && after.publicHandle.size() <= 30
+          && after.publicHandle.matches('^[a-z0-9][a-z0-9._-]*$')
+          && (
+            !resource.exists
+            || !resource.data.keys().hasAny(['publicHandle'])
+            || after.publicHandle == resource.data.publicHandle
+          )
+        );
+    }
+
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && userFlashStatusTextOk(request.resource.data)
+        && userProfileBioOk(request.resource.data)
+        && userPublicHandleOk();
       allow delete: if false;
     }
 

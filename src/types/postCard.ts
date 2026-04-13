@@ -5,6 +5,9 @@ export type PostCardPost = {
   body: string;
   communityId: string;
   tags: string[];
+  authorId: string;
+  /** For /u/:handle links; falls back to uid for older posts */
+  authorProfileKey: string;
   author: string;
   createdAt: string;
   score?: number;

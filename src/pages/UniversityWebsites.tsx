@@ -41,6 +41,8 @@ export default function UniversityWebsites() {
       );
     });
   }, [region, searchQuery]);
+  const activeRegionLabel =
+    SIDEBAR_ITEMS.find((item) => item.region === region)?.label ?? "All Universities";
 
   const resetFilters = () => {
     setRegion("all");
@@ -94,10 +96,21 @@ export default function UniversityWebsites() {
         </aside>
 
         <div className="feed-page__content universities-page">
-          <div className="flairs-page__header">
-            <h1 className="flairs-page__title">University Explorer</h1>
+          <div className="flairs-page__header universities-page__hero">
+            <div className="universities-page__hero-head">
+              <h1 className="flairs-page__title">University Explorer</h1>
+              <div className="universities-page__hero-badges" aria-label="Explorer summary">
+                <span className="universities-page__hero-badge">
+                  {filtered.length} {filtered.length === 1 ? "result" : "results"}
+                </span>
+                <span className="universities-page__hero-badge universities-page__hero-badge--soft">
+                  {activeRegionLabel}
+                </span>
+              </div>
+            </div>
             <p className="flairs-page__subtitle">
-              Open official college websites and browse campus photos in one place.
+              Find official university sites, scan campus vibes, and jump from exploration into
+              community threads.
             </p>
           </div>
 

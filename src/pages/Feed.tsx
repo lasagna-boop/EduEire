@@ -33,6 +33,7 @@ export default function Feed() {
   const [selectedSection, setSelectedSection] = useState("");
   const [mobileSectionsOpen, setMobileSectionsOpen] = useState(false);
   const [feedSort, setFeedSort] = useState<FeedSort>("recent");
+  const [streamScrolled, setStreamScrolled] = useState(false);
 
   const [adminUser, setAdminUser] = useState(false);
   const [communityId, setCommunityId] = useState("");
@@ -82,6 +83,21 @@ export default function Feed() {
     setSearchQuery(qFromUrl);
   }, [qFromUrl]);
 
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        setStreamScrolled(window.scrollY > 24);
+        ticking = false;
+      });
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const handleSearchQueryChange = (value: string) => {
     setSearchQuery(value);
     setSearchParams(
@@ -106,9 +122,18 @@ export default function Feed() {
     if (!selectedSection) return true;
     return p.tags.some((t) => t.toLowerCase() === selectedSection.toLowerCase());
   });
+  const visibleCount = filteredPosts.length;
 
   return (
-    <div className="feed-page">
+    <div
+      className={[
+        "feed-page",
+        "feed-page--stream",
+        streamScrolled ? "feed-page--stream-scrolled" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <AppHeader
         activeTopLink="communities"
         search={{
@@ -128,14 +153,34 @@ export default function Feed() {
         />
 
         <div className="feed-page__content">
+          <header className="feed-stream__intro">
+            <div className="feed-stream__intro-head">
+              <h1 className="feed-stream__title">Feed</h1>
+              <div className="feed-stream__intro-badges" aria-label="Feed overview">
+                <span className="feed-stream__badge">
+                  {visibleCount} {visibleCount === 1 ? "post" : "posts"}
+                </span>
+                {selectedSection ? (
+                  <span className="feed-stream__badge feed-stream__badge--soft">
+                    #{selectedSection}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <p className="feed-stream__subtitle">
+              Community updates across EduÉire, curated by topic and ranked your way.
+            </p>
+          </header>
+
           <div className="feed-mobile-sections">
             <button
               type="button"
               className="feed-mobile-sections__toggle"
               onClick={() => setMobileSectionsOpen((v) => !v)}
+              aria-expanded={mobileSectionsOpen}
             >
-              <span>Sections</span>
-              <span>{mobileSectionsOpen ? "▲" : "▼"}</span>
+              <span>Browse topics</span>
+              <span aria-hidden>{mobileSectionsOpen ? "▲" : "▼"}</span>
             </button>
             {mobileSectionsOpen ? (
               <div className="feed-page__sidebar-card">
@@ -181,69 +226,99 @@ export default function Feed() {
             />
           </div>
 
-          {error && <p className="feed-page__error">{error}</p>}
+          {error ? <p className="feed-page__error">{error}</p> : null}
 
-          <div className="feed-sort-switch" role="group" aria-label="Feed sort mode">
-            <button
-              type="button"
-              className={[
-                "feed-sort-switch__btn",
-                feedSort === "recent" ? "feed-sort-switch__btn--active" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              onClick={() => {
-                setFeedSort("recent");
-                void load("recent");
-              }}
+          <div className="feed-stream__toolbar">
+            <div
+              className="feed-sort-switch feed-sort-switch--stream"
+              role="group"
+              aria-label="Sort feed"
             >
-              Recent
-            </button>
-            <button
-              type="button"
-              className={[
-                "feed-sort-switch__btn",
-                feedSort === "mostLiked" ? "feed-sort-switch__btn--active" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              onClick={() => {
-                setFeedSort("mostLiked");
-                void load("mostLiked");
-              }}
-            >
-              Most Liked
-            </button>
-            <button
-              type="button"
-              className={[
-                "feed-sort-switch__btn",
-                feedSort === "credibility" ? "feed-sort-switch__btn--active" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              onClick={() => {
-                setFeedSort("credibility");
-                void load("credibility");
-              }}
-            >
-              Credibility (beta)
-            </button>
+              <button
+                type="button"
+                className={[
+                  "feed-sort-switch__btn",
+                  feedSort === "recent" ? "feed-sort-switch__btn--active" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => {
+                  setFeedSort("recent");
+                  void load("recent");
+                }}
+              >
+                Recent
+              </button>
+              <button
+                type="button"
+                className={[
+                  "feed-sort-switch__btn",
+                  feedSort === "mostLiked" ? "feed-sort-switch__btn--active" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => {
+                  setFeedSort("mostLiked");
+                  void load("mostLiked");
+                }}
+              >
+                Popular
+              </button>
+              <button
+                type="button"
+                className={[
+                  "feed-sort-switch__btn",
+                  feedSort === "credibility" ? "feed-sort-switch__btn--active" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => {
+                  setFeedSort("credibility");
+                  void load("credibility");
+                }}
+              >
+                <span className="feed-sort-switch__btn-inner">
+                  Credibility
+                  <span className="feed-sort-switch__beta">beta</span>
+                </span>
+              </button>
+            </div>
+
+            {selectedSection ? (
+              <button
+                type="button"
+                className="feed-stream__filter-chip"
+                onClick={() => setSelectedSection("")}
+                aria-label={`Clear topic filter: ${selectedSection}`}
+              >
+                <span className="feed-stream__filter-prefix">Topic</span>
+                <span className="feed-stream__filter-value">{selectedSection}</span>
+                <span className="feed-stream__filter-dismiss" aria-hidden>
+                  ×
+                </span>
+              </button>
+            ) : null}
           </div>
 
-          {selectedSection ? (
-            <div className="feed-page__sidebar-card" style={{ marginBottom: 16 }}>
-              <p>
-                Filtering by section: <strong>{selectedSection}</strong>
-              </p>
+          {loading && filteredPosts.length === 0 ? (
+            <div className="feed-stream__loading" role="status" aria-live="polite">
+              Loading posts…
             </div>
           ) : null}
-
-          {loading && filteredPosts.length === 0 ? (
-            <div className="feed-page__loading">Loading posts…</div>
-          ) : null}
           {!loading && filteredPosts.length === 0 ? (
-            <div className="feed-page__empty">No posts yet. Be the first to post!</div>
+            <div className="feed-stream__empty">
+              {searchQuery.trim() || selectedSection ? (
+                <>
+                  Nothing matches your filters.
+                  <strong>Try another search or clear the topic filter.</strong>
+                </>
+              ) : (
+                <>
+                  No posts yet.
+                  <strong>Start a thread and help the community grow.</strong>
+                </>
+              )}
+            </div>
           ) : null}
           {filteredPosts.length > 0 ? (
             <div className="feed-page__list">
@@ -255,14 +330,14 @@ export default function Feed() {
         </div>
 
         <aside className="feed-page__right-sidebar">
-          <div className="feed-page__sidebar-card">
+          <div className="feed-page__sidebar-card feed-stream__about-card">
             <h3>About EduÉire</h3>
             <p>
               Ireland&apos;s community for students and educators to connect, share, and learn
               together.
             </p>
             {adminUser ? (
-              <Link to="/admin" className="feed-page__btn feed-page__btn--outline" style={{ marginTop: 12 }}>
+              <Link to="/admin" className="feed-page__btn feed-page__btn--outline feed-stream__admin-link">
                 Admin
               </Link>
             ) : null}

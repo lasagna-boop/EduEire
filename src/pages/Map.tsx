@@ -152,8 +152,18 @@ export default function MapPage() {
         <aside className="map-page__sidebar">
           <div className="map-page__sidebar-inner">
             <div className="map-page__sidebar-head">
-              <h2>Locations</h2>
-              <p>Filter the Cluster</p>
+              <h2>Study Map</h2>
+              <p>Find a spot fast and jump straight into the community thread.</p>
+              <div className="map-page__sidebar-badges" aria-label="Map summary">
+                <span className="map-page__sidebar-badge">
+                  {visibleCount} {visibleCount === 1 ? "location" : "locations"}
+                </span>
+                {activeCategoryOnly ? (
+                  <span className="map-page__sidebar-badge map-page__sidebar-badge--soft">
+                    {CATEGORY_META[activeCategoryOnly].label}
+                  </span>
+                ) : null}
+              </div>
             </div>
 
             <nav className="map-page__category-list" aria-label="Map categories">
@@ -192,6 +202,7 @@ export default function MapPage() {
                 Showing {visibleCount} of {totalPoints} locations
               </span>
             )}
+            <span className="map-page__sidebar-foot-note">Tap any pin to open hottest threads.</span>
             {error ? <span className="map-page__error">{error}</span> : null}
           </div>
         </aside>

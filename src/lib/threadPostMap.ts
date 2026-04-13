@@ -17,6 +17,8 @@ export function threadToPostCardPost(
     body: t.body ?? "",
     communityId,
     tags: Array.isArray(t.tags) ? t.tags : [],
+    authorId: t.authorId,
+    authorProfileKey: t.authorPublicHandle || t.authorId,
     author: t.authorName || "anon",
     createdAt: formatFirestoreDay(t.createdAt),
     score: t.score ?? 0,
