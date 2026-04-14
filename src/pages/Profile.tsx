@@ -2,15 +2,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import AppHeader from "../components/AppHeader";
+import { UserProfileLink } from "../components/UserProfileLink";
 import { useExpiryCountdown } from "../hooks/useFlashCountdown";
 import { errorMessage } from "../lib/errors";
 import {
   getUserSubscriptions,
   getCommunity,
+  getUserSocialStats,
+  listFollowingUsers,
+  listTopActiveFollowers,
   unsubscribeFromCommunity,
   listThreads,
+  type CommunityActiveSubscriber,
   type Community as CommunityType,
   type Thread,
+  type UserProfileSummary,
 } from "../lib/firestore";
 import { parseFirestoreDate, threadVisibleOnProfile } from "../lib/firestoreFormat";
 import { threadsToPostCardPosts } from "../lib/threadPostMap";
@@ -110,7 +116,11 @@ export default function Profile() {
   const [myPosts, setMyPosts] = useState<PostCardPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [socialLoading, setSocialLoading] = useState(true);
   const [unsubbing, setUnsubbing] = useState<string | null>(null);
+  const [topFollowers, setTopFollowers] = useState<CommunityActiveSubscriber[]>([]);
+  const [followingUsers, setFollowingUsers] = useState<UserProfileSummary[]>([]);
+  const [socialStats, setSocialStats] = useState({ followingCount: 0, followersCount: 0 });
 
   const [flashText, setFlashText] = useState("");
   const [flashExpiresAt, setFlashExpiresAt] = useState<unknown | null>(null);
@@ -187,10 +197,33 @@ export default function Profile() {
     }
   };
 
+  const loadSocial = async () => {
+    if (!fbUser) return;
+    setSocialLoading(true);
+    try {
+      const [top, following, stats] = await Promise.all([
+        listTopActiveFollowers(fbUser.uid, 3),
+        listFollowingUsers(fbUser.uid, 24),
+        getUserSocialStats(fbUser.uid),
+      ]);
+      setTopFollowers(top);
+      setFollowingUsers(following);
+      setSocialStats(stats);
+    } catch (e) {
+      console.error("Failed to load social graph", e);
+      setTopFollowers([]);
+      setFollowingUsers([]);
+      setSocialStats({ followingCount: 0, followersCount: 0 });
+    } finally {
+      setSocialLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadSubscriptions();
     loadMyPosts();
     loadProfileSnippet();
+    loadSocial();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fbUser?.uid]);
 
@@ -408,14 +441,14 @@ export default function Profile() {
             <div className="profile-stats__divider" aria-hidden />
             <div className="profile-stats__item">
               <div className="profile-stats__value profile-stats__value--accent">
-                {loading ? "…" : subscriptions.length}
+                {socialLoading ? "…" : socialStats.followersCount}
               </div>
-              <div className="profile-stats__label">Communities</div>
+              <div className="profile-stats__label">Followers</div>
             </div>
             <div className="profile-stats__divider" aria-hidden />
             <div className="profile-stats__item">
-              <div className="profile-stats__value">{accessMode === "full" ? "Full" : "Read"}</div>
-              <div className="profile-stats__label">Access</div>
+              <div className="profile-stats__value">{socialLoading ? "…" : socialStats.followingCount}</div>
+              <div className="profile-stats__label">Following</div>
             </div>
           </div>
 
@@ -547,6 +580,50 @@ export default function Profile() {
                 ))}
               </ul>
             ) : null}
+          </div>
+          <div className="feed-page__sidebar-card">
+            <h3>Friends &amp; followers</h3>
+            <div className="feed-stream__active-box" aria-label="Top active followers">
+              <p className="feed-stream__active-title">Top active followers</p>
+              {socialLoading ? (
+                <p className="feed-stream__active-empty">Loading followers...</p>
+              ) : topFollowers.length > 0 ? (
+                <ul className="feed-stream__active-list">
+                  {topFollowers.map((user, idx) => (
+                    <li key={user.id}>
+                      <span className="feed-stream__active-rank">#{idx + 1}</span>
+                      <UserProfileLink
+                        profileKey={user.profileKey}
+                        label={user.name}
+                        className="feed-stream__active-name"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="feed-stream__active-empty">No followers yet.</p>
+              )}
+            </div>
+            <div className="profile-following-list">
+              <p className="profile-following-list__title">Following</p>
+              {socialLoading ? (
+                <p className="feed-stream__active-empty">Loading following...</p>
+              ) : followingUsers.length > 0 ? (
+                <ul className="profile-following-list__items">
+                  {followingUsers.slice(0, 6).map((user) => (
+                    <li key={user.id}>
+                      <UserProfileLink
+                        profileKey={user.profileKey}
+                        label={user.name}
+                        className="profile-following-list__link"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="feed-stream__active-empty">You are not following anyone yet.</p>
+              )}
+            </div>
           </div>
         </aside>
       </main>

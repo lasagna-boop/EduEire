@@ -296,6 +296,33 @@
   text-decoration: underline;
 }
 
+.profile-user-follow-btn {
+  margin-top: 10px;
+  border: 1px solid rgba(36, 74, 59, 0.28);
+  border-radius: 999px;
+  background: linear-gradient(120deg, #244a3b 0%, #2d6a4f 100%);
+  color: #f4f9f6;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    transform 160ms cubic-bezier(0.25, 1, 0.5, 1),
+    box-shadow 160ms cubic-bezier(0.25, 1, 0.5, 1),
+    opacity 160ms ease;
+}
+
+.profile-user-follow-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 16px -14px rgba(36, 74, 59, 0.9);
+}
+
+.profile-user-follow-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .profile-stats {
   display: flex;
   align-items: stretch;
@@ -608,6 +635,40 @@
   animation-delay: 130ms;
 }
 
+.profile-following-list {
+  margin-top: 12px;
+}
+
+.profile-following-list__title {
+  margin: 0 0 7px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #496175;
+}
+
+.profile-following-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-following-list__link {
+  color: #21384d;
+  text-decoration: none;
+  font-size: 0.83rem;
+  font-weight: 650;
+}
+
+.profile-following-list__link:hover {
+  color: #1f3b30;
+  text-decoration: underline;
+}
+
 @keyframes profile-card-enter {
   from {
     opacity: 0;
@@ -671,6 +732,10 @@
   }
 
   .profile-stats__item {
+    transition: none !important;
+  }
+
+  .profile-user-follow-btn {
     transition: none !important;
   }
 }

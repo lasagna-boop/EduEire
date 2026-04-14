@@ -57,13 +57,22 @@ service cloud.firestore {
         );
     }
 
+    function userFollowingIdsOk(data) {
+      return !data.keys().hasAny(['followingUserIds'])
+        || (
+          data.followingUserIds is list
+          && data.followingUserIds.size() <= 500
+        );
+    }
+
     match /users/{userId} {
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
         && request.auth.uid == userId
         && userFlashStatusTextOk(request.resource.data)
         && userProfileBioOk(request.resource.data)
-        && userPublicHandleOk();
+        && userPublicHandleOk()
+        && userFollowingIdsOk(request.resource.data);
       allow delete: if false;
     }
 

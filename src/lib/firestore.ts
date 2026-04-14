@@ -260,6 +260,182 @@ export async function unsubscribeFromCommunity(userId: string, communityId: stri
   await updateDoc(communityRef, { memberCount: increment(-1) });
 }
 
+export type CommunityActiveSubscriber = {
+  id: string;
+  profileKey: string;
+  name: string;
+  activityScore: number;
+};
+
+export type UserProfileSummary = {
+  id: string;
+  profileKey: string;
+  name: string;
+};
+
+export type UserSocialStats = {
+  followingCount: number;
+  followersCount: number;
+};
+
+function userDisplayName(data: { displayName?: string; email?: string }): string {
+  const displayName = data.displayName?.trim();
+  if (displayName) return displayName;
+  if (data.email?.includes("@")) return data.email.split("@")[0];
+  return "Member";
+}
+
+function userActivityScore(data: {
+  totalThreadsCount?: number;
+  totalCommentsCount?: number;
+  activeDays30d?: number;
+}): number {
+  const threads = Number(data.totalThreadsCount ?? 0);
+  const comments = Number(data.totalCommentsCount ?? 0);
+  const activeDays = Number(data.activeDays30d ?? 0);
+  return activeDays * 5 + threads * 2 + comments;
+}
+
+/**
+ * Returns top active subscribers for a community using user-level contribution signals.
+ * Activity score combines recent active days and total contributions.
+ */
+export async function listCommunityTopSubscribers(
+  communityId: string,
+  topN = 3
+): Promise<CommunityActiveSubscriber[]> {
+  const q = query(
+    collection(db, "users"),
+    where("subscriptions", "array-contains", communityId),
+    limit(80)
+  );
+  const snap = await getDocs(q);
+  const ranked = snap.docs
+    .map((d) => {
+      const data = d.data() as {
+        displayName?: string;
+        email?: string;
+        publicHandle?: string;
+        totalThreadsCount?: number;
+        totalCommentsCount?: number;
+        activeDays30d?: number;
+      };
+      const displayName = data.displayName?.trim();
+      const emailPrefix = data.email?.includes("@") ? data.email.split("@")[0] : null;
+      const name = displayName || emailPrefix || "Member";
+      const threads = Number(data.totalThreadsCount ?? 0);
+      const comments = Number(data.totalCommentsCount ?? 0);
+      const activeDays = Number(data.activeDays30d ?? 0);
+      const activityScore = activeDays * 5 + threads * 2 + comments;
+      return {
+        id: d.id,
+        profileKey: data.publicHandle?.trim() || d.id,
+        name,
+        activityScore,
+      } satisfies CommunityActiveSubscriber;
+    })
+    .sort((a, b) => {
+      if (b.activityScore !== a.activityScore) return b.activityScore - a.activityScore;
+      return a.name.localeCompare(b.name);
+    })
+    .slice(0, topN);
+  return ranked;
+}
+
+export async function followUser(userId: string, targetUserId: string): Promise<void> {
+  if (!userId || !targetUserId || userId === targetUserId) return;
+  await setDoc(
+    doc(db, "users", userId),
+    { followingUserIds: arrayUnion(targetUserId) },
+    { merge: true }
+  );
+}
+
+export async function unfollowUser(userId: string, targetUserId: string): Promise<void> {
+  if (!userId || !targetUserId || userId === targetUserId) return;
+  await setDoc(
+    doc(db, "users", userId),
+    { followingUserIds: arrayRemove(targetUserId) },
+    { merge: true }
+  );
+}
+
+export async function isFollowingUser(userId: string, targetUserId: string): Promise<boolean> {
+  if (!userId || !targetUserId || userId === targetUserId) return false;
+  const snap = await getDoc(doc(db, "users", userId));
+  if (!snap.exists()) return false;
+  const ids = Array.isArray(snap.data()?.followingUserIds) ? snap.data()?.followingUserIds : [];
+  return ids.includes(targetUserId);
+}
+
+export async function listFollowingUsers(userId: string, topN = 24): Promise<UserProfileSummary[]> {
+  const snap = await getDoc(doc(db, "users", userId));
+  if (!snap.exists()) return [];
+  const rawIds: unknown[] = Array.isArray(snap.data()?.followingUserIds)
+    ? (snap.data()?.followingUserIds as unknown[])
+    : [];
+  const ids = rawIds.filter((id): id is string => typeof id === "string").slice(0, topN);
+  if (ids.length === 0) return [];
+  const userDocs = await Promise.all(ids.map((id) => getDoc(doc(db, "users", id))));
+  const list: UserProfileSummary[] = [];
+  for (const d of userDocs) {
+    if (!d.exists()) continue;
+    const data = d.data() as { publicHandle?: string; displayName?: string; email?: string };
+    list.push({
+      id: d.id,
+      profileKey: data.publicHandle?.trim() || d.id,
+      name: userDisplayName(data),
+    });
+  }
+  return list;
+}
+
+export async function listTopActiveFollowers(
+  userId: string,
+  topN = 3
+): Promise<CommunityActiveSubscriber[]> {
+  if (!userId) return [];
+  const q = query(collection(db, "users"), where("followingUserIds", "array-contains", userId), limit(80));
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => {
+      const data = d.data() as {
+        displayName?: string;
+        email?: string;
+        publicHandle?: string;
+        totalThreadsCount?: number;
+        totalCommentsCount?: number;
+        activeDays30d?: number;
+      };
+      return {
+        id: d.id,
+        profileKey: data.publicHandle?.trim() || d.id,
+        name: userDisplayName(data),
+        activityScore: userActivityScore(data),
+      } satisfies CommunityActiveSubscriber;
+    })
+    .sort((a, b) => {
+      if (b.activityScore !== a.activityScore) return b.activityScore - a.activityScore;
+      return a.name.localeCompare(b.name);
+    })
+    .slice(0, topN);
+}
+
+export async function getUserSocialStats(userId: string): Promise<UserSocialStats> {
+  if (!userId) return { followersCount: 0, followingCount: 0 };
+  const [self, followers] = await Promise.all([
+    getDoc(doc(db, "users", userId)),
+    getDocs(query(collection(db, "users"), where("followingUserIds", "array-contains", userId), limit(200))),
+  ]);
+  const followingIds = self.exists() && Array.isArray(self.data()?.followingUserIds)
+    ? self.data()?.followingUserIds
+    : [];
+  return {
+    followingCount: followingIds.length,
+    followersCount: followers.size,
+  };
+}
+
 // check if user is subscribed to a community
 // ==================== ADMIN / MODERATION ====================
 

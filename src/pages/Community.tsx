@@ -4,6 +4,7 @@ import PostCard from "../components/PostCard";
 import { CommunitiesSidebar, SECTION_OPTIONS } from "../components/CommunitiesSidebar";
 import { CreateThreadCard } from "../components/CreateThreadCard";
 import AppHeader from "../components/AppHeader";
+import { UserProfileLink } from "../components/UserProfileLink";
 import {
   getCommunity,
   listThreads,
@@ -11,6 +12,8 @@ import {
   subscribeToCommunity,
   unsubscribeFromCommunity,
   getUserSubscriptions,
+  listCommunityTopSubscribers,
+  type CommunityActiveSubscriber,
   type Community as CommunityType,
   type Thread,
 } from "../lib/firestore";
@@ -43,6 +46,8 @@ export default function Community() {
   const [searchQuery, setSearchQuery] = useState(qFromUrl);
   const [selectedSection, setSelectedSection] = useState("");
   const [mobileSectionsOpen, setMobileSectionsOpen] = useState(false);
+  const [topSubscribers, setTopSubscribers] = useState<CommunityActiveSubscriber[]>([]);
+  const [topSubscribersLoading, setTopSubscribersLoading] = useState(false);
 
   const loadCommunity = async () => {
     if (!communityId) return;
@@ -90,11 +95,26 @@ export default function Community() {
     }
   };
 
+  const loadTopSubscribers = async () => {
+    if (!communityId) return;
+    setTopSubscribersLoading(true);
+    try {
+      const ranked = await listCommunityTopSubscribers(communityId, 3);
+      setTopSubscribers(ranked);
+    } catch (e) {
+      console.error("Failed to load top subscribers", e);
+      setTopSubscribers([]);
+    } finally {
+      setTopSubscribersLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadCommunity();
     loadCommunities();
     loadPosts();
     checkSubscription();
+    loadTopSubscribers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communityId, fbUser?.uid]);
 
@@ -145,9 +165,10 @@ export default function Community() {
     if (!selectedSection) return true;
     return p.tags.some((t) => t.toLowerCase() === selectedSection.toLowerCase());
   });
+  const visibleCount = filteredPosts.length;
 
   return (
-    <div className="feed-page">
+    <div className="feed-page feed-page--stream">
       <AppHeader
         activeTopLink="communities"
         search={{
@@ -174,33 +195,49 @@ export default function Community() {
         />
 
         <div className="feed-page__content">
-          <div className="community-header">
-            <div className="community-header__info">
-              <h1 className="community-header__title">c/{communityId}</h1>
-              {community && (
-                <p className="community-header__fullname">{community.fullName}</p>
-              )}
+          <header className="feed-stream__intro feed-stream__intro--community">
+            <div className="feed-stream__intro-head">
+              <div>
+                <h1 className="feed-stream__title">c/{communityId}</h1>
+                <p className="feed-stream__subtitle">
+                  {community?.fullName ??
+                    `University community feed for ${communityId}.`}
+                </p>
+              </div>
+              <div className="feed-stream__intro-badges" aria-label="Community overview">
+                <span className="feed-stream__badge">
+                  {visibleCount} {visibleCount === 1 ? "post" : "posts"}
+                </span>
+                {community ? (
+                  <span className="feed-stream__badge feed-stream__badge--soft">
+                    {community.memberCount} {community.memberCount === 1 ? "member" : "members"}
+                  </span>
+                ) : null}
+              </div>
             </div>
-            {fbUser && (
-              <button
-                type="button"
-                onClick={handleSubscribe}
-                disabled={subLoading}
-                className={`feed-page__btn ${isSubscribed ? "feed-page__btn--outline" : "feed-page__btn--filled"}`}
-              >
-                {communityJoinButtonLabel(subLoading, isSubscribed)}
-              </button>
-            )}
-          </div>
+            {fbUser ? (
+              <div className="feed-stream__community-actions">
+                <button
+                  type="button"
+                  onClick={handleSubscribe}
+                  disabled={subLoading}
+                  className={`feed-page__btn ${isSubscribed ? "feed-page__btn--outline" : "feed-page__btn--filled"}`}
+                >
+                  {communityJoinButtonLabel(subLoading, isSubscribed)}
+                </button>
+              </div>
+            ) : null}
+          </header>
 
           <div className="feed-mobile-sections">
             <button
               type="button"
               className="feed-mobile-sections__toggle"
               onClick={() => setMobileSectionsOpen((v) => !v)}
+              aria-expanded={mobileSectionsOpen}
             >
-              <span>Sections</span>
-              <span>{mobileSectionsOpen ? "▲" : "▼"}</span>
+              <span>Browse topics</span>
+              <span aria-hidden>{mobileSectionsOpen ? "▲" : "▼"}</span>
             </button>
             {mobileSectionsOpen ? (
               <div className="feed-page__sidebar-card">
@@ -244,22 +281,43 @@ export default function Community() {
             />
           </div>
 
-          {error && <p className="feed-page__error">{error}</p>}
+          {error ? <p className="feed-page__error">{error}</p> : null}
 
-          {selectedSection ? (
-            <div className="feed-page__sidebar-card" style={{ marginBottom: 16 }}>
-              <p>
-                Filtering by section: <strong>{selectedSection}</strong>
-              </p>
-            </div>
-          ) : null}
+          <div className="feed-stream__toolbar">
+            {selectedSection ? (
+              <button
+                type="button"
+                className="feed-stream__filter-chip"
+                onClick={() => setSelectedSection("")}
+                aria-label={`Clear topic filter: ${selectedSection}`}
+              >
+                <span className="feed-stream__filter-prefix">Topic</span>
+                <span className="feed-stream__filter-value">{selectedSection}</span>
+                <span className="feed-stream__filter-dismiss" aria-hidden>
+                  ×
+                </span>
+              </button>
+            ) : null}
+          </div>
 
           {loading && filteredPosts.length === 0 ? (
-            <div className="feed-page__loading">Loading posts…</div>
+            <div className="feed-stream__loading" role="status" aria-live="polite">
+              Loading posts…
+            </div>
           ) : null}
           {!loading && filteredPosts.length === 0 ? (
-            <div className="feed-page__empty">
-              No posts in c/{communityId} yet. Be the first to post!
+            <div className="feed-stream__empty">
+              {searchQuery.trim() || selectedSection ? (
+                <>
+                  Nothing matches your filters.
+                  <strong>Try another search or clear the topic filter.</strong>
+                </>
+              ) : (
+                <>
+                  No posts in c/{communityId} yet.
+                  <strong>Be the first to start a thread.</strong>
+                </>
+              )}
             </div>
           ) : null}
           {filteredPosts.length > 0 ? (
@@ -272,15 +330,31 @@ export default function Community() {
         </div>
 
         <aside className="feed-page__right-sidebar">
-          <div className="feed-page__sidebar-card">
+          <div className="feed-page__sidebar-card feed-stream__about-card">
             <h3>About c/{communityId}</h3>
             {community ? (
               <>
                 <p>{community.description || community.fullName}</p>
-                <div className="community-stats">
-                  <span className="community-stats__item">
-                    <strong>{community.memberCount}</strong> members
-                  </span>
+                <div className="feed-stream__active-box" aria-label="Top active subscribers">
+                  <p className="feed-stream__active-title">Top active subscribers</p>
+                  {topSubscribersLoading ? (
+                    <p className="feed-stream__active-empty">Loading active subscribers...</p>
+                  ) : topSubscribers.length > 0 ? (
+                    <ul className="feed-stream__active-list">
+                      {topSubscribers.map((subscriber, idx) => (
+                        <li key={subscriber.id}>
+                          <span className="feed-stream__active-rank">#{idx + 1}</span>
+                          <UserProfileLink
+                            profileKey={subscriber.profileKey}
+                            label={subscriber.name}
+                            className="feed-stream__active-name"
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="feed-stream__active-empty">No active subscribers yet.</p>
+                  )}
                 </div>
               </>
             ) : (

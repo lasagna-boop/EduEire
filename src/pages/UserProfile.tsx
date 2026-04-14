@@ -2,10 +2,22 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import AppHeader from "../components/AppHeader";
+import { UserProfileLink } from "../components/UserProfileLink";
 import { useExpiryCountdown } from "../hooks/useFlashCountdown";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { listThreads, type Thread } from "../lib/firestore";
+import {
+  followUser,
+  getUserSocialStats,
+  isFollowingUser,
+  listFollowingUsers,
+  listThreads,
+  listTopActiveFollowers,
+  unfollowUser,
+  type CommunityActiveSubscriber,
+  type Thread,
+  type UserProfileSummary,
+} from "../lib/firestore";
 import { resolveProfileKeyToUid } from "../lib/publicProfileRoute";
 import { threadVisibleOnProfile } from "../lib/firestoreFormat";
 import { threadsToPostCardPosts } from "../lib/threadPostMap";
@@ -52,6 +64,12 @@ export default function UserProfile() {
   const [posts, setPosts] = useState<PostCardPost[]>([]);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileLoadError, setProfileLoadError] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
+  const [topFollowers, setTopFollowers] = useState<CommunityActiveSubscriber[]>([]);
+  const [followingUsers, setFollowingUsers] = useState<UserProfileSummary[]>([]);
+  const [socialStats, setSocialStats] = useState({ followingCount: 0, followersCount: 0 });
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
 
   const flashCountdown = useExpiryCountdown(flashExpiresAt);
   const flashStatusLive =
@@ -82,6 +100,7 @@ export default function UserProfile() {
   const load = useCallback(async () => {
     if (!resolvedUid || !profileKeyParam) return;
     setProfileLoading(true);
+    setSocialLoading(true);
     setProfileLoadError(false);
     try {
       const userRef = await getDoc(doc(db, "users", resolvedUid));
@@ -120,6 +139,18 @@ export default function UserProfile() {
           profileHandleFromEmail(email ?? undefined, dname ?? undefined),
       );
 
+      const selfView = fbUser?.uid === resolvedUid;
+      const [top, following, stats, followingState] = await Promise.all([
+        listTopActiveFollowers(resolvedUid, 3),
+        listFollowingUsers(resolvedUid, 24),
+        getUserSocialStats(resolvedUid),
+        fbUser && !selfView ? isFollowingUser(fbUser.uid, resolvedUid) : Promise.resolve(false),
+      ]);
+      setTopFollowers(top);
+      setFollowingUsers(following);
+      setSocialStats(stats);
+      setIsFollowing(followingState);
+
       if (
         publicHandle &&
         profileKeyParam === resolvedUid &&
@@ -132,14 +163,39 @@ export default function UserProfile() {
       setProfileLoadError(true);
     } finally {
       setProfileLoading(false);
+      setSocialLoading(false);
     }
-  }, [resolvedUid, profileKeyParam, navigate]);
+  }, [resolvedUid, profileKeyParam, navigate, fbUser]);
 
   useEffect(() => {
     if (resolvedUid) void load();
   }, [resolvedUid, load]);
 
   const isSelf = fbUser?.uid === resolvedUid;
+
+  const handleToggleFollow = async () => {
+    if (!fbUser || !resolvedUid || isSelf || followBusy) return;
+    setFollowBusy(true);
+    try {
+      if (isFollowing) {
+        await unfollowUser(fbUser.uid, resolvedUid);
+      } else {
+        await followUser(fbUser.uid, resolvedUid);
+      }
+      const nextFollowing = !isFollowing;
+      setIsFollowing(nextFollowing);
+      setSocialStats((prev) => ({
+        ...prev,
+        followersCount: Math.max(0, prev.followersCount + (nextFollowing ? 1 : -1)),
+      }));
+      const refreshedTop = await listTopActiveFollowers(resolvedUid, 3);
+      setTopFollowers(refreshedTop);
+    } catch (e) {
+      console.error("Failed to toggle follow", e);
+    } finally {
+      setFollowBusy(false);
+    }
+  };
 
   if (!profileKeyParam) {
     return <Navigate to="/feed" replace />;
@@ -217,6 +273,17 @@ export default function UserProfile() {
                 <div className="profile-hero__body">
                   <h1 className="profile-hero__title">{displayTitle}</h1>
                   <p className="profile-hero__handle">@{handle}</p>
+                  {!isSelf && fbUser ? (
+                    <button
+                      type="button"
+                      className="profile-user-follow-btn"
+                      onClick={() => void handleToggleFollow()}
+                      disabled={followBusy}
+                      aria-pressed={isFollowing}
+                    >
+                      {followBusy ? "Please wait..." : isFollowing ? "Following" : "Follow"}
+                    </button>
+                  ) : null}
                   {flashStatusLive ? (
                     <div className="profile-hero__flash-bar thread-detail__flash-bar">
                       <span className="post-card__flash-banner">
@@ -251,6 +318,18 @@ export default function UserProfile() {
                   <div className="profile-stats__value">{posts.length}</div>
                   <div className="profile-stats__label">Posts</div>
                 </div>
+                <div className="profile-stats__item">
+                  <div className="profile-stats__value profile-stats__value--accent">
+                    {socialLoading ? "…" : socialStats.followersCount}
+                  </div>
+                  <div className="profile-stats__label">Followers</div>
+                </div>
+                <div className="profile-stats__item">
+                  <div className="profile-stats__value">
+                    {socialLoading ? "…" : socialStats.followingCount}
+                  </div>
+                  <div className="profile-stats__label">Following</div>
+                </div>
               </div>
 
               <h2 className="profile-posts__heading">Posts</h2>
@@ -266,6 +345,52 @@ export default function UserProfile() {
             </>
           ) : null}
         </div>
+        <aside className="feed-page__right-sidebar profile-sidebar">
+          <div className="feed-page__sidebar-card">
+            <h3>Friends &amp; followers</h3>
+            <div className="feed-stream__active-box" aria-label="Top active followers">
+              <p className="feed-stream__active-title">Top active followers</p>
+              {socialLoading ? (
+                <p className="feed-stream__active-empty">Loading followers...</p>
+              ) : topFollowers.length > 0 ? (
+                <ul className="feed-stream__active-list">
+                  {topFollowers.map((user, idx) => (
+                    <li key={user.id}>
+                      <span className="feed-stream__active-rank">#{idx + 1}</span>
+                      <UserProfileLink
+                        profileKey={user.profileKey}
+                        label={user.name}
+                        className="feed-stream__active-name"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="feed-stream__active-empty">No followers yet.</p>
+              )}
+            </div>
+            <div className="profile-following-list">
+              <p className="profile-following-list__title">Following</p>
+              {socialLoading ? (
+                <p className="feed-stream__active-empty">Loading following...</p>
+              ) : followingUsers.length > 0 ? (
+                <ul className="profile-following-list__items">
+                  {followingUsers.slice(0, 6).map((user) => (
+                    <li key={user.id}>
+                      <UserProfileLink
+                        profileKey={user.profileKey}
+                        label={user.name}
+                        className="profile-following-list__link"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="feed-stream__active-empty">Not following anyone yet.</p>
+              )}
+            </div>
+          </div>
+        </aside>
       </main>
     </div>
   );

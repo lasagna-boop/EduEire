@@ -38,3 +38,19 @@ functions/lib
 #banned word lists (contain profanity — kept out of repo)
 src/lib/banned-words.ts
 functions/src/banned-words.ts
+
+# --- Local AI / agent tooling (skills, editor agent config — not app source) ---
+.agents/
+.cursor/
+.codex/
+
+# Local “source of truth” / prompt dumps for agents (may describe your stack in depth)
+PROJECT_CONTEXT.md
+
+# --- Reports, thesis drafts, Office lock files, scratch extracts ---
+*FYP*.docx
+*FYP*.pdf
+Final Report*.docx
+Final Report*.pdf
+~$*.docx
+.tmp_*.txt

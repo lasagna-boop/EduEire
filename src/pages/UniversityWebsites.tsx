@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "../components/AppHeader";
+import { listThreads } from "../lib/firestore";
 import { publicFirebaseStorageDownloadUrl } from "../lib/publicStorageUrl";
 import {
   type UniversityExplorerRegion,
@@ -15,10 +16,17 @@ const SIDEBAR_ITEMS: { region: UniversityExplorerRegion | "all"; label: string; 
   { region: "other", label: "More", icon: "map" },
 ];
 
+const SITE_TO_COMMUNITY_ID: Record<string, string> = {
+  tcd: "trinity",
+  mu: "maynooth",
+};
+
 export default function UniversityWebsites() {
   const [region, setRegion] = useState<UniversityExplorerRegion | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [brokenStoragePaths, setBrokenStoragePaths] = useState<ReadonlySet<string>>(() => new Set());
+  const [activeUsersByUniversity, setActiveUsersByUniversity] = useState<Record<string, string[]>>({});
+  const [activeUsersLoading, setActiveUsersLoading] = useState(true);
 
   const markStorageImageBroken = useCallback((storagePath: string) => {
     setBrokenStoragePaths((prev) => {
@@ -48,6 +56,68 @@ export default function UniversityWebsites() {
     setRegion("all");
     setSearchQuery("");
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadActiveUsers = async () => {
+      setActiveUsersLoading(true);
+      try {
+        const siteToCommunity = Object.fromEntries(
+          UNIVERSITY_OFFICIAL_SITES.map((u) => [u.id, SITE_TO_COMMUNITY_ID[u.id] ?? u.id])
+        ) as Record<string, string>;
+        const communityToSites = new Map<string, string[]>();
+        for (const [siteId, communityId] of Object.entries(siteToCommunity)) {
+          const bucket = communityToSites.get(communityId);
+          if (bucket) bucket.push(siteId);
+          else communityToSites.set(communityId, [siteId]);
+        }
+
+        // P1 optimization: fetch once, then aggregate per community/site in memory.
+        const { threads } = await listThreads({ pageSize: 250, sortBy: "lastActivity" });
+        const countsByCommunity = new Map<string, Map<string, number>>();
+        for (const t of threads) {
+          const communityId = t.communityId;
+          if (!communityToSites.has(communityId)) continue;
+          const author = t.authorName?.trim();
+          if (!author) continue;
+          const counts = countsByCommunity.get(communityId) ?? new Map<string, number>();
+          counts.set(author, (counts.get(author) ?? 0) + 1);
+          countsByCommunity.set(communityId, counts);
+        }
+
+        const bySite: Record<string, string[]> = {};
+        for (const siteId of Object.keys(siteToCommunity)) {
+          const communityId = siteToCommunity[siteId];
+          const counts = countsByCommunity.get(communityId) ?? new Map<string, number>();
+          bySite[siteId] = Array.from(counts.entries())
+            .sort((a, b) => {
+              if (b[1] !== a[1]) return b[1] - a[1];
+              return a[0].localeCompare(b[0]);
+            })
+            .slice(0, 3)
+            .map(([name]) => name);
+        }
+
+        if (cancelled) return;
+        setActiveUsersByUniversity(bySite);
+      } catch (e) {
+        console.error("Failed to load active users", e);
+        if (!cancelled) {
+          const empty = Object.fromEntries(UNIVERSITY_OFFICIAL_SITES.map((u) => [u.id, []])) as Record<
+            string,
+            string[]
+          >;
+          setActiveUsersByUniversity(empty);
+        }
+      } finally {
+        if (!cancelled) setActiveUsersLoading(false);
+      }
+    };
+    void loadActiveUsers();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="feed-page">
@@ -183,6 +253,23 @@ export default function UniversityWebsites() {
                     </div>
                     <div className="universities-page__card-body">
                       <h3 className="universities-page__card-title">{u.name}</h3>
+                      <div className="universities-page__active-box" aria-label="Most active users">
+                        <p className="universities-page__active-title">Most active users</p>
+                        {activeUsersLoading ? (
+                          <p className="universities-page__active-empty">Loading active users...</p>
+                        ) : activeUsersByUniversity[u.id] && activeUsersByUniversity[u.id].length > 0 ? (
+                          <ul className="universities-page__active-list">
+                            {activeUsersByUniversity[u.id].map((name, idx) => (
+                              <li key={`${u.id}-${name}`}>
+                                <span className="universities-page__active-rank">#{idx + 1}</span>
+                                <span className="universities-page__active-name">{name}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="universities-page__active-empty">No active users yet.</p>
+                        )}
+                      </div>
                       <p className="universities-page__card-desc">{u.description}</p>
                       <a
                         href={u.officialUrl}

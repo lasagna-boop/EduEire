@@ -56,18 +56,6 @@
     flex-wrap: wrap;
   }
 
-  .feed-page__header {
-    padding: 8px 12px;
-  }
-
-  .feed-page__logo-img {
-    height: 44px;
-  }
-
-  .feed-page__user {
-    display: none;
-  }
-
   .feed-page__main {
     padding: 12px;
   }
