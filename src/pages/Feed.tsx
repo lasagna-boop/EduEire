@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
-import { CommunitiesSidebar, SECTION_OPTIONS } from "../components/CommunitiesSidebar";
+import { CommunitiesSidebar, SectionTopicList } from "../components/CommunitiesSidebar";
 import { CreateThreadCard } from "../components/CreateThreadCard";
 import AppHeader from "../components/AppHeader";
 import {
@@ -175,36 +175,33 @@ export default function Feed() {
           <div className="feed-mobile-sections">
             <button
               type="button"
-              className="feed-mobile-sections__toggle"
+              className={[
+                "feed-mobile-sections__toggle",
+                mobileSectionsOpen ? "feed-mobile-sections__toggle--open" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               onClick={() => setMobileSectionsOpen((v) => !v)}
               aria-expanded={mobileSectionsOpen}
             >
-              <span>Browse topics</span>
-              <span aria-hidden>{mobileSectionsOpen ? "▲" : "▼"}</span>
+              <span className="feed-mobile-sections__toggle-label">Browse topics</span>
+              <span className="feed-mobile-sections__caret" aria-hidden>
+                ▼
+              </span>
             </button>
             {mobileSectionsOpen ? (
-              <div className="feed-page__sidebar-card">
-                <ul className="feed-page__community-list">
-                  {SECTION_OPTIONS.map((s, idx) => (
-                    <li key={`mobile-${s.label}-${idx}`}>
-                      <button
-                        type="button"
-                        className={[
-                          "feed-page__community-link",
-                          selectedSection === s.label ? "feed-page__community-link--active" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        onClick={() =>
-                          setSelectedSection((prev) => (prev === s.label ? "" : s.label))
-                        }
-                      >
-                        <span className="feed-page__community-icon">{s.icon}</span>
-                        <span className="feed-page__community-name">{s.label}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+              <div className="feed-page__sidebar-card feed-page__sections-card feed-page__sections-card--sheet">
+                <div className="feed-page__sections-head">
+                  <h3 className="feed-page__sections-title">Sections</h3>
+                  <p className="feed-page__sections-lede">Tap a tag to filter the feed</p>
+                </div>
+                <SectionTopicList
+                  activeSection={selectedSection}
+                  onSectionSelect={(label) =>
+                    setSelectedSection((prev) => (prev === label ? "" : label))
+                  }
+                  instanceKey="feed-mobile"
+                />
               </div>
             ) : null}
           </div>
@@ -330,34 +327,49 @@ export default function Feed() {
         </div>
 
         <aside className="feed-page__right-sidebar">
-          <div className="feed-page__sidebar-card feed-stream__about-card">
-            <h3>About EduÉire</h3>
-            <p>
-              Ireland&apos;s community for students and educators to connect, share, and learn
-              together.
-            </p>
-            {adminUser ? (
-              <Link to="/admin" className="feed-page__btn feed-page__btn--outline feed-stream__admin-link">
-                Admin
-              </Link>
-            ) : null}
+          <div className="feed-page__sidebar-card feed-stream__about-card feed-page__rail-card">
+            <div className="feed-page__rail-head">
+              <h3 className="feed-page__rail-title">About EduÉire</h3>
+            </div>
+            <div className="feed-page__rail-body">
+              <p className="feed-page__rail-copy">
+                Ireland&apos;s community for students and educators to connect, share, and learn
+                together.
+              </p>
+              {adminUser ? (
+                <Link
+                  to="/admin"
+                  className="feed-page__btn feed-page__btn--outline feed-stream__admin-link feed-page__rail-admin"
+                >
+                  Admin
+                </Link>
+              ) : null}
+            </div>
           </div>
-          <div className="feed-create-thread feed-create-thread--desktop">
-            <CreateThreadCard
-              mode="feed"
-              fbUser={fbUser}
-              canWrite={canWrite}
-              accessMode={accessMode}
-              communities={communities}
-              communityId={communityId}
-              onCommunityIdChange={setCommunityId}
-              onPosted={load}
-              onFormError={setError}
-              triggerLabel="Create Post"
-              readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
-              presentation="overlay"
-            />
-          </div>
+          {fbUser ? (
+            <div className="feed-page__sidebar-card feed-page__rail-card feed-page__rail-card--cta feed-create-thread feed-create-thread--desktop">
+              <div className="feed-page__rail-head feed-page__rail-head--tight">
+                <h3 className="feed-page__rail-title">New post</h3>
+                <p className="feed-page__rail-lede">Choose a community, add a tag, and share with the feed.</p>
+              </div>
+              <div className="feed-page__rail-cta-slot">
+                <CreateThreadCard
+                  mode="feed"
+                  fbUser={fbUser}
+                  canWrite={canWrite}
+                  accessMode={accessMode}
+                  communities={communities}
+                  communityId={communityId}
+                  onCommunityIdChange={setCommunityId}
+                  onPosted={load}
+                  onFormError={setError}
+                  triggerLabel="Create Post"
+                  readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
+                  presentation="overlay"
+                />
+              </div>
+            </div>
+          ) : null}
         </aside>
       </main>
     </div>

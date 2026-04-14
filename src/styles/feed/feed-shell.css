@@ -89,38 +89,70 @@
 }
 
 .feed-page__btn {
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  min-height: 44px;
+  box-sizing: border-box;
+  border-radius: var(--edu-btn-radius-pill);
+  font-family: inherit;
+  font-weight: var(--edu-btn-weight);
   font-size: 0.875rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
-  border: none;
-  transition: all 0.15s;
+  border: 1.5px solid transparent;
+  transition: var(--edu-btn-ease);
 }
 
 .feed-page__btn--outline {
-  background: transparent;
-  color: #2d6a4f;
-  border: 1px solid #2d6a4f;
+  background: linear-gradient(180deg, var(--edu-btn-surface), var(--edu-btn-surface-soft));
+  color: var(--edu-btn-green-dark);
+  border-color: rgba(45, 106, 79, 0.45);
+  box-shadow: var(--edu-btn-shadow);
 }
 
-.feed-page__btn--outline:hover {
-  background: rgba(45, 106, 79, 0.12);
-  color: #1a202c;
+.feed-page__btn--outline:hover:not(:disabled) {
+  border-color: var(--edu-btn-accent);
+  color: #0f172a;
+  box-shadow: var(--edu-btn-shadow-accent);
+  transform: translateY(-1px);
 }
 
 .feed-page__btn--filled {
-  background: #2d6a4f;
   color: #ffffff;
+  border-color: rgba(27, 67, 50, 0.35);
+  background: linear-gradient(
+    135deg,
+    var(--edu-btn-green-dark) 0%,
+    var(--edu-btn-green) 52%,
+    var(--edu-btn-green-mid) 100%
+  );
+  box-shadow: var(--edu-btn-shadow);
 }
 
 .feed-page__btn--filled:hover:not(:disabled) {
-  background: #2d6a4f;
-  box-shadow: 0 4px 12px rgba(45, 106, 79, 0.24);
+  box-shadow: var(--edu-btn-shadow-hover);
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.feed-page__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--edu-btn-shadow), 0 0 0 3px rgba(45, 106, 79, 0.28);
+}
+
+.feed-page__btn--filled:focus-visible {
+  box-shadow: var(--edu-btn-shadow-hover), 0 0 0 3px rgba(255, 159, 28, 0.35);
 }
 
 .feed-page__btn:disabled {
-  opacity: 0.6;
+  opacity: 0.58;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
 }

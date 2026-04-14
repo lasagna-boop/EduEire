@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { login, register } from "../lib/auth";
 import { errorMessage } from "../lib/errors";
@@ -6,9 +6,12 @@ import { useAuth } from "../context/useAuth";
 import { STUDENT_EMAIL_DOMAINS } from "../lib/userAccess";
 import AppHeader from "../components/AppHeader";
 
+const LandingHeroShader = lazy(() => import("../components/LandingHeroShader"));
+
 export default function Login() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,6 +24,15 @@ export default function Login() {
       setIsRegister(true);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setPrefersReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -44,10 +56,26 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <AppHeader activeTopLink="communities" />
+      <div
+        className={`login-page__bg${prefersReducedMotion ? " login-page__bg--static" : ""}`}
+        aria-hidden
+      >
+        {!prefersReducedMotion ? (
+          <>
+            <div className="login-page__shader">
+              <Suspense fallback={null}>
+                <LandingHeroShader />
+              </Suspense>
+            </div>
+            <div className="login-page__scrim" />
+          </>
+        ) : null}
+      </div>
 
-      {/* Main  */}
-      <main className="login-page__main">
+      <div className="login-page__chrome">
+        <AppHeader activeTopLink="communities" />
+
+        <main className="login-page__main">
         <div className="login-page__card">
           <h1 className="login-page__title">
             {isRegister ? "Create Account" : "Log In"}
@@ -130,7 +158,8 @@ export default function Login() {
             </form>
           )}
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

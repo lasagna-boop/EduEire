@@ -234,19 +234,25 @@
 
 .post-card__flag-btn {
   font-size: 12px;
-  font-weight: 600;
-  color: #4a5568;
-  background: none;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  padding: 2px 8px;
+  font-weight: var(--edu-btn-weight);
+  letter-spacing: -0.02em;
+  color: #475569;
+  background: linear-gradient(180deg, #ffffff, var(--edu-btn-surface-soft));
+  border: 1px solid rgba(45, 106, 79, 0.18);
+  border-radius: var(--edu-btn-radius-pill);
+  padding: 6px 12px;
+  min-height: 30px;
   cursor: pointer;
-  transition: all 0.15s;
+  font-family: inherit;
+  box-shadow: 0 2px 10px rgba(27, 67, 50, 0.06);
+  transition: var(--edu-btn-ease);
 }
 
 .post-card__flag-btn:hover:not(:disabled) {
-  color: #ff9f1c;
-  border-color: #ff9f1c;
+  color: #0f172a;
+  border-color: var(--edu-btn-accent);
+  box-shadow: var(--edu-btn-shadow-accent);
+  transform: translateY(-1px);
 }
 
 .post-card__flag-btn--flagged {

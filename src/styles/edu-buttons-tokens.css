@@ -1,0 +1,18 @@
+/* Shared button tokens — EduÉire rail / CTA language (green + orange accent, soft depth). */
+
+:root {
+  --edu-btn-green-dark: #1b4332;
+  --edu-btn-green: #2d6a4f;
+  --edu-btn-green-mid: #40916c;
+  --edu-btn-accent: #ff9f1c;
+  --edu-btn-surface: #ffffff;
+  --edu-btn-surface-soft: #f4faf7;
+  --edu-btn-radius-pill: 999px;
+  --edu-btn-radius: 14px;
+  --edu-btn-weight: 700;
+  --edu-btn-shadow: 0 4px 18px rgba(27, 67, 50, 0.1);
+  --edu-btn-shadow-hover: 0 10px 26px rgba(27, 67, 50, 0.14);
+  --edu-btn-shadow-accent: 0 6px 18px rgba(255, 159, 28, 0.22);
+  --edu-btn-ease: border-color 0.2s ease, box-shadow 0.22s ease, transform 0.22s ease, background 0.22s ease,
+    color 0.2s ease, filter 0.2s ease;
+}

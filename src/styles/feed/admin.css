@@ -118,35 +118,57 @@
 }
 
 .admin-card__btn {
-  padding: 8px 20px;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 9px 20px;
+  border-radius: var(--edu-btn-radius-pill);
+  font-weight: var(--edu-btn-weight);
+  font-size: 0.82rem;
+  letter-spacing: -0.02em;
   cursor: pointer;
-  border: none;
-  transition: all 0.15s;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: var(--edu-btn-ease);
 }
 
 .admin-card__btn--approve {
-  background: #2d6a4f;
+  border: 1.5px solid rgba(27, 67, 50, 0.35);
   color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    var(--edu-btn-green-dark) 0%,
+    var(--edu-btn-green) 52%,
+    var(--edu-btn-green-mid) 100%
+  );
+  box-shadow: var(--edu-btn-shadow);
 }
 
 .admin-card__btn--approve:hover:not(:disabled) {
-  background: #2d6a4f;
+  box-shadow: var(--edu-btn-shadow-hover);
+  transform: translateY(-1px);
+  filter: brightness(1.04);
 }
 
 .admin-card__btn--reject {
-  background: transparent;
-  color: #ff9f1c;
-  border: 1px solid #ff9f1c;
+  background: linear-gradient(180deg, var(--edu-btn-surface), var(--edu-btn-surface-soft));
+  color: #b45309;
+  border: 1.5px solid rgba(255, 159, 28, 0.55);
+  box-shadow: var(--edu-btn-shadow);
 }
 
 .admin-card__btn--reject:hover:not(:disabled) {
-  background: rgba(255, 159, 28, 0.12);
+  border-color: var(--edu-btn-accent);
+  color: #0f172a;
+  box-shadow: var(--edu-btn-shadow-accent);
+  transform: translateY(-1px);
 }
 
 .admin-card__btn:disabled {
-  opacity: 0.6;
+  opacity: 0.58;
   cursor: not-allowed;
+  transform: none;
+  filter: none;
+  box-shadow: none;
 }

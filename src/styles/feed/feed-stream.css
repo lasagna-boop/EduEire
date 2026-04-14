@@ -46,6 +46,155 @@
   display: inline-block;
 }
 
+/* —— Right rail: About + Create (aligned with Sections card styling) —— */
+
+@keyframes feed-rail-ambient {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: translate3d(5%, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.62;
+    transform: translate3d(-5%, 0, 0) scale(1.02);
+  }
+}
+
+@keyframes feed-rail-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__sidebar-card.feed-page__rail-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 18px;
+  padding: 18px 16px 18px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: linear-gradient(158deg, #ffffff 0%, #f5faf8 45%, #fffdf6 100%);
+  box-shadow:
+    0 6px 32px rgba(27, 67, 50, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.88) inset;
+  backdrop-filter: blur(6px);
+  animation: feed-rail-enter 0.55s var(--feed-ease-out-expo) both;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-card::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 0;
+  height: 3px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(90deg, #1b4332, #2d6a4f 40%, #52b788 72%, #ff9f1c);
+  opacity: 0.9;
+  z-index: 0;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-card::after {
+  content: "";
+  position: absolute;
+  inset: -32% -22%;
+  background:
+    radial-gradient(ellipse 65% 42% at 12% 8%, rgba(45, 106, 79, 0.1), transparent 54%),
+    radial-gradient(ellipse 55% 48% at 92% 88%, rgba(255, 159, 28, 0.08), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+  animation: feed-rail-ambient 16s ease-in-out infinite;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-card--cta {
+  animation-delay: 0.08s;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-head,
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-body {
+  position: relative;
+  z-index: 1;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-head {
+  margin-bottom: 12px;
+  padding-top: 4px;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-head--tight {
+  margin-bottom: 10px;
+}
+
+.feed-page--stream .feed-page__right-sidebar h3.feed-page__rail-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #14221a;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-lede {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #64748b;
+  max-width: 22rem;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-copy {
+  margin: 0 0 12px;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-body > .feed-page__rail-copy:last-child {
+  margin-bottom: 0;
+}
+
+.feed-page--stream .feed-page__rail-card .feed-stream__active-box {
+  margin-top: 4px;
+  border-radius: 14px;
+  border-color: rgba(45, 106, 79, 0.14);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.95), rgba(246, 250, 248, 0.92));
+  box-shadow: 0 4px 18px rgba(27, 67, 50, 0.05);
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-stream__admin-link.feed-page__rail-admin {
+  margin-top: 14px;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-cta-slot {
+  position: relative;
+  z-index: 1;
+}
+
+.feed-page--stream .feed-page__right-sidebar .feed-page__rail-card--cta .feed-page__create-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-page--stream .feed-page__right-sidebar .feed-page__rail-card {
+    animation: none !important;
+  }
+
+  .feed-page--stream .feed-page__right-sidebar .feed-page__rail-card::after {
+    animation: none;
+    opacity: 0.55;
+  }
+}
+
 .feed-stream__intro {
   position: relative;
   overflow: hidden;
@@ -616,8 +765,8 @@
   box-shadow: 0 10px 20px -24px rgba(26, 32, 44, 0.28);
 }
 
-.feed-page--stream .feed-mobile-sections .feed-page__sidebar-card {
-  border-radius: 14px;
+.feed-page--stream .feed-mobile-sections .feed-page__sections-card {
+  border-radius: 16px;
   margin-bottom: 12px;
 }
 

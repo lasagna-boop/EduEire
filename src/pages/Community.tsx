@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
-import { CommunitiesSidebar, SECTION_OPTIONS } from "../components/CommunitiesSidebar";
+import { CommunitiesSidebar, SectionTopicList } from "../components/CommunitiesSidebar";
 import { CreateThreadCard } from "../components/CreateThreadCard";
 import AppHeader from "../components/AppHeader";
 import { UserProfileLink } from "../components/UserProfileLink";
@@ -232,36 +232,33 @@ export default function Community() {
           <div className="feed-mobile-sections">
             <button
               type="button"
-              className="feed-mobile-sections__toggle"
+              className={[
+                "feed-mobile-sections__toggle",
+                mobileSectionsOpen ? "feed-mobile-sections__toggle--open" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               onClick={() => setMobileSectionsOpen((v) => !v)}
               aria-expanded={mobileSectionsOpen}
             >
-              <span>Browse topics</span>
-              <span aria-hidden>{mobileSectionsOpen ? "▲" : "▼"}</span>
+              <span className="feed-mobile-sections__toggle-label">Browse topics</span>
+              <span className="feed-mobile-sections__caret" aria-hidden>
+                ▼
+              </span>
             </button>
             {mobileSectionsOpen ? (
-              <div className="feed-page__sidebar-card">
-                <ul className="feed-page__community-list">
-                  {SECTION_OPTIONS.map((s, idx) => (
-                    <li key={`community-mobile-${s.label}-${idx}`}>
-                      <button
-                        type="button"
-                        className={[
-                          "feed-page__community-link",
-                          selectedSection === s.label ? "feed-page__community-link--active" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        onClick={() =>
-                          setSelectedSection((prev) => (prev === s.label ? "" : s.label))
-                        }
-                      >
-                        <span className="feed-page__community-icon">{s.icon}</span>
-                        <span className="feed-page__community-name">{s.label}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+              <div className="feed-page__sidebar-card feed-page__sections-card feed-page__sections-card--sheet">
+                <div className="feed-page__sections-head">
+                  <h3 className="feed-page__sections-title">Sections</h3>
+                  <p className="feed-page__sections-lede">Tap a tag to filter posts</p>
+                </div>
+                <SectionTopicList
+                  activeSection={selectedSection}
+                  onSectionSelect={(label) =>
+                    setSelectedSection((prev) => (prev === label ? "" : label))
+                  }
+                  instanceKey="community-mobile"
+                />
               </div>
             ) : null}
           </div>
@@ -330,11 +327,14 @@ export default function Community() {
         </div>
 
         <aside className="feed-page__right-sidebar">
-          <div className="feed-page__sidebar-card feed-stream__about-card">
-            <h3>About c/{communityId}</h3>
+          <div className="feed-page__sidebar-card feed-stream__about-card feed-page__rail-card">
+            <div className="feed-page__rail-head">
+              <h3 className="feed-page__rail-title">About c/{communityId}</h3>
+            </div>
+            <div className="feed-page__rail-body">
             {community ? (
               <>
-                <p>{community.description || community.fullName}</p>
+                <p className="feed-page__rail-copy">{community.description || community.fullName}</p>
                 <div className="feed-stream__active-box" aria-label="Top active subscribers">
                   <p className="feed-stream__active-title">Top active subscribers</p>
                   {topSubscribersLoading ? (
@@ -358,23 +358,32 @@ export default function Community() {
                 </div>
               </>
             ) : (
-              <p>Loading...</p>
+              <p className="feed-page__rail-copy">Loading...</p>
             )}
+            </div>
           </div>
-          <div className="community-create-thread community-create-thread--desktop">
-            <CreateThreadCard
-              mode="community"
-              fbUser={fbUser}
-              canWrite={canWrite}
-              accessMode={accessMode}
-              fixedCommunityId={communityId ?? ""}
-              onPosted={loadPosts}
-              onFormError={setError}
-              triggerLabel="Create Thread"
-              readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
-              presentation="overlay"
-            />
-          </div>
+          {fbUser ? (
+            <div className="feed-page__sidebar-card feed-page__rail-card feed-page__rail-card--cta community-create-thread community-create-thread--desktop">
+              <div className="feed-page__rail-head feed-page__rail-head--tight">
+                <h3 className="feed-page__rail-title">New thread</h3>
+                <p className="feed-page__rail-lede">Opens the composer for this community.</p>
+              </div>
+              <div className="feed-page__rail-cta-slot">
+                <CreateThreadCard
+                  mode="community"
+                  fbUser={fbUser}
+                  canWrite={canWrite}
+                  accessMode={accessMode}
+                  fixedCommunityId={communityId ?? ""}
+                  onPosted={loadPosts}
+                  onFormError={setError}
+                  triggerLabel="Create Thread"
+                  readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
+                  presentation="overlay"
+                />
+              </div>
+            </div>
+          ) : null}
         </aside>
       </main>
     </div>
