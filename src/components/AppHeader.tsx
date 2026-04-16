@@ -85,9 +85,19 @@ export default function AppHeader({ activeTopLink, search }: AppHeaderProps) {
               <Link to="/profile" className="landing__btn landing__btn--ghost">
                 Profile
               </Link>
-              <button onClick={handleLogout} className="landing__btn landing__btn--filled" type="button">
+              <button
+                onClick={handleLogout}
+                className="landing__btn landing__btn--filled landing__btn--logout-header"
+                type="button"
+              >
                 Log Out
               </button>
+              <Link
+                to="/profile"
+                className="landing__btn landing__btn--filled landing__btn--mobile-profile"
+              >
+                My Profile
+              </Link>
             </>
           ) : (
             <>

@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
-import { CommunitiesSidebar, SectionTopicList } from "../components/CommunitiesSidebar";
+import {
+  CommunitiesSidebar,
+  SECTION_OPTIONS,
+  SectionTopicList,
+} from "../components/CommunitiesSidebar";
 import { CreateThreadCard } from "../components/CreateThreadCard";
 import AppHeader from "../components/AppHeader";
 import {
@@ -24,21 +28,45 @@ export default function Feed() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const qFromUrl = searchParams.get("q") ?? "";
+  const communityFromUrl = searchParams.get("community")?.trim() ?? "";
+  const sortFromUrl = searchParams.get("sort")?.trim().toLowerCase() ?? "";
+  const topicFromUrl = searchParams.get("topic")?.trim() ?? "";
 
   const [posts, setPosts] = useState<PostCardPost[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState(qFromUrl);
-  const [selectedSection, setSelectedSection] = useState("");
   const [mobileSectionsOpen, setMobileSectionsOpen] = useState(false);
-  const [feedSort, setFeedSort] = useState<FeedSort>("recent");
   const [streamScrolled, setStreamScrolled] = useState(false);
+
+  const feedSort: FeedSort = useMemo(() => {
+    if (sortFromUrl === "popular") return "mostLiked";
+    if (sortFromUrl === "credibility") return "credibility";
+    return "recent";
+  }, [sortFromUrl]);
+
+  const selectedSection = useMemo(() => {
+    if (!topicFromUrl) return "";
+    return SECTION_OPTIONS.some((o) => o.label === topicFromUrl) ? topicFromUrl : "";
+  }, [topicFromUrl]);
 
   const [adminUser, setAdminUser] = useState(false);
   const [communityId, setCommunityId] = useState("");
 
-  const loadCommunities = async () => {
+  /** Empty = all institutions; otherwise Firestore filter by `communityId`. */
+  const feedCommunityScope = useMemo(() => {
+    if (!communityFromUrl) return "";
+    if (communities.length === 0) return communityFromUrl;
+    return communities.some((c) => c.id === communityFromUrl) ? communityFromUrl : "";
+  }, [communityFromUrl, communities]);
+
+  const activeCommunityMeta = useMemo(
+    () => communities.find((c) => c.id === feedCommunityScope) ?? null,
+    [communities, feedCommunityScope]
+  );
+
+  const loadCommunities = useCallback(async () => {
     try {
       const list = await ensureDefaultCommunities();
       setCommunities(list);
@@ -48,19 +76,23 @@ export default function Feed() {
     } catch (e) {
       console.error("Failed to load/seed communities:", e);
     }
-  };
+  }, [communityId]);
 
-  const load = async (sortMode: FeedSort = feedSort) => {
+  const load = useCallback(async () => {
     setError(null);
     setLoading(true);
     try {
       const sortBy =
-        sortMode === "recent"
+        feedSort === "recent"
           ? "createdAt"
-          : sortMode === "mostLiked"
+          : feedSort === "mostLiked"
             ? "score"
             : "credibilityScore";
-      const { threads: allThreads } = await listThreads({ pageSize: 30, sortBy });
+      const { threads: allThreads } = await listThreads({
+        pageSize: 30,
+        sortBy,
+        communityId: feedCommunityScope || undefined,
+      });
       const now = Date.now();
       const threads = allThreads.filter((t: Thread) => threadVisibleInFeed(t, now));
       const mapped = await threadsToPostCardPosts(threads, "feed");
@@ -70,14 +102,54 @@ export default function Feed() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [feedSort, feedCommunityScope]);
 
   useEffect(() => {
-    loadCommunities();
-    load();
-    if (fbUser) isAdmin(fbUser.uid).then(setAdminUser);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void loadCommunities();
+  }, [loadCommunities]);
+
+  useEffect(() => {
+    if (fbUser?.uid) isAdmin(fbUser.uid).then(setAdminUser);
+    else setAdminUser(false);
+  }, [fbUser]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    if (communities.length === 0 || !communityFromUrl) return;
+    if (!communities.some((c) => c.id === communityFromUrl)) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("community");
+          return next;
+        },
+        { replace: true }
+      );
+    }
+  }, [communities, communityFromUrl, setSearchParams]);
+
+  useEffect(() => {
+    if (!topicFromUrl) return;
+    if (!SECTION_OPTIONS.some((o) => o.label === topicFromUrl)) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("topic");
+          return next;
+        },
+        { replace: true }
+      );
+    }
+  }, [topicFromUrl, setSearchParams]);
+
+  useEffect(() => {
+    if (feedCommunityScope && communities.some((c) => c.id === feedCommunityScope)) {
+      setCommunityId(feedCommunityScope);
+    }
+  }, [feedCommunityScope, communities]);
 
   useEffect(() => {
     setSearchQuery(qFromUrl);
@@ -106,6 +178,55 @@ export default function Feed() {
         const trimmed = value.trim();
         if (trimmed) next.set("q", trimmed);
         else next.delete("q");
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const handleFeedScopeChange = (nextId: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (nextId) next.set("community", nextId);
+        else next.delete("community");
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const handleSortChange = (mode: FeedSort) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (mode === "recent") next.delete("sort");
+        else if (mode === "mostLiked") next.set("sort", "popular");
+        else next.set("sort", "credibility");
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const handleTopicToggle = (label: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        const current = next.get("topic");
+        if (current === label) next.delete("topic");
+        else next.set("topic", label);
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const clearTopicFilter = () => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("topic");
         return next;
       },
       { replace: true }
@@ -147,9 +268,7 @@ export default function Feed() {
         <CommunitiesSidebar
           communities={communities}
           activeSection={selectedSection}
-          onSectionSelect={(section) =>
-            setSelectedSection((prev) => (prev === section ? "" : section))
-          }
+          onSectionSelect={(section) => handleTopicToggle(section)}
         />
 
         <div className="feed-page__content">
@@ -160,6 +279,11 @@ export default function Feed() {
                 <span className="feed-stream__badge">
                   {visibleCount} {visibleCount === 1 ? "post" : "posts"}
                 </span>
+                {feedCommunityScope && activeCommunityMeta ? (
+                  <span className="feed-stream__badge feed-stream__badge--soft">
+                    {activeCommunityMeta.name}
+                  </span>
+                ) : null}
                 {selectedSection ? (
                   <span className="feed-stream__badge feed-stream__badge--soft">
                     #{selectedSection}
@@ -168,7 +292,36 @@ export default function Feed() {
               </div>
             </div>
             <p className="feed-stream__subtitle">
-              Community updates across EduÉire, curated by topic and ranked your way.
+              {feedCommunityScope && activeCommunityMeta ? (
+                <>
+                  Showing threads from{" "}
+                  <strong>{activeCommunityMeta.fullName}</strong> only. Switch to{" "}
+                  <em>All institutions</em> to browse across EduÉire, or open a full community page
+                  for subscribe and local context.
+                </>
+              ) : (
+                <>
+                  <strong>Mixed feed:</strong> posts from every institution, with{" "}
+                  <span className="feed-stream__subtitle-mono">c/…</span> on each card. Use the
+                  institution control below to match a single-university view, or stay on{" "}
+                  <em>All institutions</em>
+                  {communities[0] ? (
+                    <>
+                      {" "}
+                      — open{" "}
+                      <Link
+                        to={`/c/${communities[0].id}`}
+                        className="feed-stream__subtitle-link"
+                      >
+                        a community hub
+                      </Link>{" "}
+                      for subscriptions and local context.
+                    </>
+                  ) : (
+                    "."
+                  )}
+                </>
+              )}
             </p>
           </header>
 
@@ -197,9 +350,7 @@ export default function Feed() {
                 </div>
                 <SectionTopicList
                   activeSection={selectedSection}
-                  onSectionSelect={(label) =>
-                    setSelectedSection((prev) => (prev === label ? "" : label))
-                  }
+                  onSectionSelect={(label) => handleTopicToggle(label)}
                   instanceKey="feed-mobile"
                 />
               </div>
@@ -226,6 +377,26 @@ export default function Feed() {
           {error ? <p className="feed-page__error">{error}</p> : null}
 
           <div className="feed-stream__toolbar">
+            <div className="feed-stream__scope">
+              <label className="feed-stream__scope-label" htmlFor="feed-institution-scope">
+                Institution
+              </label>
+              <select
+                id="feed-institution-scope"
+                className="feed-stream__scope-select"
+                value={feedCommunityScope}
+                onChange={(e) => handleFeedScopeChange(e.target.value)}
+                aria-label="Filter feed by institution"
+              >
+                <option value="">All institutions</option>
+                {communities.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} — {c.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div
               className="feed-sort-switch feed-sort-switch--stream"
               role="group"
@@ -239,10 +410,7 @@ export default function Feed() {
                 ]
                   .filter(Boolean)
                   .join(" ")}
-                onClick={() => {
-                  setFeedSort("recent");
-                  void load("recent");
-                }}
+                onClick={() => handleSortChange("recent")}
               >
                 Recent
               </button>
@@ -254,10 +422,7 @@ export default function Feed() {
                 ]
                   .filter(Boolean)
                   .join(" ")}
-                onClick={() => {
-                  setFeedSort("mostLiked");
-                  void load("mostLiked");
-                }}
+                onClick={() => handleSortChange("mostLiked")}
               >
                 Popular
               </button>
@@ -269,10 +434,7 @@ export default function Feed() {
                 ]
                   .filter(Boolean)
                   .join(" ")}
-                onClick={() => {
-                  setFeedSort("credibility");
-                  void load("credibility");
-                }}
+                onClick={() => handleSortChange("credibility")}
               >
                 <span className="feed-sort-switch__btn-inner">
                   Credibility
@@ -285,11 +447,28 @@ export default function Feed() {
               <button
                 type="button"
                 className="feed-stream__filter-chip"
-                onClick={() => setSelectedSection("")}
+                onClick={() => clearTopicFilter()}
                 aria-label={`Clear topic filter: ${selectedSection}`}
               >
                 <span className="feed-stream__filter-prefix">Topic</span>
                 <span className="feed-stream__filter-value">{selectedSection}</span>
+                <span className="feed-stream__filter-dismiss" aria-hidden>
+                  ×
+                </span>
+              </button>
+            ) : null}
+
+            {feedCommunityScope ? (
+              <button
+                type="button"
+                className="feed-stream__filter-chip feed-stream__filter-chip--soft"
+                onClick={() => handleFeedScopeChange("")}
+                aria-label={`Clear institution filter: ${activeCommunityMeta?.name ?? feedCommunityScope}`}
+              >
+                <span className="feed-stream__filter-prefix">Institution</span>
+                <span className="feed-stream__filter-value">
+                  {activeCommunityMeta?.name ?? feedCommunityScope}
+                </span>
                 <span className="feed-stream__filter-dismiss" aria-hidden>
                   ×
                 </span>
@@ -304,10 +483,13 @@ export default function Feed() {
           ) : null}
           {!loading && filteredPosts.length === 0 ? (
             <div className="feed-stream__empty">
-              {searchQuery.trim() || selectedSection ? (
+              {searchQuery.trim() || selectedSection || feedCommunityScope ? (
                 <>
                   Nothing matches your filters.
-                  <strong>Try another search or clear the topic filter.</strong>
+                  <strong>
+                    Try another search, clear the topic filter
+                    {feedCommunityScope ? ", or show all institutions" : ""}.
+                  </strong>
                 </>
               ) : (
                 <>

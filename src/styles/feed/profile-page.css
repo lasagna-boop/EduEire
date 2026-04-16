@@ -717,6 +717,32 @@
   }
 }
 
+/* Narrow / mobile: sidebar stacks under hero — staggered slide-in */
+@keyframes profile-sidebar-stack-in {
+  from {
+    opacity: 0;
+    transform: translate3d(14px, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (max-width: 1100px) {
+  .profile-main .feed-page__right-sidebar.profile-sidebar .feed-page__sidebar-card {
+    animation: profile-sidebar-stack-in 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .profile-main .feed-page__right-sidebar.profile-sidebar .feed-page__sidebar-card:nth-child(1) {
+    animation-delay: 0.07s;
+  }
+
+  .profile-main .feed-page__right-sidebar.profile-sidebar .feed-page__sidebar-card:nth-child(2) {
+    animation-delay: 0.16s;
+  }
+}
+
 @media (max-width: 700px) {
   .profile-hero__cover {
     height: 120px;
@@ -765,6 +791,10 @@
   .profile-hero,
   .profile-status-card,
   .profile-about {
+    animation: none !important;
+  }
+
+  .profile-main .feed-page__right-sidebar.profile-sidebar .feed-page__sidebar-card {
     animation: none !important;
   }
 

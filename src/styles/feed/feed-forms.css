@@ -230,6 +230,10 @@
 }
 
 .feed-page__error {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   background: #faf9f6;
   color: #ff9f1c;
   padding: 12px 16px;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import PostCard from "../components/PostCard";
 import { CommunitiesSidebar, SectionTopicList } from "../components/CommunitiesSidebar";
 import { CreateThreadCard } from "../components/CreateThreadCard";
@@ -201,7 +201,15 @@ export default function Community() {
                 <h1 className="feed-stream__title">c/{communityId}</h1>
                 <p className="feed-stream__subtitle">
                   {community?.fullName ??
-                    `University community feed for ${communityId}.`}
+                    `University community feed for ${communityId}.`}{" "}
+                  {communityId ? (
+                    <Link
+                      to={`/feed?community=${encodeURIComponent(communityId)}`}
+                      className="feed-stream__subtitle-link"
+                    >
+                      Same scope on the home feed
+                    </Link>
+                  ) : null}
                 </p>
               </div>
               <div className="feed-stream__intro-badges" aria-label="Community overview">

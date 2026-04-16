@@ -52,6 +52,11 @@ function sameStringArray(a: unknown, b: unknown): boolean {
   return true;
 }
 
+function asStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((item): item is string => typeof item === "string"))];
+}
+
 async function bumpUserStats(userId: string, updates: Record<string, unknown>) {
   await db.doc(`users/${userId}`).set(updates, { merge: true });
 }
@@ -120,8 +125,13 @@ export const trackThreadVoteImpact = onDocumentWritten(
     const helpfulDelta = helpfulVoteDelta(oldVote, newVote);
     if (scoreDelta === 0 && helpfulDelta === 0) return;
 
-    const threadSnap = await db.doc(`threads/${event.params.threadId}`).get();
+    const threadRef = db.doc(`threads/${event.params.threadId}`);
+    const threadSnap = await threadRef.get();
     if (!threadSnap.exists) return;
+    if (scoreDelta !== 0) {
+      await threadRef.set({ score: FieldValue.increment(scoreDelta) }, { merge: true });
+    }
+
     const authorId = threadSnap.data()?.authorId as string | undefined;
     if (!authorId || authorId === event.params.voterId) return;
 
@@ -153,10 +163,13 @@ export const trackCommentVoteImpact = onDocumentWritten(
     const helpfulDelta = helpfulVoteDelta(oldVote, newVote);
     if (scoreDelta === 0 && helpfulDelta === 0) return;
 
-    const postSnap = await db
-      .doc(`threads/${event.params.threadId}/posts/${event.params.postId}`)
-      .get();
+    const postRef = db.doc(`threads/${event.params.threadId}/posts/${event.params.postId}`);
+    const postSnap = await postRef.get();
     if (!postSnap.exists) return;
+    if (scoreDelta !== 0) {
+      await postRef.set({ score: FieldValue.increment(scoreDelta) }, { merge: true });
+    }
+
     const authorId = postSnap.data()?.authorId as string | undefined;
     if (!authorId || authorId === event.params.voterId) return;
 
@@ -270,9 +283,73 @@ export const moderatePost = onDocumentCreated(
         ...(result.toxicityScore != null && { toxicityScore: result.toxicityScore }),
         ...(result.spamScore != null && { spamScore: result.spamScore }),
       });
+    await db.doc(`threads/${event.params.threadId}`).set(
+      {
+        lastActivityAt: FieldValue.serverTimestamp(),
+        postCount: FieldValue.increment(1),
+      },
+      { merge: true }
+    );
     if (authorId) {
       await updateUserModerationStats(authorId, result.verdict, "comment");
     }
     await recalculateCommentCredibility(event.params.threadId, event.params.postId);
   }
 );
+
+export const trackFlairVoteImpact = onDocumentWritten(
+  "flairs/{flairId}/votes/{voterId}",
+  async (event) => {
+    const before = event.data?.before.data() ?? {};
+    const after = event.data?.after.data() ?? {};
+
+    const oldVote = asVote(before.vote);
+    const newVote = asVote(after.vote);
+    if (oldVote === newVote) return;
+
+    const scoreDelta = voteScoreDelta(oldVote, newVote);
+    if (scoreDelta === 0) return;
+
+    await db.doc(`flairs/${event.params.flairId}`).set(
+      { score: FieldValue.increment(scoreDelta) },
+      { merge: true }
+    );
+  }
+);
+
+export const trackCommunitySubscriptionCounts = onDocumentWritten(
+  "users/{userId}",
+  async (event) => {
+    const before = event.data?.before.data() ?? {};
+    const after = event.data?.after.data() ?? {};
+
+    const beforeSubs = asStringList(before.subscriptions);
+    const afterSubs = asStringList(after.subscriptions);
+    const beforeSet = new Set(beforeSubs);
+    const afterSet = new Set(afterSubs);
+
+    const added = afterSubs.filter((id) => !beforeSet.has(id));
+    const removed = beforeSubs.filter((id) => !afterSet.has(id));
+    if (added.length === 0 && removed.length === 0) return;
+
+    const batch = db.batch();
+    for (const communityId of added) {
+      batch.set(
+        db.doc(`communities/${communityId}`),
+        { memberCount: FieldValue.increment(1) },
+        { merge: true }
+      );
+    }
+    for (const communityId of removed) {
+      batch.set(
+        db.doc(`communities/${communityId}`),
+        { memberCount: FieldValue.increment(-1) },
+        { merge: true }
+      );
+    }
+    await batch.commit();
+  }
+);
+
+export { syncPublicLandingStats } from "./syncPublicLandingStats";
+export { getLandingStats } from "./getLandingStats";

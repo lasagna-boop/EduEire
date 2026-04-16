@@ -19,19 +19,21 @@
     display: none;
   }
 
+  /* Profile: main column first (hero + card), sidebar (communities / social) below */
+  .profile-main .feed-page__content {
+    order: 0;
+    max-width: none;
+    width: 100%;
+  }
+
   .profile-main .feed-page__right-sidebar.profile-sidebar {
     display: block;
     width: 100%;
-    order: -1;
+    order: 1;
   }
 
   .profile-main {
     flex-wrap: wrap;
-  }
-
-  .profile-main .feed-page__content {
-    max-width: none;
-    width: 100%;
   }
 
   .feed-page__content {

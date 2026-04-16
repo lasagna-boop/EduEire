@@ -223,14 +223,15 @@ export async function seedCommunities() {
  * universities were added). Avoids an extra list round-trip when nothing was missing.
  */
 export async function ensureDefaultCommunities(): Promise<Community[]> {
-  let list = await listCommunities();
-  const ids = new Set(list.map((c) => c.id));
-  const anyMissing = DEFAULT_COMMUNITY_SEEDS.some((c) => !ids.has(c.id));
-  if (anyMissing) {
-    await seedCommunities();
-    list = await listCommunities();
-  }
-  return list;
+  const list = await listCommunities();
+  if (list.length > 0) return list;
+
+  // Security posture: clients no longer write `/communities`.
+  // If collection is empty, return local defaults while admins seed trusted docs.
+  return DEFAULT_COMMUNITY_SEEDS.map((c) => ({
+    ...c,
+    memberCount: 0,
+  }));
 }
 
 // ==================== USER SUBSCRIPTIONS ====================
@@ -245,19 +246,15 @@ export async function getUserSubscriptions(userId: string): Promise<string[]> {
 // subscribe to a community
 export async function subscribeToCommunity(userId: string, communityId: string) {
   const userRef = doc(db, "users", userId);
-  const communityRef = doc(db, "communities", communityId);
 
   await setDoc(userRef, { subscriptions: arrayUnion(communityId) }, { merge: true });
-  await updateDoc(communityRef, { memberCount: increment(1) });
 }
 
 // unsubscribe from a community
 export async function unsubscribeFromCommunity(userId: string, communityId: string) {
   const userRef = doc(db, "users", userId);
-  const communityRef = doc(db, "communities", communityId);
 
   await updateDoc(userRef, { subscriptions: arrayRemove(communityId) });
-  await updateDoc(communityRef, { memberCount: increment(-1) });
 }
 
 export type CommunityActiveSubscriber = {
@@ -602,6 +599,8 @@ export type Thread = {
   /** Denormalized from users/{authorId}.publicHandle for clean profile URLs */
   authorPublicHandle?: string;
   createdAt?: unknown;
+  /** Bumped on new comments; used for default “activity” sort */
+  lastActivityAt?: unknown;
   score?: number;
   // optional expiry for flash threads; when in the past, thread is hidden from feeds
   flashExpiresAt?: unknown;
@@ -636,6 +635,27 @@ export type Post = {
 
 type ThreadDocData = Omit<Thread, "id">;
 type PostDocData = Omit<Post, "id">;
+
+/** Descending sort key for thread list (higher = more relevant first). */
+function threadSortValue(
+  t: Thread,
+  field: "lastActivityAt" | "createdAt" | "score" | "credibilityScore"
+): number {
+  if (field === "score") {
+    const s = t.score;
+    return typeof s === "number" && !Number.isNaN(s) ? s : 0;
+  }
+  if (field === "credibilityScore") {
+    const c = t.credibilityScore;
+    return typeof c === "number" && !Number.isNaN(c) ? c : 0;
+  }
+  if (field === "lastActivityAt") {
+    const ms = firestoreMillis(t.lastActivityAt);
+    if (ms > 0) return ms;
+    return firestoreMillis(t.createdAt);
+  }
+  return firestoreMillis(t.createdAt);
+}
 
 function utcDayKey(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10);
@@ -780,11 +800,27 @@ export async function listThreads(opts: {
     credibilityScore: "credibilityScore",
   };
   const sortField = sortFieldMap[opts.sortBy ?? "lastActivity"];
-  const parts: QueryConstraint[] = [orderBy(sortField, "desc"), limit(pageSize)];
 
+  // `where(communityId) + orderBy(...)` needs a composite index (and fails while building).
+  // Equality-only query + in-memory sort works immediately; cap fetch for large communities.
   if (opts.communityId) {
-    parts.unshift(where("communityId", "==", opts.communityId));
+    const maxFetch = Math.min(500, Math.max(pageSize * 15, 80));
+    const q = query(
+      base,
+      where("communityId", "==", opts.communityId),
+      limit(maxFetch)
+    );
+    const snap = await getDocs(q);
+    let threads: Thread[] = snap.docs.map((d) => {
+      const data = d.data() as ThreadDocData;
+      return { id: d.id, ...data };
+    });
+    threads.sort((a, b) => threadSortValue(b, sortField) - threadSortValue(a, sortField));
+    threads = threads.slice(0, pageSize);
+    return { threads, nextCursor: null };
   }
+
+  const parts: QueryConstraint[] = [orderBy(sortField, "desc"), limit(pageSize)];
 
   if (opts.cursor) parts.push(startAfter(opts.cursor));
 
@@ -938,7 +974,12 @@ export async function voteOnThread(
   
   // update thread score
   if (scoreChange !== 0) {
-    await updateDoc(threadRef, { score: increment(scoreChange) });
+    try {
+      await updateDoc(threadRef, { score: increment(scoreChange) });
+    } catch (e) {
+      // Score is also maintained server-side by Cloud Functions; ignore client-side rule denials.
+      console.warn("Could not update thread score directly", e);
+    }
   }
   
   return { newVote, scoreChange };
@@ -1095,7 +1136,12 @@ export async function voteOnFlair(flairId: string, userId: string, newVote: Vote
   }
 
   if (scoreChange !== 0) {
-    await updateDoc(flairRef, { score: increment(scoreChange) });
+    try {
+      await updateDoc(flairRef, { score: increment(scoreChange) });
+    } catch (e) {
+      // Score is also maintained server-side by Cloud Functions; ignore client-side rule denials.
+      console.warn("Could not update flair score directly", e);
+    }
   }
 
   return { newVote, scoreChange };

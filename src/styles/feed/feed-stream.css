@@ -363,11 +363,86 @@
 
 .feed-stream__subtitle {
   margin: 10px 0 0 0;
-  max-width: 48ch;
+  max-width: min(62ch, 100%);
   font-size: 0.9rem;
   font-weight: 550;
   color: #465c70;
   line-height: 1.56;
+}
+
+.feed-stream__subtitle-link {
+  color: #1f5c45;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.feed-stream__subtitle-link:hover {
+  color: #163d2f;
+}
+
+.feed-stream__subtitle-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+  font-size: 0.85em;
+  font-weight: 650;
+  color: #314a5c;
+}
+
+.feed-stream__scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: min(100%, 260px);
+}
+
+.feed-stream__scope-label {
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #4a5d6e;
+}
+
+.feed-stream__scope-select {
+  flex: 1 1 200px;
+  min-width: 0;
+  max-width: 420px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(86, 106, 128, 0.35);
+  background: rgba(255, 255, 255, 0.95);
+  color: #1a202c;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  transition:
+    border-color 160ms var(--feed-ease-out-quart),
+    box-shadow 160ms var(--feed-ease-out-quart);
+}
+
+.feed-stream__scope-select:hover {
+  border-color: rgba(57, 87, 110, 0.45);
+}
+
+.feed-stream__scope-select:focus {
+  outline: none;
+  border-color: rgba(45, 106, 79, 0.55);
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.18);
+}
+
+.feed-stream__filter-chip--soft {
+  border-color: rgba(86, 106, 128, 0.28);
+  background: rgba(247, 250, 252, 0.92);
+}
+
+.feed-stream__filter-chip--soft:hover {
+  border-color: rgba(86, 106, 128, 0.42);
+  background: rgba(237, 242, 247, 0.95);
 }
 
 .feed-stream__toolbar {
@@ -536,6 +611,9 @@
   border-radius: 12px;
   border-width: 1px;
   margin-bottom: 14px;
+  max-width: min(100%, 100vw - 48px);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .feed-stream__loading,

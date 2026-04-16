@@ -1,6 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { collection, getCountFromServer, query, where } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getCountFromServer,
+  getDoc,
+  query,
+  where,
+} from "firebase/firestore";
 import { useAuth } from "../context/useAuth";
 import AppHeader from "../components/AppHeader";
 import { LandingUniversityBadge } from "../components/LandingUniversityBadge";
@@ -109,35 +116,66 @@ export default function Landing() {
   }, []);
 
   useEffect(() => {
-    const loadRegisteredUsersCount = async () => {
-      try {
-        const snap = await getCountFromServer(collection(db, "users"));
-        setRegisteredUsersCount(snap.data().count);
-      } catch (e) {
-        console.error("Failed to load registered users count", e);
-      }
-    };
+    let cancelled = false;
 
-    void loadRegisteredUsersCount();
-  }, []);
-
-  useEffect(() => {
     const loadLandingStats = async () => {
-      try {
-        const [verifiedUsersSnap, threadsSnap] = await Promise.all([
-          getCountFromServer(query(collection(db, "users"), where("studentEmailConfirmed", "==", true))),
-          getCountFromServer(collection(db, "threads")),
-        ]);
+      let reg: number | null = null;
+      let ver: number | null = null;
+      let disc: number | null = null;
 
-        setVerifiedStudentsCount(verifiedUsersSnap.data().count);
-        setDiscussionsCount(threadsSnap.data().count);
+      try {
+        const pub = await getDoc(doc(db, "public_stats", "landing"));
+        if (!cancelled && pub.exists()) {
+          const d = pub.data();
+          if (typeof d.registeredUsersCount === "number") {
+            reg = d.registeredUsersCount;
+            setRegisteredUsersCount(reg);
+          }
+          if (typeof d.verifiedStudentsCount === "number") {
+            ver = d.verifiedStudentsCount;
+            setVerifiedStudentsCount(ver);
+          }
+          if (typeof d.discussionsCount === "number") {
+            disc = d.discussionsCount;
+            setDiscussionsCount(disc);
+          }
+        }
       } catch (e) {
-        console.error("Failed to load landing stats", e);
+        console.error("Failed to load public_stats landing snapshot", e);
+      }
+
+      try {
+        const threadsSnap = await getCountFromServer(collection(db, "threads"));
+        if (cancelled) return;
+        const n = threadsSnap.data().count;
+        if (disc === null) {
+          disc = n;
+          setDiscussionsCount(n);
+        }
+      } catch (e) {
+        console.error("Failed to load thread count", e);
+      }
+
+      if (!user || cancelled) return;
+
+      try {
+        const [regSnap, verifiedSnap] = await Promise.all([
+          getCountFromServer(collection(db, "users")),
+          getCountFromServer(query(collection(db, "users"), where("studentEmailConfirmed", "==", true))),
+        ]);
+        if (cancelled) return;
+        setRegisteredUsersCount(regSnap.data().count);
+        setVerifiedStudentsCount(verifiedSnap.data().count);
+      } catch (e) {
+        console.error("Failed to load authenticated user counts", e);
       }
     };
 
     void loadLandingStats();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     const loadSubscriptions = async () => {
@@ -217,40 +255,51 @@ export default function Landing() {
         <aside className="landing__sidebar landing__sidebar--left">
           <div className="landing__panel">
             <div className="landing__panel-head">
-              <div className="landing__panel-icon">🏫</div>
+              <div className="landing__panel-icon">🧭</div>
               <div>
-                <h3>Communities</h3>
-                <p>Explore Irish Academia</p>
+                <h3>Browse</h3>
+                <p className="landing__panel-tagline">Where each link goes</p>
               </div>
             </div>
 
-            <nav className="landing__menu">
+            <p className="landing__nav-hint">
+              The main feed mixes every institution; community hubs and the map add structure.
+            </p>
+
+            <nav className="landing__menu" aria-label="Primary destinations">
+              <span className="landing__nav-group-label">Feed</span>
               <Link to="/feed" className="landing__menu-item landing__menu-item--active">
-                <span>🏠</span> Home
+                <span aria-hidden>🏠</span> All posts
               </Link>
-              <Link to="/feed" className="landing__menu-item">
-                <span>📈</span> Popular
+              <Link to="/feed?sort=popular" className="landing__menu-item">
+                <span aria-hidden>📈</span> Popular
               </Link>
-              <Link to="/feed" className="landing__menu-item">
-                <span>🎓</span> Leaving Cert
+              <Link to="/feed?topic=Admissions" className="landing__menu-item">
+                <span aria-hidden>📝</span> Admissions threads
               </Link>
-              <Link to="/feed" className="landing__menu-item">
-                <span>🏛️</span> University
+
+              <span className="landing__nav-group-label">Discover</span>
+              <Link to="/universities" className="landing__menu-item">
+                <span aria-hidden>🌐</span> University Explorer
               </Link>
-              <Link to="/feed" className="landing__menu-item">
-                <span>🤝</span> Student Life
+              <Link to="/map" className="landing__menu-item">
+                <span aria-hidden>🗺️</span> Campus map
+              </Link>
+              <Link to="/flairs" className="landing__menu-item">
+                <span aria-hidden>🏷️</span> Topic tags (Flairs)
               </Link>
             </nav>
 
-            <Link to="/feed" className="landing__cta-btn">
-              Create Post
+            <Link
+              to={user ? "/feed" : "/login"}
+              className="landing__cta-btn"
+            >
+              {user ? "Create a post" : "Log in to post"}
             </Link>
           </div>
 
           <div className="landing__sidebar-footer">
-            <Link to="/feed">Rules</Link>
-            <Link to="/feed">Privacy</Link>
-            <Link to="/feed">Support</Link>
+            <span className="landing__sidebar-footer-note">Help &amp; legal: coming soon</span>
           </div>
         </aside>
 
@@ -274,15 +323,24 @@ export default function Landing() {
                 <span>Irish Students.</span>
               </h1>
               <p>
-                Join {(registeredUsersCount ?? 0).toLocaleString()} scholars across Ireland. Engage in high-level
-                discourse, share premium resources, and find your academic home.
+                {registeredUsersCount !== null ? (
+                  <>
+                    Join {registeredUsersCount.toLocaleString()} scholars across Ireland. Engage in high-level
+                    discourse, share premium resources, and find your academic home.
+                  </>
+                ) : (
+                  <>
+                    Join Ireland&apos;s student community. Engage in high-level discourse, share resources, and find
+                    your academic home.
+                  </>
+                )}
               </p>
               <div className="landing__hero-actions">
                 <Link to="/feed" className="landing__btn landing__btn--hero-primary">
-                  Explore Communities
+                  Open the feed
                 </Link>
-                <Link to="/feed" className="landing__btn landing__btn--hero-secondary">
-                  Start a Discussion
+                <Link to="/universities" className="landing__btn landing__btn--hero-secondary">
+                  Explore institutions
                 </Link>
               </div>
             </div>
@@ -293,21 +351,27 @@ export default function Landing() {
             <article className="landing__stat-card">
               <div className="landing__stat-icon landing__stat-icon--blue">👥</div>
               <div>
-                <div className="landing__stat-value">{(verifiedStudentsCount ?? 0).toLocaleString()}</div>
+                <div className="landing__stat-value">
+                  {verifiedStudentsCount === null ? "—" : verifiedStudentsCount.toLocaleString()}
+                </div>
                 <div className="landing__stat-label">Verified Students</div>
               </div>
             </article>
             <article className="landing__stat-card">
               <div className="landing__stat-icon landing__stat-icon--green">📄</div>
               <div>
-                <div className="landing__stat-value">{(registeredUsersCount ?? 0).toLocaleString()}</div>
+                <div className="landing__stat-value">
+                  {registeredUsersCount === null ? "—" : registeredUsersCount.toLocaleString()}
+                </div>
                 <div className="landing__stat-label">Website Users</div>
               </div>
             </article>
             <article className="landing__stat-card">
               <div className="landing__stat-icon landing__stat-icon--rose">💬</div>
               <div>
-                <div className="landing__stat-value">{(discussionsCount ?? 0).toLocaleString()}</div>
+                <div className="landing__stat-value">
+                  {discussionsCount === null ? "—" : discussionsCount.toLocaleString()}
+                </div>
                 <div className="landing__stat-label">Discussions</div>
               </div>
             </article>
@@ -430,10 +494,10 @@ export default function Landing() {
               <Link to="/feed">Campus Ambassadors</Link>
             </div>
             <div>
-              <h4>Resources</h4>
-              <Link to="/map">Study Hub</Link>
-              <Link to="/map">Past Papers</Link>
-              <Link to="/map">Careers Portal</Link>
+              <h4>Explore</h4>
+              <Link to="/universities">University Explorer</Link>
+              <Link to="/map">Campus map</Link>
+              <Link to="/flairs">Topic tags</Link>
             </div>
             <div>
               <h4>Stay Connected</h4>

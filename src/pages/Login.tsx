@@ -10,20 +10,37 @@ const LandingHeroShader = lazy(() => import("../components/LandingHeroShader"));
 
 export default function Login() {
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [isRegister, setIsRegister] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  // Open in signup mode when coming from Landing "Sign Up" (?mode=signup)
+  /** Single source of truth with header links: `/login` vs `/login?mode=signup` */
+  const isRegister = searchParams.get("mode") === "signup";
+
+  const toggleAuthMode = () => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (next.get("mode") === "signup") {
+          next.delete("mode");
+        } else {
+          next.set("mode", "signup");
+        }
+        return next;
+      },
+      { replace: true }
+    );
+    setError(null);
+  };
+
   useEffect(() => {
-    if (searchParams.get("mode") === "signup") {
-      setIsRegister(true);
-    }
-  }, [searchParams]);
+    setError(null);
+  }, [isRegister]);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -33,8 +50,6 @@ export default function Login() {
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,7 +162,7 @@ export default function Login() {
 
               <button
                 type="button"
-                onClick={() => setIsRegister((v) => !v)}
+                onClick={() => toggleAuthMode()}
                 disabled={busy}
                 className="login-page__switch"
               >
