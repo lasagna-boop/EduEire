@@ -80,6 +80,29 @@ service cloud.firestore {
           || request.resource.data.accessMode == expectedAccessMode());
     }
 
+    /** Matches client READ_ONLY_ALLOWED_SECTIONS (Admissions / First Year). */
+    function tagsAllowReadOnlyThread(tags) {
+      return tags is list
+        && tags.hasAny(['Admissions', 'First Year/Transition']);
+    }
+
+    function userAccessMode() {
+      let d = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return d.keys().hasAny(['accessMode']) ? d.accessMode : '';
+    }
+
+    function readOnlyUser() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userAccessMode() == 'read_only';
+    }
+
+    /** Full student email OR read-only account (client limits sections elsewhere). */
+    function canCreateThreadContent(data) {
+      return hasStudentEmail()
+        || (readOnlyUser() && tagsAllowReadOnlyThread(data.tags));
+    }
+
     function threadCreateOk(data) {
       return data.authorId is string
         && data.authorId == request.auth.uid
@@ -94,7 +117,8 @@ service cloud.firestore {
         && data.title.size() <= 180
         && data.body is string
         && data.body.size() >= 1
-        && data.body.size() <= 12000;
+        && data.body.size() <= 12000
+        && data.tags is list;
     }
 
     function postCreateOk(data) {
@@ -106,6 +130,20 @@ service cloud.firestore {
         && data.body is string
         && data.body.size() >= 1
         && data.body.size() <= 12000;
+    }
+
+    function threadTagList(threadId) {
+      let d = get(/databases/$(database)/documents/threads/$(threadId)).data;
+      return d.keys().hasAny(['tags']) && d.tags is list ? d.tags : [];
+    }
+
+    function canCreatePostInThread(threadId) {
+      return hasStudentEmail()
+        || (
+          readOnlyUser()
+          && exists(/databases/$(database)/documents/threads/$(threadId))
+          && tagsAllowReadOnlyThread(threadTagList(threadId))
+        );
     }
 
     function flairCreateOk(data) {
@@ -216,7 +254,9 @@ service cloud.firestore {
 
     match /threads/{threadId} {
       allow read: if true;
-      allow create: if hasStudentEmail() && threadCreateOk(request.resource.data);
+      allow create: if request.auth != null
+        && threadCreateOk(request.resource.data)
+        && canCreateThreadContent(request.resource.data);
       // Only admins can change moderation fields from clients.
       // Score and activity counters are server-managed via Cloud Functions.
       allow update: if request.auth != null
@@ -235,7 +275,9 @@ service cloud.firestore {
 
       match /posts/{postId} {
         allow read: if true;
-        allow create: if hasStudentEmail() && postCreateOk(request.resource.data);
+        allow create: if request.auth != null
+          && postCreateOk(request.resource.data)
+          && canCreatePostInThread(threadId);
         allow update: if request.auth != null
           && isAdmin()
           && request.resource.data.diff(resource.data).affectedKeys()

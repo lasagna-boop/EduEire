@@ -3,7 +3,7 @@ import FlairCard from "../components/FlairCard";
 import AppHeader from "../components/AppHeader";
 import { useAuth } from "../context/useAuth";
 import { createFlair, listFlairs, type Flair } from "../lib/firestore";
-import { moderateContent } from "../lib/moderation";
+import { moderateContentV2 } from "../lib/moderation";
 
 export default function Flairs() {
   const { user: fbUser, canWrite } = useAuth();
@@ -52,7 +52,7 @@ export default function Flairs() {
     setError(null);
 
     const titleTrimmed = title.trim();
-    const modResult = moderateContent(titleTrimmed, "");
+    const modResult = moderateContentV2(titleTrimmed, "");
     if (modResult.flagged) {
       setError("Your flair contains inappropriate language and cannot be published.");
       setBusy(false);

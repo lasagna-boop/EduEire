@@ -1,12 +1,8 @@
-// Cloud Functions — Layer 2 (Server-side enforcement)
-//
-// Triggers: onDocumentCreated for threads and posts
-// Sets moderationStatus on each document: "approved" | "rejected" | "pending_review"
-
 import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/firestore";
 import { initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
-import { moderate } from "./moderation";
+import { moderate, moderateThreadContent } from "./moderation";
+import { sanitizeModerationText } from "./moderationInput";
 import { recalculateCommentCredibility, recalculateThreadCredibility } from "./credibilityRecalc";
 
 initializeApp();
@@ -84,7 +80,6 @@ async function updateUserModerationStats(
   await userRef.set(updates, { merge: true });
 }
 
-// Trigger: new thread created → moderate title + body
 export const moderateThread = onDocumentCreated(
   "threads/{threadId}",
   async (event) => {
@@ -92,11 +87,11 @@ export const moderateThread = onDocumentCreated(
     if (!snap) return;
 
     const data = snap.data();
-    const title = data.title ?? "";
-    const body = data.body ?? "";
-    const authorId = data.authorId ?? "";
+    const title = sanitizeModerationText(data.title);
+    const body = sanitizeModerationText(data.body);
+    const authorId = typeof data.authorId === "string" ? data.authorId : "";
 
-    const result = await moderate(`${title} ${body}`);
+    const result = await moderateThreadContent(title, body);
 
     await db.doc(`threads/${event.params.threadId}`).update({
       moderationStatus: result.verdict,
@@ -262,7 +257,6 @@ export const trackCommentModerationReports = onDocumentWritten(
   }
 );
 
-// Trigger: new comment (post) created → moderate body
 export const moderatePost = onDocumentCreated(
   "threads/{threadId}/posts/{postId}",
   async (event) => {
@@ -270,8 +264,8 @@ export const moderatePost = onDocumentCreated(
     if (!snap) return;
 
     const data = snap.data();
-    const body = data.body ?? "";
-    const authorId = data.authorId ?? "";
+    const body = sanitizeModerationText(data.body);
+    const authorId = typeof data.authorId === "string" ? data.authorId : "";
 
     const result = await moderate(body);
 

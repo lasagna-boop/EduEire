@@ -16,7 +16,7 @@ import {
 import { useAuth } from "../context/useAuth";
 import { errorMessage } from "../lib/errors";
 import { isApprovedPost } from "../lib/postModeration";
-import { moderateContent } from "../lib/moderation";
+import { moderateContentV2 } from "../lib/moderation";
 import { hasReadOnlyAllowedTag } from "../lib/sectionAccess";
 import { voteScoreDelta } from "../lib/voteScoreDelta";
 
@@ -115,7 +115,7 @@ export default function ThreadDetail() {
     setSubmitting(true);
     setError(null);
 
-    const modResult = moderateContent("", commentBody.trim());
+    const modResult = moderateContentV2("", commentBody.trim());
     if (modResult.flagged) {
       setError("Your comment looks like spam or contains inappropriate language.");
       setSubmitting(false);
@@ -149,7 +149,7 @@ export default function ThreadDetail() {
     )
       return;
 
-    const modResult = moderateContent("", body.trim());
+    const modResult = moderateContentV2("", body.trim());
     if (modResult.flagged) {
       setError("Your reply looks like spam or contains inappropriate language.");
       throw new Error("moderation");

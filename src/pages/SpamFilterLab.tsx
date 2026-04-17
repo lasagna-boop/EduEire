@@ -2,19 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import { isAdmin } from "../lib/firestore";
-import { moderateContent, checkProfanity } from "../lib/moderation";
-import { checkSpam } from "../lib/moderationSpam";
+import { moderateContentV2, checkProfanity } from "../lib/moderation";
+import { checkSpamV2, SPAM_V2_THRESHOLD, SPAM_WEIGHTS_V2 } from "../lib/moderationSpam";
 import { useAuth } from "../context/useAuth";
 import "../styles/spam-filter-lab.css";
-
-/** Mirrors `moderationSpam.ts` — for labels only */
-const SPAM_TAG_WEIGHTS: Record<string, number> = {
-  spam_links: 0.35,
-  spam_caps: 0.2,
-  spam_char_run: 0.15,
-  spam_repetition: 0.2,
-  spam_keywords: 0.25,
-};
 
 function pct(n: number): string {
   return `${(n * 100).toFixed(1)}%`;
@@ -37,12 +28,12 @@ export default function SpamFilterLab() {
       .catch(() => setChecking(false));
   }, [fbUser]);
 
-  const combined = useMemo(() => moderateContent(title, body), [title, body]);
+  const combined = useMemo(() => moderateContentV2(title, body), [title, body]);
   const profanityOnly = useMemo(
     () => checkProfanity(`${title}\n${body}`),
     [title, body]
   );
-  const spamOnly = useMemo(() => checkSpam(`${title}\n${body}`), [title, body]);
+  const spamOnly = useMemo(() => checkSpamV2(`${title}\n${body}`), [title, body]);
 
   if (checking) {
     return (
@@ -80,9 +71,8 @@ export default function SpamFilterLab() {
           <header className="spam-lab__header">
             <h1 className="spam-lab__title">Spam filter lab</h1>
             <p className="spam-lab__lede">
-              Live preview of the same <strong>client Layer 1</strong> pipeline used before
-              posts are saved (profanity + spam heuristics + quality signals). Empty title is
-              fine — use body only to mimic comments.
+              Preview of the client-side Layer 1 check (profanity, spam v2, quality v2). Leave the
+              title empty to approximate a comment.
             </p>
           </header>
 
@@ -113,8 +103,8 @@ export default function SpamFilterLab() {
                 spellCheck
               />
               <p className="spam-lab__note">
-                Client flags when <code>spamScore ≥ 0.5</code> or profanity matches (same as
-                create flow).
+                Client flags when <code>spamScore ≥ {SPAM_V2_THRESHOLD}</code> or profanity matches
+                (same as create flow).
               </p>
             </div>
           </div>
@@ -168,7 +158,7 @@ export default function SpamFilterLab() {
                       <li key={m}>
                         {m}{" "}
                         <span style={{ opacity: 0.75 }}>
-                          (+{SPAM_TAG_WEIGHTS[m] ?? "?"})
+                          (+{SPAM_WEIGHTS_V2[m] ?? "?"})
                         </span>
                       </li>
                     ))}
@@ -187,10 +177,9 @@ export default function SpamFilterLab() {
             </div>
 
             <p className="spam-lab__disclaimer">
-              <strong>Server (Layer 2)</strong> runs again in Cloud Functions with the same
-              keyword list and spam math, plus optional Google Perspective toxicity when{" "}
-              <code>PERSPECTIVE_API_KEY</code> is set. Final moderation status on saved
-              documents may differ slightly from this lab.
+              Cloud Functions re-runs moderation (keywords, spam v2, quality v2) and may call
+              Perspective when <code>PERSPECTIVE_API_KEY</code> is configured. Stored status can
+              differ from this preview.
             </p>
           </section>
         </div>

@@ -1,3 +1,5 @@
+import { sanitizeModerationText } from "./moderationInput";
+
 export type SpamResult = {
   flagged: boolean;
   matches: string[];
@@ -46,13 +48,14 @@ function hasSpamKeywords(text: string): boolean {
 }
 
 export function checkSpam(text: string): SpamResult {
+  const safe = sanitizeModerationText(text);
   const matches: string[] = [];
 
-  if (countUrls(text) >= 3) matches.push("spam_links");
-  if (uppercaseRatio(text) > 0.7 && text.length >= 20) matches.push("spam_caps");
-  if (hasLongCharRun(text)) matches.push("spam_char_run");
-  if (hasRepeatedPhrase(text)) matches.push("spam_repetition");
-  if (hasSpamKeywords(text)) matches.push("spam_keywords");
+  if (countUrls(safe) >= 3) matches.push("spam_links");
+  if (uppercaseRatio(safe) > 0.7 && safe.length >= 20) matches.push("spam_caps");
+  if (hasLongCharRun(safe)) matches.push("spam_char_run");
+  if (hasRepeatedPhrase(safe)) matches.push("spam_repetition");
+  if (hasSpamKeywords(safe)) matches.push("spam_keywords");
 
   const spamScore = clamp01(
     matches.reduce((sum, key) => sum + (SPAM_WEIGHTS[key] ?? 0), 0)
@@ -65,7 +68,6 @@ export function checkSpam(text: string): SpamResult {
   };
 }
 
-// ---- Versioned exports (V2 is implemented separately, V1 remains default) ----
 export {
   checkSpamV2,
   SPAM_V2_THRESHOLD,

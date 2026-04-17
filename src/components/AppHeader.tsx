@@ -23,6 +23,7 @@ export default function AppHeader({ activeTopLink, search }: AppHeaderProps) {
   const handleLogout = async () => {
     try {
       await logout();
+      navigate("/");
     } catch (e) {
       console.error("Logout failed", e);
     }
@@ -34,7 +35,7 @@ export default function AppHeader({ activeTopLink, search }: AppHeaderProps) {
         <div className="landing__header-left">
           <SlideMenu />
           <Link to="/" className="landing__logo">
-            <img src="/EduEire logo.svg" alt="EduÉire" className="landing__logo-img" />
+            <img src="/logo.svg" alt="EduÉire" className="landing__logo-img" />
           </Link>
           <div className="landing__top-links">
             <Link
@@ -73,7 +74,7 @@ export default function AppHeader({ activeTopLink, search }: AppHeaderProps) {
             />
           </form>
         ) : (
-          <div style={{ flex: 1 }} />
+          <div className="landing__header-spacer" aria-hidden="true" />
         )}
 
         <div className="landing__auth">

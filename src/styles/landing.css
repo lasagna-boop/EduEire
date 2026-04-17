@@ -22,6 +22,8 @@
   align-items: center;
   gap: 20px;
   padding: 12px 24px;
+  /* Lets the search column shrink so auth (Log Out) stays on-screen on laptop widths */
+  min-width: 0;
 }
 
 .landing__header-left {
@@ -123,11 +125,12 @@
 }
 
 .landing__search {
-  flex: 1;
+  /* 1 1 0: shrink/grow from zero basis so this column yields space before clipping .landing__auth */
+  flex: 1 1 0;
   max-width: 620px;
   margin: 0 auto;
   position: relative;
-  min-width: 180px;
+  min-width: 0;
 }
 
 .landing__search-icon {
@@ -1077,7 +1080,23 @@
   .landing__header-inner {
     gap: 10px;
     padding: 10px 12px;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  /* Second row: full-width search so burger + logo + auth stay on the first row */
+  .landing__search {
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
+    margin: 0;
+    min-width: 0;
+  }
+
+  .landing__auth {
+    order: 2;
+    margin-left: auto;
+    flex-shrink: 0;
   }
 
   .landing__header-left {
@@ -1087,12 +1106,6 @@
 
   .landing__logo-img {
     height: 42px;
-  }
-
-  .landing__search {
-    margin: 0;
-    max-width: none;
-    min-width: 0;
   }
 
   .landing__layout {

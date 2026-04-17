@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { User } from "firebase/auth";
 import { createThread, type Community } from "../lib/firestore";
 import { errorMessage } from "../lib/errors";
-import { moderateContent } from "../lib/moderation";
+import { moderateContentV2 } from "../lib/moderation";
 import type { AccessMode } from "../lib/userAccess";
 import { hasReadOnlyAllowedTag, READ_ONLY_ALLOWED_SECTIONS } from "../lib/sectionAccess";
 
@@ -72,7 +72,7 @@ export function CreateThreadCard(props: Readonly<Props>) {
     setLocalError(null);
     props.onFormError(null);
 
-    const modResult = moderateContent(title.trim(), body.trim());
+    const modResult = moderateContentV2(title.trim(), body.trim());
     if (modResult.flagged) {
       const message = "Your post contains inappropriate language and cannot be published.";
       setLocalError(message);

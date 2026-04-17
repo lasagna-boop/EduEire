@@ -1,10 +1,5 @@
-// src/lib/moderation.ts
-// Layer 1 — Client-side keyword filter (Auto Reject)
-//
-// Performs string normalisation + regex word-boundary matching
-// to catch profanity, slurs, and spam before content reaches Firestore.
-
 import { BANNED_WORDS } from "./banned-words";
+import { sanitizeModerationText } from "./moderationInput";
 import {
   checkSpam,
   checkSpamV2,
@@ -13,7 +8,11 @@ import {
   SPAM_WEIGHTS_V2,
 } from "./moderationSpam";
 
-// ==================== LEET-SPEAK SUBSTITUTION MAP ====================
+function contentPair(title: string, body: string) {
+  const t = sanitizeModerationText(title).trim();
+  const b = sanitizeModerationText(body).trim();
+  return { t, b, combined: `${t}\n${b}` };
+}
 
 const LEET_MAP: Record<string, string> = {
   "@": "a",
@@ -29,33 +28,17 @@ const LEET_MAP: Record<string, string> = {
   "+": "t",
 };
 
-// ==================== NORMALISATION PIPELINE ====================
-
 export function normalise(text: string): string {
-  let s = text;
-
-  // 1. lowercase
-  s = s.toLowerCase();
-
-  // 2. Unicode NFKD decomposition — strip diacritics (e.g. é → e)
+  let s = text.toLowerCase();
   s = s.normalize("NFKD").replaceAll(/[\u0300-\u036f]/g, "");
-
-  // 3. leet-speak substitution
   s = s
     .split("")
     .map((ch) => LEET_MAP[ch] ?? ch)
     .join("");
-
-  // 4. collapse repeated characters (e.g. "fuuuck" → "fuck")
   s = s.replaceAll(/(.)\1{2,}/g, "$1");
-
-  // 5. strip inserted whitespace/punctuation between letters ("f u c k" → "fuck")
   s = s.replaceAll(/\b(\w)\s+(?=\w\b)/g, "$1");
-
   return s;
 }
-
-// ==================== DETECTION ====================
 
 export type ModerationResult = {
   flagged: boolean;
@@ -169,11 +152,10 @@ function qualitySignalsV2(title: string, body: string): { score: number; matches
 }
 
 export function checkProfanity(text: string): ModerationResult {
-  const normalised = normalise(text);
+  const normalised = normalise(sanitizeModerationText(text));
   const matches: string[] = [];
 
   for (const word of BANNED_WORDS) {
-    // word-boundary regex to avoid false positives (e.g. "class" not matching "ass")
     const pattern = new RegExp(String.raw`\b${escapeRegex(word)}\b`, "gi");
     if (pattern.test(normalised)) {
       matches.push(word);
@@ -190,11 +172,8 @@ function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// ==================== COMBINED CHECK ====================
-
-/** Heuristic-only breakdown (same string as `checkSpam(text)` in tests). */
 export function explainCheckSpamOnly(text: string) {
-  const spam = checkSpam(text);
+  const spam = checkSpam(sanitizeModerationText(text));
   const heuristicPerTag = spam.matches.map((tag) => ({
     tag,
     weight: SPAM_WEIGHTS[tag] ?? 0,
@@ -208,9 +187,8 @@ export function explainCheckSpamOnly(text: string) {
   };
 }
 
-/** Heuristic-only breakdown for V2 spam rules. */
 export function explainCheckSpamOnlyV2(text: string) {
-  const spam = checkSpamV2(text);
+  const spam = checkSpamV2(sanitizeModerationText(text));
   const heuristicPerTag = spam.matches.map((tag) => ({
     tag,
     weight: SPAM_WEIGHTS_V2[tag] ?? 0,
@@ -225,8 +203,6 @@ export function explainCheckSpamOnlyV2(text: string) {
   };
 }
 
-// checks title + body together, returns Red if flagged
-/** Inspectable breakdown for CLI / diagnostics (Layer 1 only). */
 export type Layer1Breakdown = {
   combined: string;
   profanityMatches: string[];
@@ -243,15 +219,15 @@ export type Layer1Breakdown = {
 };
 
 export function explainLayer1(title: string, body: string): Layer1Breakdown {
-  const combined = `${title}\n${body}`;
+  const { t, b, combined } = contentPair(title, body);
   const profanityResult = checkProfanity(combined);
   const spamResult = checkSpam(combined);
-  const qualityDetail = qualitySignalsDetail(title, body);
+  const qualityDetail = qualitySignalsDetail(t, b);
   const sigmaSpam = spamResult.spamScore;
   const sigmaQual = qualityDetail.score;
   const sigma = clamp01(sigmaSpam + sigmaQual);
   const toxicityProxy = clamp01(profanityResult.matches.length * 0.35);
-  const full = moderateContent(title, body);
+  const full = moderateContent(t, b);
   const heuristicPerTag = spamResult.matches.map((tag) => ({
     tag,
     weight: SPAM_WEIGHTS[tag] ?? 0,
@@ -273,10 +249,10 @@ export function explainLayer1(title: string, body: string): Layer1Breakdown {
 }
 
 export function moderateContent(title: string, body: string): ModerationResult {
-  const combined = `${title}\n${body}`;
+  const { t, b, combined } = contentPair(title, body);
   const profanityResult = checkProfanity(combined);
   const spamResult = checkSpam(combined);
-  const qualityResult = qualitySignals(title, body);
+  const qualityResult = qualitySignals(t, b);
   const spamScore = clamp01(spamResult.spamScore + qualityResult.score);
   const toxicityScore = clamp01(profanityResult.matches.length * 0.35);
 
@@ -313,15 +289,15 @@ export type Layer1BreakdownV2 = {
 };
 
 export function explainLayer1V2(title: string, body: string): Layer1BreakdownV2 {
-  const combined = `${title}\n${body}`;
+  const { t, b, combined } = contentPair(title, body);
   const profanityResult = checkProfanity(combined);
   const spamResult = checkSpamV2(combined);
-  const qualityDetail = qualitySignalsDetailV2(title, body);
+  const qualityDetail = qualitySignalsDetailV2(t, b);
   const sigmaSpam = spamResult.spamScore;
   const sigmaQual = qualityDetail.score;
   const sigma = clamp01(sigmaSpam + sigmaQual);
   const toxicityProxy = clamp01(profanityResult.matches.length * 0.35);
-  const full = moderateContentV2(title, body);
+  const full = moderateContentV2(t, b);
   const heuristicPerTag = spamResult.matches.map((tag) => ({
     tag,
     weight: SPAM_WEIGHTS_V2[tag] ?? 0,
@@ -343,12 +319,11 @@ export function explainLayer1V2(title: string, body: string): Layer1BreakdownV2 
   };
 }
 
-/** Version 2 manual spam layer (still local and deterministic; no external models). */
 export function moderateContentV2(title: string, body: string): ModerationResult {
-  const combined = `${title}\n${body}`;
+  const { t, b, combined } = contentPair(title, body);
   const profanityResult = checkProfanity(combined);
   const spamResult = checkSpamV2(combined);
-  const qualityResult = qualitySignalsV2(title, body);
+  const qualityResult = qualitySignalsV2(t, b);
   const spamScore = clamp01(spamResult.spamScore + qualityResult.score);
   const toxicityScore = clamp01(profanityResult.matches.length * 0.35);
 
