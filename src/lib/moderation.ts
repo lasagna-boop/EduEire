@@ -5,7 +5,13 @@
 // to catch profanity, slurs, and spam before content reaches Firestore.
 
 import { BANNED_WORDS } from "./banned-words";
-import { checkSpam } from "./moderationSpam";
+import {
+  checkSpam,
+  checkSpamV2,
+  SPAM_V2_THRESHOLD,
+  SPAM_WEIGHTS,
+  SPAM_WEIGHTS_V2,
+} from "./moderationSpam";
 
 // ==================== LEET-SPEAK SUBSTITUTION MAP ====================
 
@@ -64,35 +70,102 @@ function clamp01(value: number): number {
   return value;
 }
 
-function qualitySignals(title: string, body: string): { score: number; matches: string[] } {
+export type QualitySignalDetail = {
+  qTitle: number;
+  qBody: number;
+  qGib: number;
+  score: number;
+  matches: string[];
+};
+
+export type QualitySignalDetailV2 = {
+  qTitle: number;
+  qBody: number;
+  qGib: number;
+  qContext: number;
+  score: number;
+  matches: string[];
+};
+
+function qualitySignalsDetail(title: string, body: string): QualitySignalDetail {
   const t = title.trim();
   const b = body.trim();
   const matches: string[] = [];
-  let score = 0;
+  let qTitle = 0;
+  let qBody = 0;
+  let qGib = 0;
 
-  // Very short/low-effort thread title (e.g. "dd")
   if (t.length > 0 && t.length <= 2) {
     matches.push("low_effort_title");
-    score += 0.5;
+    qTitle = 0.5;
   } else if (t.length > 0 && t.length <= 4) {
     matches.push("short_title");
-    score += 0.2;
+    qTitle = 0.2;
   }
 
-  // Tiny body + tiny title is often low-value spam/noise
   if (b.length > 0 && b.length <= 6 && t.length <= 4) {
     matches.push("low_effort_body");
-    score += 0.25;
+    qBody = 0.25;
   }
 
   const compact = `${t}${b}`.toLowerCase().replaceAll(/\s+/g, "");
   const uniqueChars = new Set(compact.split("")).size;
   if (compact.length > 0 && compact.length <= 10 && uniqueChars <= 3) {
     matches.push("gibberish_short");
-    score += 0.3;
+    qGib = 0.3;
   }
 
-  return { score: clamp01(score), matches };
+  const score = clamp01(qTitle + qBody + qGib);
+  return { qTitle, qBody, qGib, score, matches };
+}
+
+function qualitySignals(title: string, body: string): { score: number; matches: string[] } {
+  const d = qualitySignalsDetail(title, body);
+  return { score: d.score, matches: d.matches };
+}
+
+function qualitySignalsDetailV2(title: string, body: string): QualitySignalDetailV2 {
+  const t = title.trim();
+  const b = body.trim();
+  const matches: string[] = [];
+  let qTitle = 0;
+  let qBody = 0;
+  let qGib = 0;
+  let qContext = 0;
+
+  if (t.length > 0 && t.length <= 2) {
+    matches.push("low_effort_title_v2");
+    qTitle = 0.45;
+  } else if (t.length > 0 && t.length <= 4) {
+    matches.push("short_title_v2");
+    qTitle = 0.2;
+  }
+
+  if (b.length > 0 && b.length <= 8 && t.length <= 6) {
+    matches.push("low_effort_body_v2");
+    qBody = 0.28;
+  }
+
+  const compact = `${t}${b}`.toLowerCase().replaceAll(/\s+/g, "");
+  const uniqueChars = new Set(compact.split("")).size;
+  if (compact.length > 0 && compact.length <= 14 && uniqueChars <= 4) {
+    matches.push("gibberish_short_v2");
+    qGib = 0.28;
+  }
+
+  const tokenCount = b.length === 0 ? 0 : b.split(/\s+/).filter(Boolean).length;
+  if (tokenCount > 0 && tokenCount <= 3 && b.length <= 20) {
+    matches.push("very_low_context_v2");
+    qContext = 0.12;
+  }
+
+  const score = clamp01(qTitle + qBody + qGib + qContext);
+  return { qTitle, qBody, qGib, qContext, score, matches };
+}
+
+function qualitySignalsV2(title: string, body: string): { score: number; matches: string[] } {
+  const d = qualitySignalsDetailV2(title, body);
+  return { score: d.score, matches: d.matches };
 }
 
 export function checkProfanity(text: string): ModerationResult {
@@ -119,7 +192,86 @@ function escapeRegex(str: string): string {
 
 // ==================== COMBINED CHECK ====================
 
+/** Heuristic-only breakdown (same string as `checkSpam(text)` in tests). */
+export function explainCheckSpamOnly(text: string) {
+  const spam = checkSpam(text);
+  const heuristicPerTag = spam.matches.map((tag) => ({
+    tag,
+    weight: SPAM_WEIGHTS[tag] ?? 0,
+  }));
+  return {
+    text,
+    heuristicMatches: spam.matches,
+    heuristicPerTag,
+    sigmaSpam: spam.spamScore,
+    flaggedByHeuristicRule: spam.flagged,
+  };
+}
+
+/** Heuristic-only breakdown for V2 spam rules. */
+export function explainCheckSpamOnlyV2(text: string) {
+  const spam = checkSpamV2(text);
+  const heuristicPerTag = spam.matches.map((tag) => ({
+    tag,
+    weight: SPAM_WEIGHTS_V2[tag] ?? 0,
+  }));
+  return {
+    text,
+    heuristicMatches: spam.matches,
+    heuristicPerTag,
+    sigmaSpam: spam.spamScore,
+    flaggedByHeuristicRule: spam.flagged,
+    threshold: SPAM_V2_THRESHOLD,
+  };
+}
+
 // checks title + body together, returns Red if flagged
+/** Inspectable breakdown for CLI / diagnostics (Layer 1 only). */
+export type Layer1Breakdown = {
+  combined: string;
+  profanityMatches: string[];
+  profanityFlagged: boolean;
+  toxicityProxy: number;
+  heuristicMatches: string[];
+  heuristicPerTag: { tag: string; weight: number }[];
+  sigmaSpam: number;
+  qualityDetail: QualitySignalDetail;
+  sigmaQual: number;
+  sigma: number;
+  flagged: boolean;
+  allMatchTags: string[];
+};
+
+export function explainLayer1(title: string, body: string): Layer1Breakdown {
+  const combined = `${title}\n${body}`;
+  const profanityResult = checkProfanity(combined);
+  const spamResult = checkSpam(combined);
+  const qualityDetail = qualitySignalsDetail(title, body);
+  const sigmaSpam = spamResult.spamScore;
+  const sigmaQual = qualityDetail.score;
+  const sigma = clamp01(sigmaSpam + sigmaQual);
+  const toxicityProxy = clamp01(profanityResult.matches.length * 0.35);
+  const full = moderateContent(title, body);
+  const heuristicPerTag = spamResult.matches.map((tag) => ({
+    tag,
+    weight: SPAM_WEIGHTS[tag] ?? 0,
+  }));
+  return {
+    combined,
+    profanityMatches: profanityResult.matches,
+    profanityFlagged: profanityResult.flagged,
+    toxicityProxy,
+    heuristicMatches: spamResult.matches,
+    heuristicPerTag,
+    sigmaSpam,
+    qualityDetail,
+    sigmaQual,
+    sigma,
+    flagged: full.flagged,
+    allMatchTags: full.matches,
+  };
+}
+
 export function moderateContent(title: string, body: string): ModerationResult {
   const combined = `${title}\n${body}`;
   const profanityResult = checkProfanity(combined);
@@ -138,6 +290,78 @@ export function moderateContent(title: string, body: string): ModerationResult {
 
   return {
     flagged: profanityResult.flagged || spamScore >= 0.5,
+    matches: allMatches,
+    spamScore,
+    toxicityScore,
+  };
+}
+
+export type Layer1BreakdownV2 = {
+  combined: string;
+  profanityMatches: string[];
+  profanityFlagged: boolean;
+  toxicityProxy: number;
+  heuristicMatches: string[];
+  heuristicPerTag: { tag: string; weight: number }[];
+  sigmaSpam: number;
+  qualityDetail: QualitySignalDetailV2;
+  sigmaQual: number;
+  sigma: number;
+  flagged: boolean;
+  allMatchTags: string[];
+  threshold: number;
+};
+
+export function explainLayer1V2(title: string, body: string): Layer1BreakdownV2 {
+  const combined = `${title}\n${body}`;
+  const profanityResult = checkProfanity(combined);
+  const spamResult = checkSpamV2(combined);
+  const qualityDetail = qualitySignalsDetailV2(title, body);
+  const sigmaSpam = spamResult.spamScore;
+  const sigmaQual = qualityDetail.score;
+  const sigma = clamp01(sigmaSpam + sigmaQual);
+  const toxicityProxy = clamp01(profanityResult.matches.length * 0.35);
+  const full = moderateContentV2(title, body);
+  const heuristicPerTag = spamResult.matches.map((tag) => ({
+    tag,
+    weight: SPAM_WEIGHTS_V2[tag] ?? 0,
+  }));
+  return {
+    combined,
+    profanityMatches: profanityResult.matches,
+    profanityFlagged: profanityResult.flagged,
+    toxicityProxy,
+    heuristicMatches: spamResult.matches,
+    heuristicPerTag,
+    sigmaSpam,
+    qualityDetail,
+    sigmaQual,
+    sigma,
+    flagged: full.flagged,
+    allMatchTags: full.matches,
+    threshold: SPAM_V2_THRESHOLD,
+  };
+}
+
+/** Version 2 manual spam layer (still local and deterministic; no external models). */
+export function moderateContentV2(title: string, body: string): ModerationResult {
+  const combined = `${title}\n${body}`;
+  const profanityResult = checkProfanity(combined);
+  const spamResult = checkSpamV2(combined);
+  const qualityResult = qualitySignalsV2(title, body);
+  const spamScore = clamp01(spamResult.spamScore + qualityResult.score);
+  const toxicityScore = clamp01(profanityResult.matches.length * 0.35);
+
+  const allMatches = [
+    ...new Set([
+      ...profanityResult.matches,
+      ...spamResult.matches,
+      ...qualityResult.matches,
+    ]),
+  ];
+
+  return {
+    flagged: profanityResult.flagged || spamScore >= SPAM_V2_THRESHOLD,
     matches: allMatches,
     spamScore,
     toxicityScore,

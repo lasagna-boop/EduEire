@@ -8,6 +8,7 @@ import { LegacyUserProfileRedirect } from "./components/LegacyUserProfileRedirec
 import UserProfile from "./pages/UserProfile";
 import ThreadDetail from "./pages/ThreadDetail";
 import Admin from "./pages/Admin";
+import SpamFilterLab from "./pages/SpamFilterLab";
 import Flairs from "./pages/Flairs";
 import MapPage from "./pages/Map";
 import UniversityWebsites from "./pages/UniversityWebsites";
@@ -54,6 +55,10 @@ export default function App() {
       <Route
         path="/admin"
         element={user ? <Admin /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/admin/spam-lab"
+        element={user ? <SpamFilterLab /> : <Navigate to="/login" replace />}
       />
       <Route
         path="/flairs"

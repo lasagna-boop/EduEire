@@ -13,6 +13,11 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:spam-fixture:v1": "vitest run tests/unit/moderationSpamScoreLayer1Fixture.test.ts --reporter=verbose --reporter=./tests/reporters/layer1SpamFixtureBatteryFooter.ts",
+    "test:spam-fixture:v2": "vitest run tests/unit/moderationSpamScoreLayer1FixtureV2.test.ts --reporter=verbose --reporter=./tests/reporters/layer1SpamFixtureBatteryFooter.ts",
+    "test:spam-fixture:compare": "vitest run tests/unit/moderationSpamScoreComparison.test.ts --reporter=verbose",
+    "spam:breakdown": "npx tsx scripts/print-spam-breakdown.ts",
+    "spam:scores": "npx tsx scripts/print-spam-score-lines.ts",
     "deploy": "npm run build && firebase deploy"
   },
   "dependencies": {

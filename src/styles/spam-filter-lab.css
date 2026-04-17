@@ -1,0 +1,172 @@
+/* Admin-only spam / moderation preview (client Layer 1) */
+
+.spam-lab {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+.spam-lab__header {
+  margin-bottom: 1.5rem;
+}
+
+.spam-lab__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.spam-lab__lede {
+  margin: 0;
+  color: var(--edu-text-muted, #718096);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.spam-lab__back {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: var(--edu-accent, #2d6a4f);
+  text-decoration: none;
+}
+
+.spam-lab__back:hover {
+  text-decoration: underline;
+}
+
+.spam-lab__grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.spam-lab__label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--edu-text-muted, #718096);
+  margin-bottom: 0.35rem;
+}
+
+.spam-lab__input,
+.spam-lab__textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  font: inherit;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+}
+
+.spam-lab__textarea {
+  min-height: 160px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.spam-lab__note {
+  font-size: 0.8rem;
+  color: var(--edu-text-muted, #718096);
+  margin: -0.25rem 0 0;
+  line-height: 1.45;
+}
+
+.spam-lab__results {
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 1rem 1.15rem;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.spam-lab__verdict {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.spam-lab__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.spam-lab__pill--ok {
+  background: rgba(45, 106, 79, 0.2);
+  color: #2d6a4f;
+}
+
+.spam-lab__pill--warn {
+  background: rgba(193, 18, 31, 0.15);
+  color: #c1121f;
+}
+
+.spam-lab__meters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.spam-lab__meter-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--edu-text-muted, #718096);
+  margin-bottom: 0.25rem;
+}
+
+.spam-lab__meter-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.spam-lab__tags {
+  font-size: 0.85rem;
+}
+
+.spam-lab__tags strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--edu-text-muted, #718096);
+}
+
+.spam-lab__tag-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.spam-lab__disclaimer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 0.8rem;
+  color: var(--edu-text-muted, #718096);
+  line-height: 1.5;
+}
+
+.spam-lab__split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .spam-lab__split {
+    grid-template-columns: 1fr;
+  }
+}

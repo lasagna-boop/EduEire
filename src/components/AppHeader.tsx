@@ -34,7 +34,7 @@ export default function AppHeader({ activeTopLink, search }: AppHeaderProps) {
         <div className="landing__header-left">
           <SlideMenu />
           <Link to="/" className="landing__logo">
-            <img src="/logo.png" alt="EduÉire" className="landing__logo-img" />
+            <img src="/EduEire logo.svg" alt="EduÉire" className="landing__logo-img" />
           </Link>
           <div className="landing__top-links">
             <Link

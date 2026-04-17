@@ -4,7 +4,7 @@ export type SpamResult = {
   spamScore: number;
 };
 
-const SPAM_WEIGHTS: Record<string, number> = {
+export const SPAM_WEIGHTS: Record<string, number> = {
   spam_links: 0.35,
   spam_caps: 0.2,
   spam_char_run: 0.15,
@@ -64,4 +64,12 @@ export function checkSpam(text: string): SpamResult {
     spamScore,
   };
 }
+
+// ---- Versioned exports (V2 is implemented separately, V1 remains default) ----
+export {
+  checkSpamV2,
+  SPAM_V2_THRESHOLD,
+  SPAM_WEIGHTS_V2,
+  type SpamResultV2,
+} from "./moderation/spam/v2";
 

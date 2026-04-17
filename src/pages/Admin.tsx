@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import {
   isAdmin,
@@ -121,6 +122,10 @@ export default function Admin() {
             <h1 className="admin-header__title">Moderation Queue</h1>
             <p className="admin-header__subtitle">
               Review flagged content — approve or reject
+            </p>
+            <p className="admin-header__subtitle" style={{ marginTop: "0.5rem" }}>
+              <Link to="/admin/spam-lab">Spam filter lab</Link>
+              {" — "}test client moderation scores on pasted text
             </p>
           </div>
 
