@@ -92,24 +92,8 @@
   margin-bottom: 1rem;
 }
 
-.spam-lab__pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
 
-.spam-lab__pill--ok {
-  background: rgba(45, 106, 79, 0.2);
-  color: #2d6a4f;
-}
 
-.spam-lab__pill--warn {
-  background: rgba(193, 18, 31, 0.15);
-  color: #c1121f;
-}
 
 .spam-lab__meters {
   display: grid;

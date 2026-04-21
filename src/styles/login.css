@@ -8,16 +8,7 @@
 }
 
 /* Same ShaderGradient hero as Landing, fixed behind the form */
-.login-page__bg {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
 
-.login-page__bg--static {
-  background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 45%, #1b4332 100%);
-}
 
 @keyframes login-shader-fade-in {
   from {

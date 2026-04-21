@@ -380,27 +380,8 @@
   filter: brightness(1.05);
 }
 
-.landing__sidebar-footer {
-  margin-top: auto;
-  padding: 16px 8px 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
 
-.landing__sidebar-footer-note {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #94a3b8;
-  line-height: 1.35;
-}
 
-.landing__sidebar-footer a {
-  color: #4a5568;
-  font-size: 0.875rem;
-  text-decoration: none;
-  font-weight: 700;
-}
 
 .landing__main {
   flex: 1;
@@ -666,53 +647,15 @@
   box-shadow: 0 8px 18px rgba(26, 32, 44, 0.12);
 }
 
-.landing__post-votes {
-  width: 48px;
-  background: #faf9f6;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 14px 0;
-  gap: 4px;
-}
 
-.landing__post-votes button {
-  border: 0;
-  background: transparent;
-  color: #4a5568;
-  cursor: pointer;
-}
 
-.landing__post-votes span {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #1a202c;
-}
 
 .landing__post-body {
   padding: 18px;
 }
 
-.landing__post-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 8px;
-}
 
-.landing__post-meta span {
-  font-size: 0.65rem;
-  color: #4a5568;
-}
 
-.landing__tag {
-  background: #faf9f6;
-  color: #2d6a4f !important;
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-weight: 800;
-}
 
 .landing__post h3 {
   margin: 0 0 8px;
@@ -727,22 +670,8 @@
   line-height: 1.6;
 }
 
-.landing__post-actions {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
 
-.landing__post-actions a {
-  text-decoration: none;
-  font-size: 0.75rem;
-  color: #4a5568;
-  font-weight: 800;
-}
 
-.landing__post-actions a:hover {
-  color: #2d6a4f;
-}
 
 .landing__widget-head {
   display: flex;
@@ -877,10 +806,6 @@
   transform: translateY(-1px);
 }
 
-.landing__community-join-btn {
-  min-width: 58px;
-  flex-shrink: 0;
-}
 
 .landing__community-join-btn--joined {
   background: linear-gradient(180deg, rgba(255, 159, 28, 0.14), rgba(255, 159, 28, 0.08));
@@ -888,10 +813,6 @@
   color: #1a202c;
 }
 
-.landing__community-join-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
 .landing__subtle-btn {
   width: 100%;
