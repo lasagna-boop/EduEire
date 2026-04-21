@@ -806,3 +806,92 @@
     transition: none !important;
   }
 }
+
+/* Compact profile status composer */
+.profile-status-card {
+  padding: 14px 14px 12px;
+  margin-bottom: 14px;
+}
+
+.profile-status-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.profile-status-card__title {
+  margin: 0;
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+}
+
+.profile-status-card__hint {
+  margin: 0 0 8px;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.profile-status-card__mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 106, 79, 0.24);
+  background: #ffffff;
+  color: #1f3b30;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--edu-btn-ease);
+}
+
+.profile-status-card__mode-pill svg {
+  width: 14px;
+  height: 14px;
+}
+
+.profile-status-card__mode-pill--flash {
+  border-color: rgba(255, 159, 28, 0.45);
+  background: #fff8ec;
+  color: #9a3412;
+}
+
+.profile-status-card__mode-pill:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.profile-status-card__mode-pill:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.profile-status-card__field.profile-status-card__field--single {
+  min-height: 0;
+  height: 40px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  resize: none;
+}
+
+.profile-status-card__footer {
+  margin-top: 8px;
+  gap: 8px;
+}
+
+.profile-status-card__count {
+  font-size: 0.74rem;
+}
+
+.profile-status-card__actions {
+  gap: 6px;
+}
+
+.profile-status-card__btn {
+  min-height: 34px;
+  padding: 7px 12px;
+  font-size: 0.78rem;
+}

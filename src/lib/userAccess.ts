@@ -5,6 +5,7 @@ import {
   isValidPublicHandle,
   resolveUniquePublicHandle,
 } from "./publicProfileRoute";
+import { sanitizeUserLine } from "./inputSanitizer";
 
 export type AccessMode = "full" | "read_only";
 
@@ -74,6 +75,7 @@ export async function ensureUserProfile(params: {
   displayName?: string | null;
 }): Promise<UserAccessProfile> {
   const { uid, email, displayName } = params;
+  const safeDisplayName = sanitizeUserLine(displayName ?? "", 80) || null;
   const userRef = doc(db, "users", uid);
   const existing = await getDoc(userRef);
   const access = deriveAccessFromEmail(email);
@@ -82,14 +84,14 @@ export async function ensureUserProfile(params: {
   const prevHandle = typeof prev.publicHandle === "string" ? prev.publicHandle : null;
   let publicHandle = prevHandle;
   if (!publicHandle || !isValidPublicHandle(publicHandle)) {
-    const base = basePublicHandleFromUser(email, displayName);
+    const base = basePublicHandleFromUser(email, safeDisplayName);
     publicHandle = await resolveUniquePublicHandle(uid, base);
   }
 
   await setDoc(
     userRef,
     {
-      displayName: displayName ?? null,
+      displayName: safeDisplayName,
       publicHandle,
       studentEmailConfirmed: access.studentEmailConfirmed,
       accessMode: access.accessMode,

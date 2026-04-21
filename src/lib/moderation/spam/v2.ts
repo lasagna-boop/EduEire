@@ -6,7 +6,8 @@ export type SpamResultV2 = {
   spamScore: number;
 };
 
-export const SPAM_V2_THRESHOLD = 0.2;
+// Tuned for live community usage: lowers false positives on benign short posts.
+export const SPAM_V2_THRESHOLD = 0.3;
 
 export const SPAM_WEIGHTS_V2: Record<string, number> = {
   spam_links: 0.28,

@@ -9,8 +9,11 @@ import {
   doc,
   getDoc,
   getDocs,
+  getDocsFromServer,
+  FirestoreError,
   increment,
   limit,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -19,11 +22,41 @@ import {
   where,
   startAfter,
 } from "firebase/firestore";
-import type { DocumentData, QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore";
+import type {
+  DocumentData,
+  Query,
+  QueryConstraint,
+  QueryDocumentSnapshot,
+  Unsubscribe,
+} from "firebase/firestore";
 import { db } from "./firebase";
 import { getUserAccessProfile } from "./userAccess";
 import { hasReadOnlyAllowedTag } from "./sectionAccess";
 import { voteScoreDelta } from "./voteScoreDelta";
+import { normalizeCommunityName } from "./communityDisplay";
+import {
+  sanitizeStringArray,
+  sanitizeUserEmail,
+  sanitizeUserLine,
+  sanitizeUserText,
+} from "./inputSanitizer";
+
+/**
+ * Prefer server reads so deletes/edits in console show up.
+ * Only falls back to cache when the client is offline (`unavailable`); any other error
+ * would previously mask bugs and show stale IndexedDB data.
+ */
+async function getDocsPreferServer(q: Query<DocumentData>) {
+  try {
+    return await getDocsFromServer(q);
+  } catch (e: unknown) {
+    const code = e instanceof FirestoreError ? e.code : "";
+    if (code === "unavailable") {
+      return await getDocs(q);
+    }
+    throw e;
+  }
+}
 
 function firestoreMillis(ts: unknown): number {
   if (
@@ -100,12 +133,19 @@ export type Community = {
   createdAt?: unknown;
 };
 
+function normalizeCommunityRecord(community: Community): Community {
+  return {
+    ...community,
+    name: normalizeCommunityName(community.id, community.name),
+  };
+}
+
 // get a single community by ID
 export async function getCommunity(communityId: string): Promise<Community | null> {
   const snap = await getDoc(doc(db, "communities", communityId));
   if (!snap.exists()) return null;
   const data = snap.data() as Omit<Community, "id">;
-  return { id: snap.id, ...data };
+  return normalizeCommunityRecord({ id: snap.id, ...data });
 }
 
 // list all communities
@@ -114,7 +154,7 @@ export async function listCommunities(): Promise<Community[]> {
   const snap = await getDocs(q);
   return snap.docs.map((d) => {
     const data = d.data() as Omit<Community, "id">;
-    return { id: d.id, ...data };
+    return normalizeCommunityRecord({ id: d.id, ...data });
   });
 }
 
@@ -126,7 +166,7 @@ type CommunitySeed = Pick<Community, "id" | "name" | "fullName" | "description">
 export const DEFAULT_COMMUNITY_SEEDS: readonly CommunitySeed[] = [
   {
     id: "tud",
-    name: "TUD",
+    name: "TU Dublin",
     fullName: "Technological University Dublin",
     description: "Community for TU Dublin students and staff",
   },
@@ -224,14 +264,16 @@ export async function seedCommunities() {
  */
 export async function ensureDefaultCommunities(): Promise<Community[]> {
   const list = await listCommunities();
-  if (list.length > 0) return list;
+  if (list.length > 0) return list.map(normalizeCommunityRecord);
 
   // Security posture: clients no longer write `/communities`.
   // If collection is empty, return local defaults while admins seed trusted docs.
-  return DEFAULT_COMMUNITY_SEEDS.map((c) => ({
-    ...c,
-    memberCount: 0,
-  }));
+  return DEFAULT_COMMUNITY_SEEDS.map((c) =>
+    normalizeCommunityRecord({
+      ...c,
+      memberCount: 0,
+    }),
+  );
 }
 
 // ==================== USER SUBSCRIPTIONS ====================
@@ -440,6 +482,57 @@ export async function isAdmin(userId: string): Promise<boolean> {
   const snap = await getDoc(doc(db, "users", userId));
   if (!snap.exists()) return false;
   return snap.data()?.role === "admin";
+}
+
+export type ModeratorApplication = {
+  id: string;
+  applicantId: string;
+  applicantName: string;
+  applicantEmail?: string;
+  motivation: string;
+  experience?: string;
+  availability?: string;
+  status: "pending" | "reviewing" | "accepted" | "rejected";
+  createdAt?: unknown;
+  reviewedAt?: unknown;
+};
+
+export async function createModeratorApplication(input: {
+  applicantId: string;
+  applicantName: string;
+  applicantEmail?: string;
+  motivation: string;
+  experience?: string;
+  availability?: string;
+}) {
+  const payload = {
+    applicantId: input.applicantId,
+    applicantName: sanitizeUserLine(input.applicantName, 80),
+    applicantEmail: sanitizeUserEmail(input.applicantEmail ?? "", 120),
+    motivation: sanitizeUserText(input.motivation, { maxChars: 1200, preserveNewlines: true }),
+    experience: sanitizeUserText(input.experience ?? "", { maxChars: 1200, preserveNewlines: true }),
+    availability: sanitizeUserLine(input.availability ?? "", 300),
+    status: "pending" as const,
+    createdAt: serverTimestamp(),
+  };
+  const ref = await addDoc(collection(db, "moderator_applications"), payload);
+  return ref.id;
+}
+
+export async function listModeratorApplications(
+  opts?: { pageSize?: number }
+): Promise<ModeratorApplication[]> {
+  const pageSize = opts?.pageSize ?? 100;
+  const q = query(
+    collection(db, "moderator_applications"),
+    orderBy("createdAt", "desc"),
+    limit(pageSize)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data() as Omit<ModeratorApplication, "id">;
+    return { id: d.id, ...data };
+  });
 }
 
 export type FlaggedItem = {
@@ -730,33 +823,42 @@ export async function createThread(input: {
   spamScore?: number;
   isAnonymous?: boolean;
 }) {
-  const access = await getUserAccessProfile(input.authorId);
-  if (access.accessMode !== "full" && !hasReadOnlyAllowedTag(input.tags)) {
+  const sanitizedInput = {
+    ...input,
+    title: sanitizeUserLine(input.title, 180),
+    body: sanitizeUserText(input.body, { maxChars: 12_000, preserveNewlines: true }),
+    communityId: sanitizeUserLine(input.communityId, 64),
+    tags: sanitizeStringArray(input.tags, { maxItems: 12, maxItemChars: 40 }),
+    authorName: sanitizeUserLine(input.authorName, 80),
+  };
+
+  const access = await getUserAccessProfile(sanitizedInput.authorId);
+  if (access.accessMode !== "full" && !hasReadOnlyAllowedTag(sanitizedInput.tags)) {
     throw new Error(
       "Read-only accounts can create threads only in Admissions or First Year/Transition."
     );
   }
 
-  const authorSnap = await getDoc(doc(db, "users", input.authorId));
+  const authorSnap = await getDoc(doc(db, "users", sanitizedInput.authorId));
   const authorPublicHandle =
     authorSnap.exists() && typeof authorSnap.data()?.publicHandle === "string"
       ? (authorSnap.data()?.publicHandle as string)
       : undefined;
 
   const ref = await addDoc(collection(db, "threads"), {
-    ...input,
+    ...sanitizedInput,
     ...(authorPublicHandle ? { authorPublicHandle } : {}),
-    isAnonymous: input.isAnonymous === true,
-    toxicityScore: input.toxicityScore ?? 0,
-    spamScore: input.spamScore ?? 0,
-    flashExpiresAt: input.flashExpiresAt ?? null,
+    isAnonymous: sanitizedInput.isAnonymous === true,
+    toxicityScore: sanitizedInput.toxicityScore ?? 0,
+    spamScore: sanitizedInput.spamScore ?? 0,
+    flashExpiresAt: sanitizedInput.flashExpiresAt ?? null,
     score: 0,
     moderationStatus: "approved",
     createdAt: serverTimestamp(),
     lastActivityAt: serverTimestamp(),
     postCount: 0,
   });
-  void recordUserContribution(input.authorId, "thread");
+  void recordUserContribution(sanitizedInput.authorId, "thread");
   return ref.id;
 }
 
@@ -778,7 +880,7 @@ export async function listThreads(opts: {
     if (opts.cursor) parts.push(startAfter(opts.cursor));
 
     const q = query(base, ...parts);
-    const snap = await getDocs(q);
+    const snap = await getDocsPreferServer(q);
 
     const threads: Thread[] = snap.docs
       .map((d) => {
@@ -810,7 +912,7 @@ export async function listThreads(opts: {
       where("communityId", "==", opts.communityId),
       limit(maxFetch)
     );
-    const snap = await getDocs(q);
+    const snap = await getDocsPreferServer(q);
     let threads: Thread[] = snap.docs.map((d) => {
       const data = d.data() as ThreadDocData;
       return { id: d.id, ...data };
@@ -825,7 +927,7 @@ export async function listThreads(opts: {
   if (opts.cursor) parts.push(startAfter(opts.cursor));
 
   const q = query(base, ...parts);
-  const snap = await getDocs(q);
+  const snap = await getDocsPreferServer(q);
 
   const threads: Thread[] = snap.docs.map((d) => {
     const data = d.data() as ThreadDocData;
@@ -834,6 +936,92 @@ export async function listThreads(opts: {
   const nextCursor = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
 
   return { threads, nextCursor };
+}
+
+/**
+ * Live updates when thread documents are added/edited/deleted (e.g. from Firebase console).
+ * Mirrors {@link listThreads} query + sort behaviour.
+ */
+export function subscribeThreads(
+  opts: {
+    communityId?: string;
+    authorId?: string;
+    pageSize?: number;
+    sortBy?: "lastActivity" | "createdAt" | "score" | "credibilityScore";
+  },
+  onNext: (threads: Thread[]) => void,
+  onError?: (e: Error) => void
+): Unsubscribe {
+  const pageSize = opts.pageSize ?? 20;
+  const base = collection(db, "threads");
+
+  if (opts.authorId) {
+    const q = query(
+      base,
+      where("authorId", "==", opts.authorId),
+      limit(pageSize)
+    );
+    return onSnapshot(
+      q,
+      (snap) => {
+        const threads: Thread[] = snap.docs
+          .map((d) => {
+            const data = d.data() as ThreadDocData;
+            return { id: d.id, ...data };
+          })
+          .sort((a, b) => firestoreMillis(b.createdAt) - firestoreMillis(a.createdAt));
+        onNext(threads);
+      },
+      (e) => onError?.(e as Error)
+    );
+  }
+
+  const sortFieldMap: Record<
+    NonNullable<typeof opts.sortBy>,
+    "lastActivityAt" | "createdAt" | "score" | "credibilityScore"
+  > = {
+    lastActivity: "lastActivityAt",
+    createdAt: "createdAt",
+    score: "score",
+    credibilityScore: "credibilityScore",
+  };
+  const sortField = sortFieldMap[opts.sortBy ?? "lastActivity"];
+
+  if (opts.communityId) {
+    const maxFetch = Math.min(500, Math.max(pageSize * 15, 80));
+    const q = query(
+      base,
+      where("communityId", "==", opts.communityId),
+      limit(maxFetch)
+    );
+    return onSnapshot(
+      q,
+      (snap) => {
+        let threads: Thread[] = snap.docs.map((d) => {
+          const data = d.data() as ThreadDocData;
+          return { id: d.id, ...data };
+        });
+        threads.sort((a, b) => threadSortValue(b, sortField) - threadSortValue(a, sortField));
+        threads = threads.slice(0, pageSize);
+        onNext(threads);
+      },
+      (e) => onError?.(e as Error)
+    );
+  }
+
+  const parts: QueryConstraint[] = [orderBy(sortField, "desc"), limit(pageSize)];
+  const q = query(base, ...parts);
+  return onSnapshot(
+    q,
+    (snap) => {
+      const threads: Thread[] = snap.docs.map((d) => {
+        const data = d.data() as ThreadDocData;
+        return { id: d.id, ...data };
+      });
+      onNext(threads);
+    },
+    (e) => onError?.(e as Error)
+  );
 }
 
 // adds a post inside a thread (subcollection) and bumps the thread's activity
@@ -848,7 +1036,13 @@ export async function addPost(
     parentPostId?: string | null;
   }
 ) {
-  const access = await getUserAccessProfile(input.authorId);
+  const sanitizedInput = {
+    ...input,
+    body: sanitizeUserText(input.body, { maxChars: 12_000, preserveNewlines: true }),
+    authorName: sanitizeUserLine(input.authorName, 80),
+  };
+
+  const access = await getUserAccessProfile(sanitizedInput.authorId);
   if (access.accessMode !== "full") {
     const threadSnap = await getDoc(doc(db, "threads", threadId));
     const threadTags = threadSnap.exists()
@@ -861,7 +1055,7 @@ export async function addPost(
     }
   }
 
-  const parentPostId = input.parentPostId ?? null;
+  const parentPostId = sanitizedInput.parentPostId ?? null;
   let ancestorIds: string[] = [];
   if (parentPostId) {
     const parentSnap = await getDoc(
@@ -877,26 +1071,26 @@ export async function addPost(
     ancestorIds = [...pAncestors, parentPostId];
   }
 
-  const authorSnap = await getDoc(doc(db, "users", input.authorId));
+  const authorSnap = await getDoc(doc(db, "users", sanitizedInput.authorId));
   const authorPublicHandle =
     authorSnap.exists() && typeof authorSnap.data()?.publicHandle === "string"
       ? (authorSnap.data()?.publicHandle as string)
       : undefined;
 
   const ref = await addDoc(collection(doc(db, "threads", threadId), "posts"), {
-    body: input.body,
-    authorId: input.authorId,
-    authorName: input.authorName,
+    body: sanitizedInput.body,
+    authorId: sanitizedInput.authorId,
+    authorName: sanitizedInput.authorName,
     ...(authorPublicHandle ? { authorPublicHandle } : {}),
-    toxicityScore: input.toxicityScore ?? 0,
-    spamScore: input.spamScore ?? 0,
+    toxicityScore: sanitizedInput.toxicityScore ?? 0,
+    spamScore: sanitizedInput.spamScore ?? 0,
     parentPostId,
     ancestorIds,
     score: 0,
     moderationStatus: "approved",
     createdAt: serverTimestamp(),
   });
-  void recordUserContribution(input.authorId, "comment");
+  void recordUserContribution(sanitizedInput.authorId, "comment");
 
   // best-effort: update thread stats; may fail if rules restrict thread updates
   try {
@@ -1063,6 +1257,29 @@ export async function listFlairs(opts?: { pageSize?: number }): Promise<Flair[]>
     .filter((f) => !f.moderationStatus || f.moderationStatus === "approved");
 }
 
+/** Live list for the Flairs hub (scores and new proposals update without reload). */
+export function subscribeFlairs(
+  opts: { pageSize?: number } | undefined,
+  onNext: (flairs: Flair[]) => void,
+  onError?: (e: Error) => void
+): Unsubscribe {
+  const pageSize = opts?.pageSize ?? 50;
+  const q = query(collection(db, "flairs"), orderBy("score", "desc"), limit(pageSize));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list = snap.docs
+        .map((d) => {
+          const data = d.data() as Omit<Flair, "id">;
+          return { id: d.id, ...data };
+        })
+        .filter((f) => !f.moderationStatus || f.moderationStatus === "approved");
+      onNext(list);
+    },
+    (e) => onError?.(e as Error)
+  );
+}
+
 export async function createFlair(input: {
   title: string;
   description?: string;
@@ -1071,14 +1288,21 @@ export async function createFlair(input: {
   toxicityScore?: number;
   spamScore?: number;
 }) {
-  const access = await getUserAccessProfile(input.authorId);
+  const sanitizedInput = {
+    ...input,
+    title: sanitizeUserLine(input.title, 80),
+    description: sanitizeUserText(input.description ?? "", { maxChars: 300, preserveNewlines: true }),
+    authorName: sanitizeUserLine(input.authorName, 80),
+  };
+
+  const access = await getUserAccessProfile(sanitizedInput.authorId);
   if (access.accessMode !== "full") {
     throw new Error("Only confirmed student emails can create flairs.");
   }
 
   // Weekly rate limit: 1 flair per user per Dublin-week (resets Sundays 00:00 Europe/Dublin).
   const currentWeekKey = getDublinWeekKey(new Date());
-  const userRef = doc(db, "users", input.authorId);
+  const userRef = doc(db, "users", sanitizedInput.authorId);
   const userSnap = await getDoc(userRef);
   type UserFlairMeta = { lastFlairWeekKey?: string };
   const lastWeekKey: string | null = userSnap.exists()
@@ -1090,12 +1314,12 @@ export async function createFlair(input: {
   }
 
   const ref = await addDoc(collection(db, "flairs"), {
-    title: input.title,
-    description: input.description ?? "",
-    authorId: input.authorId,
-    authorName: input.authorName,
-    toxicityScore: input.toxicityScore ?? 0,
-    spamScore: input.spamScore ?? 0,
+    title: sanitizedInput.title,
+    description: sanitizedInput.description,
+    authorId: sanitizedInput.authorId,
+    authorName: sanitizedInput.authorName,
+    toxicityScore: sanitizedInput.toxicityScore ?? 0,
+    spamScore: sanitizedInput.spamScore ?? 0,
     score: 0,
     moderationStatus: "approved",
     createdAt: serverTimestamp(),

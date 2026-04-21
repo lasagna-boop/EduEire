@@ -9,14 +9,15 @@ import {
 import { CreateThreadCard } from "../components/CreateThreadCard";
 import AppHeader from "../components/AppHeader";
 import {
-  listThreads,
   ensureDefaultCommunities,
   isAdmin,
+  subscribeThreads,
   type Community,
   type Thread,
 } from "../lib/firestore";
 import { errorMessage } from "../lib/errors";
 import { threadVisibleInFeed } from "../lib/firestoreFormat";
+import { createSnapshotAsyncGuard } from "../lib/snapshotAsyncGuard";
 import { threadsToPostCardPosts } from "../lib/threadPostMap";
 import { useAuth } from "../context/useAuth";
 import type { PostCardPost } from "../types/postCard";
@@ -78,32 +79,6 @@ export default function Feed() {
     }
   }, [communityId]);
 
-  const load = useCallback(async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const sortBy =
-        feedSort === "recent"
-          ? "createdAt"
-          : feedSort === "mostLiked"
-            ? "score"
-            : "credibilityScore";
-      const { threads: allThreads } = await listThreads({
-        pageSize: 30,
-        sortBy,
-        communityId: feedCommunityScope || undefined,
-      });
-      const now = Date.now();
-      const threads = allThreads.filter((t: Thread) => threadVisibleInFeed(t, now));
-      const mapped = await threadsToPostCardPosts(threads, "feed");
-      setPosts(mapped);
-    } catch (e) {
-      setError(errorMessage(e) || "failed to load threads");
-    } finally {
-      setLoading(false);
-    }
-  }, [feedSort, feedCommunityScope]);
-
   useEffect(() => {
     void loadCommunities();
   }, [loadCommunities]);
@@ -114,8 +89,44 @@ export default function Feed() {
   }, [fbUser]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    setError(null);
+    setLoading(true);
+    const sortBy =
+      feedSort === "recent"
+        ? "createdAt"
+        : feedSort === "mostLiked"
+          ? "score"
+          : "credibilityScore";
+    const guard = createSnapshotAsyncGuard();
+    const unsubscribe = subscribeThreads(
+      {
+        pageSize: 30,
+        sortBy,
+        communityId: feedCommunityScope || undefined,
+      },
+      async (allThreads) => {
+        const snapId = guard.next();
+        try {
+          const now = Date.now();
+          const threads = allThreads.filter((t: Thread) => threadVisibleInFeed(t, now));
+          const mapped = await threadsToPostCardPosts(threads, "feed");
+          if (!guard.isLatest(snapId)) return;
+          setPosts(mapped);
+          setError(null);
+        } catch (e) {
+          if (!guard.isLatest(snapId)) return;
+          setError(errorMessage(e) || "failed to load threads");
+        } finally {
+          if (guard.isLatest(snapId)) setLoading(false);
+        }
+      },
+      (e) => {
+        setError(errorMessage(e) || "failed to load threads");
+        setLoading(false);
+      }
+    );
+    return unsubscribe;
+  }, [feedSort, feedCommunityScope]);
 
   useEffect(() => {
     if (communities.length === 0 || !communityFromUrl) return;
@@ -366,11 +377,13 @@ export default function Feed() {
               communities={communities}
               communityId={communityId}
               onCommunityIdChange={setCommunityId}
-              onPosted={load}
+              onPosted={async () => {}}
               onFormError={setError}
               triggerLabel="Create Post"
               readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
               presentation="overlay"
+              overlayTitle="New post"
+              overlayDescription="Pick an institution, add a tag, then publish to the feed."
             />
           </div>
 
@@ -532,7 +545,9 @@ export default function Feed() {
             <div className="feed-page__sidebar-card feed-page__rail-card feed-page__rail-card--cta feed-create-thread feed-create-thread--desktop">
               <div className="feed-page__rail-head feed-page__rail-head--tight">
                 <h3 className="feed-page__rail-title">New post</h3>
-                <p className="feed-page__rail-lede">Choose a community, add a tag, and share with the feed.</p>
+                <p className="feed-page__rail-lede">
+                  Opens the composer; your post appears on the feed after you publish.
+                </p>
               </div>
               <div className="feed-page__rail-cta-slot">
                 <CreateThreadCard
@@ -543,11 +558,13 @@ export default function Feed() {
                   communities={communities}
                   communityId={communityId}
                   onCommunityIdChange={setCommunityId}
-                  onPosted={load}
+                  onPosted={async () => {}}
                   onFormError={setError}
                   triggerLabel="Create Post"
                   readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
                   presentation="overlay"
+                  overlayTitle="New post"
+                  overlayDescription="Pick an institution, add a tag, then publish to the feed."
                 />
               </div>
             </div>

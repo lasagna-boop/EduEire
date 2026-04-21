@@ -7,19 +7,21 @@ import AppHeader from "../components/AppHeader";
 import { UserProfileLink } from "../components/UserProfileLink";
 import {
   getCommunity,
-  listThreads,
   listCommunities,
   subscribeToCommunity,
   unsubscribeFromCommunity,
   getUserSubscriptions,
   listCommunityTopSubscribers,
+  subscribeThreads,
   type CommunityActiveSubscriber,
   type Community as CommunityType,
   type Thread,
 } from "../lib/firestore";
 import { errorMessage } from "../lib/errors";
 import { threadVisibleInFeed } from "../lib/firestoreFormat";
+import { createSnapshotAsyncGuard } from "../lib/snapshotAsyncGuard";
 import { threadsToPostCardPosts } from "../lib/threadPostMap";
+import { formatCommunityHandle } from "../lib/communityDisplay";
 import { useAuth } from "../context/useAuth";
 import type { PostCardPost } from "../types/postCard";
 
@@ -48,6 +50,7 @@ export default function Community() {
   const [mobileSectionsOpen, setMobileSectionsOpen] = useState(false);
   const [topSubscribers, setTopSubscribers] = useState<CommunityActiveSubscriber[]>([]);
   const [topSubscribersLoading, setTopSubscribersLoading] = useState(false);
+  const communityHandle = formatCommunityHandle(communityId ?? "", community?.name);
 
   const loadCommunity = async () => {
     if (!communityId) return;
@@ -65,23 +68,6 @@ export default function Community() {
       setCommunities(list);
     } catch (e) {
       console.error("Failed to load communities", e);
-    }
-  };
-
-  const loadPosts = async () => {
-    if (!communityId) return;
-    setError(null);
-    setLoading(true);
-    try {
-      const { threads: allThreads } = await listThreads({ communityId, pageSize: 30 });
-      const now = Date.now();
-      const threads = allThreads.filter((t: Thread) => threadVisibleInFeed(t, now));
-      const mapped = await threadsToPostCardPosts(threads, "default");
-      setPosts(mapped);
-    } catch (e) {
-      setError(errorMessage(e) || "failed to load posts");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -112,11 +98,41 @@ export default function Community() {
   useEffect(() => {
     loadCommunity();
     loadCommunities();
-    loadPosts();
     checkSubscription();
     loadTopSubscribers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communityId, fbUser?.uid]);
+
+  useEffect(() => {
+    if (!communityId) return;
+    setError(null);
+    setLoading(true);
+    const guard = createSnapshotAsyncGuard();
+    const unsubscribe = subscribeThreads(
+      { communityId, pageSize: 30, sortBy: "lastActivity" },
+      async (allThreads) => {
+        const snapId = guard.next();
+        try {
+          const now = Date.now();
+          const threads = allThreads.filter((t: Thread) => threadVisibleInFeed(t, now));
+          const mapped = await threadsToPostCardPosts(threads, "default");
+          if (!guard.isLatest(snapId)) return;
+          setPosts(mapped);
+          setError(null);
+        } catch (e) {
+          if (!guard.isLatest(snapId)) return;
+          setError(errorMessage(e) || "failed to load posts");
+        } finally {
+          if (guard.isLatest(snapId)) setLoading(false);
+        }
+      },
+      (e) => {
+        setError(errorMessage(e) || "failed to load posts");
+        setLoading(false);
+      }
+    );
+    return unsubscribe;
+  }, [communityId]);
 
   useEffect(() => {
     setSearchQuery(qFromUrl);
@@ -172,7 +188,7 @@ export default function Community() {
       <AppHeader
         activeTopLink="communities"
         search={{
-          placeholder: `Search in c/${communityId}`,
+          placeholder: `Search in ${communityHandle}`,
           value: searchQuery,
           onChange: handleSearchQueryChange,
           onSubmit: () => {
@@ -198,10 +214,10 @@ export default function Community() {
           <header className="feed-stream__intro feed-stream__intro--community">
             <div className="feed-stream__intro-head">
               <div>
-                <h1 className="feed-stream__title">c/{communityId}</h1>
+                <h1 className="feed-stream__title">{communityHandle}</h1>
                 <p className="feed-stream__subtitle">
                   {community?.fullName ??
-                    `University community feed for ${communityId}.`}{" "}
+                    `University community feed for ${communityHandle}.`}{" "}
                   {communityId ? (
                     <Link
                       to={`/feed?community=${encodeURIComponent(communityId)}`}
@@ -278,11 +294,13 @@ export default function Community() {
               canWrite={canWrite}
               accessMode={accessMode}
               fixedCommunityId={communityId ?? ""}
-              onPosted={loadPosts}
+              onPosted={async () => {}}
               onFormError={setError}
               triggerLabel="Create Thread"
               readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
               presentation="overlay"
+              overlayTitle="New thread"
+              overlayDescription="Add a title, choose tags, and post to this community."
             />
           </div>
 
@@ -319,7 +337,7 @@ export default function Community() {
                 </>
               ) : (
                 <>
-                  No posts in c/{communityId} yet.
+                  No posts in {communityHandle} yet.
                   <strong>Be the first to start a thread.</strong>
                 </>
               )}
@@ -337,7 +355,7 @@ export default function Community() {
         <aside className="feed-page__right-sidebar">
           <div className="feed-page__sidebar-card feed-stream__about-card feed-page__rail-card">
             <div className="feed-page__rail-head">
-              <h3 className="feed-page__rail-title">About c/{communityId}</h3>
+              <h3 className="feed-page__rail-title">About {communityHandle}</h3>
             </div>
             <div className="feed-page__rail-body">
             {community ? (
@@ -383,11 +401,13 @@ export default function Community() {
                   canWrite={canWrite}
                   accessMode={accessMode}
                   fixedCommunityId={communityId ?? ""}
-                  onPosted={loadPosts}
+                  onPosted={async () => {}}
                   onFormError={setError}
                   triggerLabel="Create Thread"
                   readOnlyMessage="Read-only accounts can create threads only in Admissions or First Year/Transition."
                   presentation="overlay"
+                  overlayTitle="New thread"
+                  overlayDescription="Add a title, choose tags, and post to this community."
                 />
               </div>
             </div>

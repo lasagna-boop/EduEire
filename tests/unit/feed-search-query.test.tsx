@@ -5,7 +5,10 @@ import Feed from "../../src/pages/Feed";
 import { AuthContext, type AuthCtx } from "../../src/context/auth-context";
 
 vi.mock("../../src/lib/firestore", () => ({
-  listThreads: vi.fn().mockResolvedValue({ threads: [] }),
+  subscribeThreads: vi.fn((_opts: unknown, onNext: (threads: unknown[]) => void) => {
+    onNext([]);
+    return () => {};
+  }),
   ensureDefaultCommunities: vi.fn().mockResolvedValue([]),
   listCommunities: vi.fn().mockResolvedValue([]),
   isAdmin: vi.fn().mockResolvedValue(false),

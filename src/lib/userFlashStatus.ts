@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { moderateContentV2 } from "./moderation";
+import { sanitizeUserText } from "./inputSanitizer";
 
 export const USER_FLASH_STATUS_MAX_CHARS = 120;
 export const USER_PROFILE_BIO_MAX_CHARS = 200;
@@ -44,7 +45,10 @@ export async function fetchUserFlashStatus(uid: string): Promise<UserFlashStatus
 }
 
 export async function setUserFlashStatus(uid: string, rawText: string): Promise<void> {
-  const text = rawText.trim();
+  const text = sanitizeUserText(rawText, {
+    maxChars: USER_FLASH_STATUS_MAX_CHARS,
+    preserveNewlines: false,
+  });
   if (!text) {
     await clearUserFlashStatus(uid);
     return;
@@ -73,7 +77,10 @@ export async function clearUserFlashStatus(uid: string): Promise<void> {
 }
 
 export async function setUserProfileBio(uid: string, rawText: string): Promise<void> {
-  const text = rawText.trim();
+  const text = sanitizeUserText(rawText, {
+    maxChars: USER_PROFILE_BIO_MAX_CHARS,
+    preserveNewlines: false,
+  });
   if (!text) {
     await clearUserProfileBio(uid);
     return;

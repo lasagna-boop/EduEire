@@ -1,12 +1,12 @@
-import { lazy, Suspense, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { login, register } from "../lib/auth";
 import { errorMessage } from "../lib/errors";
+import { PASSWORD_POLICY_HINT, validatePasswordPolicy } from "../lib/passwordPolicy";
 import { useAuth } from "../context/useAuth";
 import { STUDENT_EMAIL_DOMAINS } from "../lib/userAccess";
 import AppHeader from "../components/AppHeader";
-
-const LandingHeroShader = lazy(() => import("../components/LandingHeroShader"));
+import LandingHeroShader from "../components/LandingHeroShader";
 
 export default function Login() {
   const { user } = useAuth();
@@ -15,6 +15,7 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -40,6 +41,7 @@ export default function Login() {
 
   useEffect(() => {
     setError(null);
+    setPasswordConfirm("");
   }, [isRegister]);
 
   useEffect(() => {
@@ -58,7 +60,24 @@ export default function Login() {
 
     try {
       if (isRegister) {
-        await register(email.trim(), password, displayName.trim());
+        const trimmed = email.trim();
+        if (!trimmed) {
+          setError("Enter your email.");
+          setBusy(false);
+          return;
+        }
+        const pwCheck = validatePasswordPolicy(password);
+        if (!pwCheck.ok) {
+          setError(pwCheck.message);
+          setBusy(false);
+          return;
+        }
+        if (password !== passwordConfirm) {
+          setError("Passwords do not match.");
+          setBusy(false);
+          return;
+        }
+        await register(trimmed, password, displayName.trim());
       } else {
         await login(email.trim(), password);
       }
@@ -78,9 +97,7 @@ export default function Login() {
         {!prefersReducedMotion ? (
           <>
             <div className="login-page__shader">
-              <Suspense fallback={null}>
-                <LandingHeroShader />
-              </Suspense>
+              <LandingHeroShader />
             </div>
             <div className="login-page__scrim" />
           </>
@@ -141,6 +158,21 @@ export default function Login() {
                 type="password"
                 autoComplete={isRegister ? "new-password" : "current-password"}
               />
+              {isRegister ? (
+                <>
+                  <input
+                    className="login-page__input"
+                    placeholder="Confirm password"
+                    value={passwordConfirm}
+                    onChange={(e) => setPasswordConfirm(e.target.value)}
+                    type="password"
+                    autoComplete="new-password"
+                  />
+                  <p className="login-page__subtitle login-page__subtitle--domains" style={{ marginTop: 0 }}>
+                    {PASSWORD_POLICY_HINT}
+                  </p>
+                </>
+              ) : null}
 
               {error && <p className="login-page__error">{error}</p>}
 

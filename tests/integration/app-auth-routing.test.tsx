@@ -42,7 +42,7 @@ describe("App routing with mocked auth", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { level: 1, name: /Irish Students/i })
+        screen.getByRole("heading", { level: 1, name: /Ireland.*students|connect/i })
       ).toBeInTheDocument();
     });
   });

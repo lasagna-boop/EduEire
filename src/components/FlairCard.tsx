@@ -92,7 +92,7 @@ export default function FlairCard({ flair }: Readonly<{ flair: Flair }>) {
   const voteDisabledClass = canVote ? "" : "post-card__vote-btn--disabled";
 
   return (
-    <div className="post-card">
+    <article className="post-card flair-card">
       <div className="post-card__votes">
         <button
           type="button"
@@ -156,6 +156,6 @@ export default function FlairCard({ flair }: Readonly<{ flair: Flair }>) {
           )}
         </div>
       </div>
-    </div>
+    </article>
   );
 }

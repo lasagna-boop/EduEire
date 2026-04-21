@@ -4,6 +4,12 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { moderate, moderateThreadContent } from "./moderation";
 import { sanitizeModerationText } from "./moderationInput";
 import { recalculateCommentCredibility, recalculateThreadCredibility } from "./credibilityRecalc";
+import {
+  sanitizeStringArray,
+  sanitizeUserEmail,
+  sanitizeUserLine,
+  sanitizeUserText,
+} from "./inputSanitizer";
 
 initializeApp();
 const db = getFirestore();
@@ -89,11 +95,19 @@ export const moderateThread = onDocumentCreated(
     const data = snap.data();
     const title = sanitizeModerationText(data.title);
     const body = sanitizeModerationText(data.body);
+    const sanitizedThread = {
+      title: sanitizeUserLine(data.title, 180),
+      body: sanitizeUserText(data.body, { maxChars: 12_000, preserveNewlines: true }),
+      authorName: sanitizeUserLine(data.authorName, 80),
+      communityId: sanitizeUserLine(data.communityId, 64),
+      tags: sanitizeStringArray(data.tags, { maxItems: 12, maxItemChars: 40 }),
+    };
     const authorId = typeof data.authorId === "string" ? data.authorId : "";
 
     const result = await moderateThreadContent(title, body);
 
     await db.doc(`threads/${event.params.threadId}`).update({
+      ...sanitizedThread,
       moderationStatus: result.verdict,
       moderationMatches: result.matches,
       ...(result.toxicityScore != null && { toxicityScore: result.toxicityScore }),
@@ -265,6 +279,10 @@ export const moderatePost = onDocumentCreated(
 
     const data = snap.data();
     const body = sanitizeModerationText(data.body);
+    const sanitizedPost = {
+      body: sanitizeUserText(data.body, { maxChars: 12_000, preserveNewlines: true }),
+      authorName: sanitizeUserLine(data.authorName, 80),
+    };
     const authorId = typeof data.authorId === "string" ? data.authorId : "";
 
     const result = await moderate(body);
@@ -272,6 +290,7 @@ export const moderatePost = onDocumentCreated(
     await db
       .doc(`threads/${event.params.threadId}/posts/${event.params.postId}`)
       .update({
+        ...sanitizedPost,
         moderationStatus: result.verdict,
         moderationMatches: result.matches,
         ...(result.toxicityScore != null && { toxicityScore: result.toxicityScore }),
@@ -288,6 +307,43 @@ export const moderatePost = onDocumentCreated(
       await updateUserModerationStats(authorId, result.verdict, "comment");
     }
     await recalculateCommentCredibility(event.params.threadId, event.params.postId);
+  }
+);
+
+export const moderateFlair = onDocumentCreated("flairs/{flairId}", async (event) => {
+  const snap = event.data;
+  if (!snap) return;
+
+  const data = snap.data();
+  const title = sanitizeModerationText(data.title);
+  const description = sanitizeModerationText(data.description);
+  const result = await moderateThreadContent(title, description);
+
+  await db.doc(`flairs/${event.params.flairId}`).update({
+    title: sanitizeUserLine(data.title, 80),
+    description: sanitizeUserText(data.description, { maxChars: 300, preserveNewlines: true }),
+    authorName: sanitizeUserLine(data.authorName, 80),
+    moderationStatus: result.verdict,
+    moderationMatches: result.matches,
+    ...(result.toxicityScore != null && { toxicityScore: result.toxicityScore }),
+    ...(result.spamScore != null && { spamScore: result.spamScore }),
+  });
+});
+
+export const sanitizeModeratorApplication = onDocumentCreated(
+  "moderator_applications/{applicationId}",
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+
+    const data = snap.data();
+    await db.doc(`moderator_applications/${event.params.applicationId}`).update({
+      applicantName: sanitizeUserLine(data.applicantName, 80),
+      applicantEmail: sanitizeUserEmail(data.applicantEmail, 120),
+      motivation: sanitizeUserText(data.motivation, { maxChars: 1200, preserveNewlines: true }),
+      experience: sanitizeUserText(data.experience, { maxChars: 1200, preserveNewlines: true }),
+      availability: sanitizeUserLine(data.availability, 300),
+    });
   }
 );
 

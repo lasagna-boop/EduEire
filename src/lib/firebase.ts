@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { initializeFirestore } from "firebase/firestore";
+import { initializeFirestore, memoryLocalCache } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -16,9 +16,11 @@ export const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 
-// fixes "stuck loading" when extensions/shields block firestore transport
+// Long polling: fixes "stuck loading" when extensions/shields block firestore transport.
+// Memory cache (not IndexedDB): avoids stale thread lists after docs are deleted in console.
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
+  localCache: memoryLocalCache(),
 });
 
 export const storage = getStorage(app);

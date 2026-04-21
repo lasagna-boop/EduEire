@@ -5,6 +5,7 @@ import { useAuth } from "../context/useAuth";
 import { getUserVote, voteOnThread, isAdmin, setModerationStatus, type Vote } from "../lib/firestore";
 import type { PostCardPost } from "../types/postCard";
 import { voteScoreDelta } from "../lib/voteScoreDelta";
+import { formatCommunityHandle } from "../lib/communityDisplay";
 
 function credibilityScoreColor(score: number): string {
   if (score >= 70) return "#2d6a4f";
@@ -145,7 +146,7 @@ export default function PostCard({ post }: Readonly<{ post: PostCardPost }>) {
         )}
         <div className="post-card__meta">
           <Link to={`/c/${post.communityId}`} className="post-card__community">
-            c/{post.communityId}
+            {formatCommunityHandle(post.communityId)}
           </Link>
           <span className="post-card__meta-detail">
             <UserProfileLink

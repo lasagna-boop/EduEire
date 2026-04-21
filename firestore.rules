@@ -312,6 +312,41 @@ service cloud.firestore {
       }
     }
 
+    match /moderator_applications/{applicationId} {
+      allow read: if request.auth != null && isAdmin();
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly([
+          'applicantId',
+          'applicantName',
+          'applicantEmail',
+          'motivation',
+          'experience',
+          'availability',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.applicantId is string
+        && request.resource.data.applicantId == request.auth.uid
+        && request.resource.data.applicantName is string
+        && request.resource.data.applicantName.size() >= 1
+        && request.resource.data.applicantName.size() <= 80
+        && request.resource.data.applicantEmail is string
+        && request.resource.data.applicantEmail.size() <= 120
+        && request.resource.data.motivation is string
+        && request.resource.data.motivation.size() >= 20
+        && request.resource.data.motivation.size() <= 1200
+        && request.resource.data.experience is string
+        && request.resource.data.experience.size() <= 1200
+        && request.resource.data.availability is string
+        && request.resource.data.availability.size() <= 300
+        && request.resource.data.status == 'pending';
+      allow update: if request.auth != null
+        && isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt'])
+        && request.resource.data.status in ['pending', 'reviewing', 'accepted', 'rejected'];
+      allow delete: if false;
+    }
+
     // Map POIs (imported CSV / edited in console). Client read-only; writes via Console or Admin SDK.
     match /map_points/{pointId} {
       allow read: if request.auth != null;

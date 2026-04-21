@@ -12,13 +12,40 @@ import SpamFilterLab from "./pages/SpamFilterLab";
 import Flairs from "./pages/Flairs";
 import MapPage from "./pages/Map";
 import UniversityWebsites from "./pages/UniversityWebsites";
+import Guidelines from "./pages/Guidelines";
+import ModeratorTeam from "./pages/ModeratorTeam";
 import { useAuth } from "./context/useAuth";
 
 export default function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div style={{ padding: 32 }}>Loading...</div>;
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "1rem",
+          background: "linear-gradient(165deg, #f7faf8, #eef4f0)",
+          fontFamily: "system-ui, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            border: "3px solid #e2e8f0",
+            borderTopColor: "#2d6a4f",
+            animation: "edu-app-spin 0.75s linear infinite",
+          }}
+        />
+        <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600, color: "#475569" }}>Loading EduÉire…</p>
+      </div>
+    );
   }
 
   return (
@@ -72,6 +99,8 @@ export default function App() {
         path="/universities"
         element={user ? <UniversityWebsites /> : <Navigate to="/login" replace />}
       />
+      <Route path="/guidelines" element={<Guidelines />} />
+      <Route path="/moderator-team" element={<ModeratorTeam />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

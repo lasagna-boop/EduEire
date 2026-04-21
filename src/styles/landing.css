@@ -432,6 +432,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  will-change: opacity;
   opacity: 0;
   animation: landing-shader-fade-in 0.55s ease-out 0.12s forwards;
 }
@@ -942,12 +943,15 @@
 
 .landing__roadmap p {
   margin: 0 0 16px;
-  color: #4a5568;
+  color: #cbd5e1;
   font-size: 0.75rem;
   line-height: 1.6;
 }
 
-.landing__roadmap button {
+.landing__roadmap button,
+.landing__roadmap .landing__roadmap-btn {
+  box-sizing: border-box;
+  display: block;
   border: 0;
   width: 100%;
   border-radius: 12px;
@@ -959,9 +963,12 @@
   position: relative;
   z-index: 1;
   transition: all 0.15s;
+  text-align: center;
+  text-decoration: none;
 }
 
-.landing__roadmap button:hover {
+.landing__roadmap button:hover,
+.landing__roadmap .landing__roadmap-btn:hover {
   background: #ff9f1c;
   color: #1a202c;
 }

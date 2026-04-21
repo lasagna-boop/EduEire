@@ -16,3 +16,9 @@
   --edu-btn-ease: border-color 0.2s ease, box-shadow 0.22s ease, transform 0.22s ease, background 0.22s ease,
     color 0.2s ease, filter 0.2s ease;
 }
+
+@keyframes edu-app-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

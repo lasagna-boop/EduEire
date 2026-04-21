@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { logout } from "../lib/auth";
 import { listCommunities } from "../lib/firestore";
+import { formatCommunityHandle } from "../lib/communityDisplay";
 
 export default function SlideMenu() {
   const { user } = useAuth();
@@ -95,7 +96,7 @@ export default function SlideMenu() {
               className="slide-menu__item slide-menu__item--link"
               onClick={close}
             >
-              c/{c.id}
+              {formatCommunityHandle(c.id)}
             </Link>
           ))}
         </nav>

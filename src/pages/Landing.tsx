@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   collection,
@@ -11,6 +11,7 @@ import {
 import { useAuth } from "../context/useAuth";
 import AppHeader from "../components/AppHeader";
 import { LandingUniversityBadge } from "../components/LandingUniversityBadge";
+import LandingHeroShader from "../components/LandingHeroShader";
 import PostCard from "../components/PostCard";
 import "../styles/landing.css";
 import {
@@ -27,8 +28,6 @@ import { db } from "../lib/firebase";
 import { threadVisibleInFeed } from "../lib/firestoreFormat";
 import { threadsToPostCardPosts } from "../lib/threadPostMap";
 import type { PostCardPost } from "../types/postCard";
-
-const LandingHeroShader = lazy(() => import("../components/LandingHeroShader"));
 
 /** Higher member count first; ties use curated seed order so the list is stable when counts are 0. */
 const COMMUNITY_SEED_ORDER = new Map(
@@ -298,18 +297,13 @@ export default function Landing() {
             </Link>
           </div>
 
-          <div className="landing__sidebar-footer">
-            <span className="landing__sidebar-footer-note">Help &amp; legal: coming soon</span>
-          </div>
         </aside>
 
         <main className="landing__main">
           <section className="landing__hero">
             {!prefersReducedMotion ? (
               <div className="landing__hero-shader" aria-hidden>
-                <Suspense fallback={null}>
-                  <LandingHeroShader />
-                </Suspense>
+                <LandingHeroShader />
               </div>
             ) : null}
             {!prefersReducedMotion ? <div className="landing__hero-scrim" aria-hidden /> : null}
@@ -319,8 +313,8 @@ export default function Landing() {
                 The Digital Cluster
               </span>
               <h1>
-                The heartbeat of <br />
-                <span>Irish Students.</span>
+                Where Ireland&apos;s students <br />
+                <span>connect.</span>
               </h1>
               <p>
                 {registeredUsersCount !== null ? (
@@ -466,11 +460,13 @@ export default function Landing() {
           </div>
 
           <div className="landing__roadmap">
-            <h3>Academic Roadmap</h3>
+            <h3>Topic tags &amp; flairs</h3>
             <p>
-              Never miss a deadline. Sync your university calendar with EduÉire for automated alerts.
+              Browse community tags, propose new ones, and vote on what should shape discussions across EduÉire.
             </p>
-            <button type="button">Get Started</button>
+            <Link to="/flairs" className="landing__roadmap-btn">
+              Open flairs
+            </Link>
             <div className="landing__roadmap-orb" />
           </div>
         </aside>
@@ -482,16 +478,15 @@ export default function Landing() {
             <div className="landing__footer-logo">EduÉire</div>
             <p>
               Designed for the next generation of Irish scholars. Promoting civil discourse and academic excellence
-              since 2023.
+              since 2026.
             </p>
           </div>
 
           <div className="landing__footer-grid">
             <div>
               <h4>Community</h4>
-              <Link to="/feed">Guidelines</Link>
-              <Link to="/feed">Moderator Team</Link>
-              <Link to="/feed">Campus Ambassadors</Link>
+              <Link to="/guidelines">Guidelines</Link>
+              <Link to="/moderator-team">Moderator Team</Link>
             </div>
             <div>
               <h4>Explore</h4>
@@ -505,7 +500,7 @@ export default function Landing() {
                 <button type="button">📱</button>
                 <button type="button">📧</button>
               </div>
-              <p className="landing__copyright">© 2024 EduÉire Network. All rights reserved.</p>
+              <p className="landing__copyright">© 2026 EduÉire. All rights reserved.</p>
             </div>
           </div>
         </div>

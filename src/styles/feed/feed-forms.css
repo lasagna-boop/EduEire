@@ -63,8 +63,10 @@
   right: 0;
   bottom: 0;
   left: 0;
-  z-index: 120;
+  /* Above sticky feed chrome (see feed-shell); must work when portaled to <body> */
+  z-index: 2000;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: #faf9f6;
   padding: 16px 16px 24px;
 }
@@ -169,6 +171,16 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .feed-page__form-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.feed-page__create-trigger-label {
+  min-width: 0;
 }
 
 .feed-page__anon-row {

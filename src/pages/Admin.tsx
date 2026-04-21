@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import AppHeader from "../components/AppHeader";
 import {
   isAdmin,
+  listModeratorApplications,
   listFlaggedThreads,
   setModerationStatus,
   type FlaggedItem,
+  type ModeratorApplication,
 } from "../lib/firestore";
 import { useAuth } from "../context/useAuth";
 import { formatFirestoreDay } from "../lib/firestoreFormat";
+import { formatCommunityHandle } from "../lib/communityDisplay";
 
 function formatDate(ts: unknown): string {
   const s = formatFirestoreDay(ts);
@@ -52,6 +55,7 @@ export default function Admin() {
   const [authorized, setAuthorized] = useState(false);
   const [checking, setChecking] = useState(true);
   const [items, setItems] = useState<FlaggedItem[]>([]);
+  const [applications, setApplications] = useState<ModeratorApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
 
@@ -68,10 +72,14 @@ export default function Admin() {
   const load = async () => {
     setLoading(true);
     try {
-      const flagged = await listFlaggedThreads();
+      const [flagged, mods] = await Promise.all([
+        listFlaggedThreads(),
+        listModeratorApplications({ pageSize: 60 }),
+      ]);
       setItems(flagged);
+      setApplications(mods);
     } catch (e) {
-      console.error("Failed to load flagged items", e);
+      console.error("Failed to load moderation admin data", e);
     } finally {
       setLoading(false);
     }
@@ -147,7 +155,9 @@ export default function Admin() {
 
                   <div className="admin-card__meta">
                     {item.communityId && (
-                      <span className="admin-card__community">c/{item.communityId}</span>
+                      <span className="admin-card__community">
+                        {formatCommunityHandle(item.communityId)}
+                      </span>
                     )}
                     {item.communityId ? " • " : ""}@{item.authorName} • {formatDate(item.createdAt)}
                   </div>
@@ -219,6 +229,50 @@ export default function Admin() {
                       {acting === item.id ? "..." : "Reject"}
                     </button>
                   </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="admin-header" style={{ marginTop: "20px" }}>
+            <h2 className="admin-header__title" style={{ fontSize: "1.2rem", marginBottom: "6px" }}>
+              Moderator Applications
+            </h2>
+            <p className="admin-header__subtitle">
+              New applications submitted from the Moderator Team page.
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="feed-page__loading">Loading applications...</div>
+          ) : null}
+          {!loading && applications.length === 0 ? (
+            <div className="feed-page__empty">No moderator applications yet.</div>
+          ) : null}
+          {!loading && applications.length > 0 ? (
+            <div className="admin-queue">
+              {applications.map((app) => (
+                <div key={app.id} className="admin-card">
+                  <div className="admin-card__badge">Moderator</div>
+                  <div className="admin-card__meta">
+                    @{app.applicantName}
+                    {app.applicantEmail ? ` (${app.applicantEmail})` : ""} • {formatDate(app.createdAt)}
+                  </div>
+                  <h3 className="admin-card__title">Motivation</h3>
+                  <p className="admin-card__body">{app.motivation}</p>
+                  {app.experience ? (
+                    <>
+                      <h3 className="admin-card__title">Experience</h3>
+                      <p className="admin-card__body">{app.experience}</p>
+                    </>
+                  ) : null}
+                  {app.availability ? (
+                    <>
+                      <h3 className="admin-card__title">Availability</h3>
+                      <p className="admin-card__body">{app.availability}</p>
+                    </>
+                  ) : null}
+                  <div className="admin-card__flags">Status: {app.status}</div>
                 </div>
               ))}
             </div>

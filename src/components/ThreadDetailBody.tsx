@@ -7,6 +7,7 @@ import { formatFirestoreDay } from "../lib/firestoreFormat";
 import { useFlashCountdown } from "../hooks/useFlashCountdown";
 import { buildCommentTree, countCommentsInTree } from "../lib/commentTree";
 import type { Post, Thread, Vote } from "../lib/firestore";
+import { formatCommunityHandle } from "../lib/communityDisplay";
 
 export type ThreadDetailBodyProps = {
   thread: Thread;
@@ -118,7 +119,7 @@ export function ThreadDetailBody({
           ) : null}
           <div className="post-card__meta">
             <Link to={`/c/${thread.communityId}`} className="post-card__community">
-              c/{thread.communityId}
+              {formatCommunityHandle(thread.communityId)}
             </Link>
             <span>
               {" "}

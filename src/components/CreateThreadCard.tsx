@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import type { User } from "firebase/auth";
 import { createThread, type Community } from "../lib/firestore";
 import { errorMessage } from "../lib/errors";
@@ -17,6 +18,9 @@ type BaseProps = {
   triggerLabel: string;
   readOnlyMessage: string;
   presentation?: "inline" | "overlay";
+  /** Shown in the overlay header when `presentation` is `overlay`. */
+  overlayTitle?: string;
+  overlayDescription?: string;
 };
 
 type FeedModeProps = BaseProps & {
@@ -51,6 +55,8 @@ const TAG_OPTIONS = [
 ] as const;
 
 export function CreateThreadCard(props: Readonly<Props>) {
+  const overlayTitleId = useId();
+  const overlayDescId = useId();
   const [showNew, setShowNew] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -248,6 +254,62 @@ export function CreateThreadCard(props: Readonly<Props>) {
 
   const useOverlay = props.presentation === "overlay";
 
+  useEffect(() => {
+    if (!useOverlay || !showNew) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [useOverlay, showNew]);
+
+  useEffect(() => {
+    if (!useOverlay || !showNew) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLocalError(null);
+        setShowNew(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [useOverlay, showNew]);
+
+  const overlayNode =
+    useOverlay && showNew ? (
+      <div
+        className="feed-page__create-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={overlayTitleId}
+        aria-describedby={overlayDescId}
+      >
+        <div className="feed-page__create-overlay-panel">
+          <div className="feed-page__create-overlay-header">
+            <div className="feed-page__create-overlay-title-wrap">
+              <h2 id={overlayTitleId}>{props.overlayTitle ?? "Create thread"}</h2>
+              <p id={overlayDescId}>
+                {props.overlayDescription ??
+                  "Share your idea clearly and choose relevant tags."}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="feed-page__create-overlay-close"
+              aria-label="Close create thread form"
+              onClick={() => {
+                setLocalError(null);
+                setShowNew(false);
+              }}
+            >
+              ×
+            </button>
+          </div>
+          {createForm}
+        </div>
+      </div>
+    ) : null;
+
   return (
     <div className="feed-page__create-card">
       <button
@@ -259,35 +321,12 @@ export function CreateThreadCard(props: Readonly<Props>) {
         }}
       >
         <span className="feed-page__create-icon">+</span>
-        <span>{props.triggerLabel}</span>
+        <span className="feed-page__create-trigger-label">{props.triggerLabel}</span>
       </button>
 
       {!useOverlay && showNew ? createForm : null}
 
-      {useOverlay && showNew ? (
-        <div className="feed-page__create-overlay" role="dialog" aria-modal="true">
-          <div className="feed-page__create-overlay-panel">
-            <div className="feed-page__create-overlay-header">
-              <div className="feed-page__create-overlay-title-wrap">
-                <h2>Create Thread</h2>
-                <p>Share your idea clearly and choose relevant tags.</p>
-              </div>
-              <button
-                type="button"
-                className="feed-page__create-overlay-close"
-                aria-label="Close create thread form"
-                onClick={() => {
-                  setLocalError(null);
-                  setShowNew(false);
-                }}
-              >
-                ×
-              </button>
-            </div>
-            {createForm}
-          </div>
-        </div>
-      ) : null}
+      {overlayNode ? createPortal(overlayNode, document.body) : null}
     </div>
   );
 }

@@ -31,6 +31,7 @@ import {
 } from "../lib/userFlashStatus";
 import { useAuth } from "../context/useAuth";
 import type { PostCardPost } from "../types/postCard";
+import { formatCommunityHandle } from "../lib/communityDisplay";
 
 type ProfileTab = "posts" | "about";
 
@@ -359,57 +360,52 @@ export default function Profile() {
           </section>
 
           <section className="profile-status-card" aria-labelledby="profile-snippet-heading">
-            <h2 id="profile-snippet-heading" className="profile-status-card__title">
-              Profile status
-            </h2>
-            <p className="profile-status-card__hint">
-              One line under your name. Use the icon in the corner: lines = permanent until you
-              change it; lightning = 24-hour flash (same highlight as flash threads). Active flash
-              replaces the permanent line on your profile.
-            </p>
-            <div className="profile-status-card__field-wrap">
-              <textarea
-                className="profile-status-card__field"
-                maxLength={snippetMaxLen}
-                rows={3}
-                placeholder={
-                  snippetMode === "flash"
-                    ? "Flash status — 24 hours after save"
-                    : "Permanent line about you"
-                }
-                value={snippetDraft}
-                disabled={statusLoading || statusSaving}
-                onChange={(e) => setSnippetDraft(e.target.value)}
-                aria-label={
-                  snippetMode === "flash" ? "Flash status (24 hours)" : "Permanent profile line"
-                }
-              />
+            <div className="profile-status-card__header">
+              <h2 id="profile-snippet-heading" className="profile-status-card__title">
+                Status
+              </h2>
               <button
                 type="button"
-                className={`profile-status-card__mode-btn${
-                  snippetMode === "flash" ? " profile-status-card__mode-btn--flash" : ""
+                className={`profile-status-card__mode-pill${
+                  snippetMode === "flash" ? " profile-status-card__mode-pill--flash" : ""
                 }`}
                 onClick={toggleSnippetMode}
                 disabled={statusLoading || statusSaving}
                 title={
                   snippetMode === "flash"
-                    ? "24-hour flash — click for permanent line"
-                    : "Permanent line — click for 24-hour flash"
+                    ? "24-hour flash active — click for normal"
+                    : "Normal active — click for 24-hour flash"
                 }
                 aria-label={
                   snippetMode === "flash"
-                    ? "Switch to permanent profile line"
+                    ? "Switch to normal profile status"
                     : "Switch to 24-hour flash status"
                 }
                 aria-pressed={snippetMode === "flash"}
               >
                 {snippetMode === "flash" ? <IconFlashBolt /> : <IconProfileLine />}
+                <span>{snippetMode === "flash" ? "24h Flash" : "Normal"}</span>
               </button>
             </div>
+            <p className="profile-status-card__hint">
+              {snippetMode === "flash"
+                ? "Flash replaces your normal line for 24 hours."
+                : "Your default line shown under your name."}
+            </p>
+            <input
+              className="profile-status-card__field profile-status-card__field--single"
+              maxLength={snippetMaxLen}
+              placeholder={
+                snippetMode === "flash" ? "Write flash status (24h)" : "Write profile status"
+              }
+              value={snippetDraft}
+              disabled={statusLoading || statusSaving}
+              onChange={(e) => setSnippetDraft(e.target.value)}
+              aria-label={snippetMode === "flash" ? "Flash status (24 hours)" : "Profile status"}
+            />
             <div className="profile-status-card__footer">
               <span className="profile-status-card__count">
                 {snippetDraft.length}/{snippetMaxLen}
-                {snippetMode === "flash" ? " · flash" : " · permanent"}
               </span>
               <div className="profile-status-card__actions">
                 <button
@@ -418,7 +414,7 @@ export default function Profile() {
                   disabled={statusLoading || statusSaving}
                   onClick={() => void handleSaveSnippet()}
                 >
-                  {statusSaving ? "Saving…" : snippetMode === "flash" ? "Save (24h)" : "Save"}
+                  {statusSaving ? "Saving…" : "Save"}
                 </button>
                 <button
                   type="button"
@@ -564,7 +560,9 @@ export default function Profile() {
                     <Link to={`/c/${c.id}`} className="profile-subscription-link">
                       <span className="profile-subscription-icon">🎓</span>
                       <div className="profile-subscription-info">
-                        <span className="profile-subscription-name">c/{c.id}</span>
+                        <span className="profile-subscription-name">
+                          {formatCommunityHandle(c.id, c.name)}
+                        </span>
                         <span className="profile-subscription-full">{c.fullName}</span>
                       </div>
                     </Link>
