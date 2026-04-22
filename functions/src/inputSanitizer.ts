@@ -1,12 +1,23 @@
-const CONTROL_CHARS_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const ZERO_WIDTH_RE = /[\u200B-\u200D\uFEFF]/g;
 
+/** Same coverage as legacy regex: drop C0 except HT/LF/CR, and DEL. */
+function stripDisallowedControls(value: string): string {
+  return [...value]
+    .filter((ch) => {
+      const cp = ch.codePointAt(0) ?? 0;
+      if (cp <= 8) return false;
+      if (cp === 11 || cp === 12) return false;
+      if (cp >= 14 && cp <= 31) return false;
+      return cp !== 127;
+    })
+    .join("");
+}
+
 function normalizeBase(value: string): string {
-  return value
-    .normalize("NFKC")
-    .replace(/\r\n?/g, "\n")
-    .replace(CONTROL_CHARS_RE, "")
-    .replace(ZERO_WIDTH_RE, "");
+  return stripDisallowedControls(value.normalize("NFKC").replaceAll(/\r\n?/g, "\n")).replaceAll(
+    ZERO_WIDTH_RE,
+    ""
+  );
 }
 
 export function sanitizeUserText(
@@ -23,11 +34,11 @@ export function sanitizeUserText(
   let out = normalizeBase(value);
   if (preserveNewlines) {
     out = out
-      .replace(/[ \t]+\n/g, "\n")
-      .replace(/\n{4,}/g, "\n\n\n")
+      .replaceAll(/[ \t]+\n/g, "\n")
+      .replaceAll(/\n{4,}/g, "\n\n\n")
       .trim();
   } else {
-    out = out.replace(/\s+/g, " ").trim();
+    out = out.replaceAll(/\s+/g, " ").trim();
   }
 
   if (out.length > maxChars) {

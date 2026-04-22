@@ -22,8 +22,11 @@ export const SPAM_WEIGHTS_V2: Record<string, number> = {
 
 const SPAM_KEYWORDS_V2 =
   /\b(free money|guaranteed profit|dm me|whatsapp|telegram|crypto signal|click here|earn fast|limited offer|bonus now)\b/i;
-const OBFUSCATED_KEYWORD_V2 =
-  /c\W*l\W*i\W*c\W*k\W*h\W*e\W*r\W*e|f\W*r\W*e\W*e\W*m\W*o\W*n\W*e\W*y|e\W*a\W*r\W*n\W*f\W*a\W*s\W*t/i;
+const OBFUSCATED_KEYWORD_PARTS_V2 = [
+  /c\W*l\W*i\W*c\W*k\W*h\W*e\W*r\W*e/i,
+  /f\W*r\W*e\W*e\W*m\W*o\W*n\W*e\W*y/i,
+  /e\W*a\W*r\W*n\W*f\W*a\W*s\W*t/i,
+] as const;
 const CONTACT_HINT_V2 = /\b(dm|direct message|telegram|whatsapp|signal me|text me)\b/i;
 
 function clamp01(value: number): number {
@@ -49,13 +52,17 @@ function hasLongCharRun(text: string): boolean {
 }
 
 function hasRepeatedPhrase(text: string): boolean {
-  const normalized = text.toLowerCase().replace(/\s+/g, " ").trim();
+  const normalized = text.toLowerCase().replaceAll(/\s+/g, " ").trim();
   return /\b(.{3,40})\b(?:\s+\1){2,}/i.test(normalized);
+}
+
+function hasObfuscatedSpamKeyword(text: string): boolean {
+  return OBFUSCATED_KEYWORD_PARTS_V2.some((re) => re.test(text));
 }
 
 function punctuationRatio(text: string): number {
   if (!text) return 0;
-  const punct = text.match(/[!?$%*#@^~`|<>_=+-]{1}/g) ?? [];
+  const punct = text.match(/[!?$%*#@^~`|<>_=+-]/g) ?? [];
   return punct.length / text.length;
 }
 
@@ -71,7 +78,7 @@ export function checkSpamV2(text: string): SpamResultV2 {
   if (hasLongCharRun(safe)) matches.push("spam_char_run");
   if (hasRepeatedPhrase(safe)) matches.push("spam_repetition");
   if (keyword) matches.push("spam_keywords");
-  if (OBFUSCATED_KEYWORD_V2.test(safe)) matches.push("spam_obfuscated_keyword");
+  if (hasObfuscatedSpamKeyword(safe)) matches.push("spam_obfuscated_keyword");
   if (contactHint && (urls >= 1 || keyword)) matches.push("spam_contact_combo");
   if (urls >= 2 && keyword) matches.push("spam_url_keyword_combo");
   if (punctuationRatio(safe) >= 0.2 && safe.length >= 24) matches.push("spam_symbol_noise");

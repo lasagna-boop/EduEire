@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { logout } from "../lib/auth";
 import SlideMenu from "./SlideMenu";
+import ThemeToggle from "./ThemeToggle";
 import "../styles/landing.css";
 
 type HeaderSearchProps = {
@@ -16,7 +17,7 @@ type AppHeaderProps = {
   search?: HeaderSearchProps;
 };
 
-export default function AppHeader({ activeTopLink, search }: AppHeaderProps) {
+export default function AppHeader({ activeTopLink, search }: Readonly<AppHeaderProps>) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -76,6 +77,10 @@ export default function AppHeader({ activeTopLink, search }: AppHeaderProps) {
         ) : (
           <div className="landing__header-spacer" aria-hidden="true" />
         )}
+
+        <div className="landing__header-tools">
+          <ThemeToggle />
+        </div>
 
         <div className="landing__auth">
           {user ? (

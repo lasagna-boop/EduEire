@@ -1,5 +1,5 @@
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 
@@ -63,6 +63,30 @@ function toFirestoreDoc(feature) {
   };
 }
 
+function applyCoordinateFallbacks(data, existing) {
+  if (data.hasCoordinates === true) return;
+  const existingLat = existing?.latitude;
+  const existingLng = existing?.longitude;
+  if (
+    typeof existingLat === "number" &&
+    typeof existingLng === "number" &&
+    Number.isFinite(existingLat) &&
+    Number.isFinite(existingLng)
+  ) {
+    data.latitude = existingLat;
+    data.longitude = existingLng;
+    data.hasCoordinates = true;
+    return;
+  }
+  const communityId = data.communityId;
+  if (typeof communityId === "string" && COMMUNITY_COORDINATE_FALLBACK[communityId]) {
+    const fallback = COMMUNITY_COORDINATE_FALLBACK[communityId];
+    data.latitude = fallback.lat;
+    data.longitude = fallback.lng;
+    data.hasCoordinates = true;
+  }
+}
+
 async function main() {
   const repoRoot = path.resolve(__dirname, "..");
   const inputPath = path.join(repoRoot, "ireland_student_map_dataset.geojson");
@@ -95,28 +119,7 @@ async function main() {
     const existingSnap = await ref.get();
     const existing = existingSnap.exists ? existingSnap.data() : null;
 
-    if (data.hasCoordinates !== true) {
-      const existingLat = existing?.latitude;
-      const existingLng = existing?.longitude;
-      if (
-        typeof existingLat === "number" &&
-        typeof existingLng === "number" &&
-        Number.isFinite(existingLat) &&
-        Number.isFinite(existingLng)
-      ) {
-        data.latitude = existingLat;
-        data.longitude = existingLng;
-        data.hasCoordinates = true;
-      } else if (
-        typeof data.communityId === "string" &&
-        COMMUNITY_COORDINATE_FALLBACK[data.communityId]
-      ) {
-        const fallback = COMMUNITY_COORDINATE_FALLBACK[data.communityId];
-        data.latitude = fallback.lat;
-        data.longitude = fallback.lng;
-        data.hasCoordinates = true;
-      }
-    }
+    applyCoordinateFallbacks(data, existing);
 
     batch.set(ref, data, { merge: true });
     inBatch += 1;

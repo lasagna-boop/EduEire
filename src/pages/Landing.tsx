@@ -62,10 +62,10 @@ export default function Landing() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
-    if (typeof window.matchMedia !== "function") {
+    if (typeof globalThis.matchMedia !== "function") {
       return;
     }
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mq = globalThis.matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => setPrefersReducedMotion(mq.matches);
     sync();
     mq.addEventListener("change", sync);
@@ -82,7 +82,7 @@ export default function Landing() {
       }
     };
 
-    void loadPopularUniversities();
+    loadPopularUniversities();
   }, []);
 
   const displayedUniversities = universitiesExpanded
@@ -101,8 +101,10 @@ export default function Landing() {
           return;
         }
 
-        const topThread = visibleThreads.reduce((best, current) =>
-          (current.score ?? 0) > (best.score ?? 0) ? current : best
+        const [seed, ...rest] = visibleThreads;
+        const topThread = rest.reduce(
+          (best, current) => ((current.score ?? 0) > (best.score ?? 0) ? current : best),
+          seed
         );
         const mapped = await threadsToPostCardPosts([topThread], "feed");
         setTrendingPost(mapped[0] ?? null);
@@ -111,7 +113,7 @@ export default function Landing() {
       }
     };
 
-    void loadTrendingThread();
+    loadTrendingThread();
   }, []);
 
   useEffect(() => {
@@ -148,7 +150,6 @@ export default function Landing() {
         if (cancelled) return;
         const n = threadsSnap.data().count;
         if (disc === null) {
-          disc = n;
           setDiscussionsCount(n);
         }
       } catch (e) {
@@ -170,7 +171,7 @@ export default function Landing() {
       }
     };
 
-    void loadLandingStats();
+    loadLandingStats();
     return () => {
       cancelled = true;
     };
@@ -191,7 +192,7 @@ export default function Landing() {
       }
     };
 
-    void loadSubscriptions();
+    loadSubscriptions();
   }, [user]);
 
   const handleToggleSubscription = async (community: Community) => {
@@ -430,7 +431,7 @@ export default function Landing() {
                   </Link>
                   <button
                     type="button"
-                    onClick={() => void handleToggleSubscription(community)}
+                    onClick={() => handleToggleSubscription(community)}
                     disabled={pendingCommunityId === community.id}
                     className={`landing__community-join-btn ${
                       subscriptionIds.includes(community.id) ? "landing__community-join-btn--joined" : ""

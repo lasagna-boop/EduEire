@@ -33,10 +33,9 @@ export function FlairsEngagementSurveys() {
     setIntentDone(true);
   }, [intentChoice]);
 
-  const submitClarity = useCallback((n: number) => {
+  const submitClarity = useCallback(() => {
     sessionStorage.setItem(STORAGE_CLARITY, "1");
     setClarityDone(true);
-    void n;
   }, []);
 
   return (
@@ -125,7 +124,7 @@ export function FlairsEngagementSurveys() {
                   key={n}
                   type="button"
                   className="flairs-survey__scale-btn"
-                  onClick={() => submitClarity(n)}
+                  onClick={() => submitClarity()}
                   aria-label={`${n} out of 5`}
                 >
                   {n}

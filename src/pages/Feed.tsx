@@ -80,7 +80,7 @@ export default function Feed() {
   }, [communityId]);
 
   useEffect(() => {
-    void loadCommunities();
+    loadCommunities();
   }, [loadCommunities]);
 
   useEffect(() => {

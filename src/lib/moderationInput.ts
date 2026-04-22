@@ -6,7 +6,7 @@ export function sanitizeModerationText(
   maxChars = MODERATION_TEXT_MAX_CHARS
 ): string {
   if (typeof value !== "string") return "";
-  const stripped = value.replace(/\0/g, "");
+  const stripped = value.replaceAll("\0", "");
   if (stripped.length <= maxChars) return stripped;
   return stripped.slice(0, maxChars);
 }

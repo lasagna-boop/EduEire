@@ -21,64 +21,17 @@ export class ErrorBoundary extends Component<Props, State> {
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div
-          role="alert"
-          style={{
-            minHeight: "100vh",
-            boxSizing: "border-box",
-            padding: "clamp(1.5rem, 4vw, 2.5rem)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "1rem",
-            fontFamily: "system-ui, sans-serif",
-            background: "linear-gradient(160deg, #f7faf8 0%, #f0f4f2 100%)",
-            color: "#1a202c",
-            textAlign: "center",
-          }}
-        >
-          <p style={{ margin: 0, fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.12em", color: "#2d6a4f" }}>
-            EDUÉIRE
-          </p>
-          <h1 style={{ margin: 0, fontSize: "1.35rem", fontWeight: 800, letterSpacing: "-0.02em" }}>
-            Something went wrong
-          </h1>
-          <p style={{ margin: 0, maxWidth: "32ch", fontSize: "0.95rem", lineHeight: 1.5, color: "#4a5568" }}>
+        <div role="alert" className="app-error-boundary">
+          <p className="app-error-boundary__brand">EDUÉIRE</p>
+          <h1 className="app-error-boundary__title">Something went wrong</h1>
+          <p className="app-error-boundary__copy">
             Refresh the page to continue. If this keeps happening, try again in a moment.
           </p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            style={{
-              marginTop: "0.5rem",
-              padding: "0.65rem 1.25rem",
-              borderRadius: "12px",
-              border: "none",
-              fontWeight: 700,
-              fontSize: "0.9rem",
-              cursor: "pointer",
-              background: "#2d6a4f",
-              color: "#fff",
-            }}
-          >
+          <button type="button" className="app-error-boundary__btn" onClick={() => globalThis.location.reload()}>
             Reload
           </button>
           {import.meta.env.DEV && this.state.error ? (
-            <pre
-              style={{
-                marginTop: "1rem",
-                maxWidth: "100%",
-                overflow: "auto",
-                textAlign: "left",
-                fontSize: "0.7rem",
-                padding: "0.75rem",
-                borderRadius: "8px",
-                background: "rgba(0,0,0,0.06)",
-              }}
-            >
-              {this.state.error.message}
-            </pre>
+            <pre className="app-error-boundary__pre">{this.state.error.message}</pre>
           ) : null}
         </div>
       );

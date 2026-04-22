@@ -412,7 +412,7 @@ export default function Profile() {
                   type="button"
                   className="profile-status-card__btn profile-status-card__btn--primary"
                   disabled={statusLoading || statusSaving}
-                  onClick={() => void handleSaveSnippet()}
+                  onClick={() => handleSaveSnippet()}
                 >
                   {statusSaving ? "Saving…" : "Save"}
                 </button>
@@ -420,7 +420,7 @@ export default function Profile() {
                   type="button"
                   className="profile-status-card__btn profile-status-card__btn--ghost"
                   disabled={statusLoading || statusSaving || clearDisabled}
-                  onClick={() => void handleClearSnippet()}
+                  onClick={() => handleClearSnippet()}
                 >
                   Clear
                 </button>

@@ -15,9 +15,11 @@ export const USER_PROFILE_BIO_MAX_CHARS = 200;
 
 const FLASH_MS = 24 * 60 * 60 * 1000;
 
+type FlashExpiresAt = unknown | null;
+
 export type UserFlashStatusSnapshot = {
   text: string;
-  expiresAt: unknown | null;
+  expiresAt: FlashExpiresAt;
 };
 
 export type UserProfileStatusSnapshot = {

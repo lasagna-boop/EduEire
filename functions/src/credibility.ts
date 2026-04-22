@@ -15,6 +15,9 @@
 
 export type ModerationStatus = "approved" | "pending_review" | "rejected";
 
+/** Nullable Firestore / JSON field stored on credibility input snapshots. */
+type NullableFirestoreField = unknown | null;
+
 export type UserCredibilitySnapshot = {
   studentEmailConfirmed: boolean;
   accessMode: "full" | "read_only";
@@ -90,7 +93,7 @@ export type CredibilityInputsDocument = {
 
   studentEmailConfirmed: boolean;
   accessMode: "full" | "read_only";
-  authorCreatedAt: unknown | null;
+  authorCreatedAt: NullableFirestoreField;
   subscriptions: string[];
 
   approvedPostsCount: number;
@@ -104,7 +107,7 @@ export type CredibilityInputsDocument = {
 
   totalThreadsCount: number;
   totalCommentsCount: number;
-  lastContributionAt: unknown | null;
+  lastContributionAt: NullableFirestoreField;
 
   reportsAgainstCount: number;
   confirmedReportsCount: number;
@@ -115,7 +118,7 @@ export type CredibilityInputsDocument = {
   contentModerationStatus: string;
   contentToxicityScore: number;
   contentSpamScore: number;
-  contentCreatedAt: unknown | null;
+  contentCreatedAt: NullableFirestoreField;
   /** 0 for threads; length of ancestorIds for comments. */
   commentAncestorDepth: number;
 };
@@ -271,6 +274,12 @@ function normalizeScoreWithTanh(value: number, scale: number): number {
   return clamp01((t + 1) / 2);
 }
 
+function moderationStatusPenalty(status: ModerationStatus): number {
+  if (status === "rejected") return 0.95;
+  if (status === "pending_review") return 0.35;
+  return 0;
+}
+
 function moderationRiskPenalty(
   status: ModerationStatus,
   toxicityScore: number,
@@ -278,8 +287,7 @@ function moderationRiskPenalty(
 ): number {
   // Status acts as a strong prior on risk.
   // Approved: minimal status penalty; Pending: medium; Rejected: very high.
-  const statusPenalty =
-    status === "rejected" ? 0.95 : status === "pending_review" ? 0.35 : 0;
+  const statusPenalty = moderationStatusPenalty(status);
 
   // Toxicity/spam contribute smoothly, so small noise does not over-penalize.
   return clamp01(statusPenalty + 0.55 * clamp01(toxicityScore) + 0.35 * clamp01(spamScore));
@@ -346,12 +354,12 @@ function buildSharedSignals(
     0.12 * contributionVolumeNorm +
     0.16 * qualityScoreNorm +
     0.08 * freshnessFactor +
-    0.10 * itemScoreNorm +
+    0.1 * itemScoreNorm +
     0.09 * approvalBalance +
     0.08 * helpfulNorm -
     0.06 * depthPenaltyNorm -
     0.12 * reportPenaltyNorm -
-    0.30 * riskPenaltyNorm;
+    0.3 * riskPenaltyNorm;
 
   // Final squashing into [0..1].
   const boundedScore01 = clamp01((Math.tanh(rawLinearScore * 1.35) + 1) / 2);

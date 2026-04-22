@@ -8,7 +8,7 @@
   --map-surface: rgba(255, 255, 255, 0.9);
   --map-ease-out: cubic-bezier(0.25, 1, 0.5, 1);
   min-height: 100vh;
-  background: #faf9f6;
+  background: var(--app-bg-page);
   color: var(--map-ink);
 }
 
@@ -546,4 +546,76 @@
   .map-page__category-btn {
     transition: none !important;
   }
+}
+
+/* ─── Dark-mode overrides ──────────────────────────────────────────────────── */
+
+[data-theme="dark"] .map-page {
+  --map-ink: var(--app-text-primary);
+  --map-muted: var(--app-text-secondary);
+  --map-border: var(--app-border-hairline);
+  --map-surface: oklch(0.245 0.028 165 / 0.9);
+}
+
+[data-theme="dark"] .map-page__sidebar {
+  background: linear-gradient(160deg, oklch(0.26 0.03 165 / 0.97), oklch(0.245 0.028 165 / 0.93));
+  border-color: var(--app-border-hairline);
+  box-shadow: 0 30px 40px -34px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"] .map-page__sidebar-head h2 {
+  color: var(--app-text-primary);
+}
+
+[data-theme="dark"] .map-page__sidebar-head p {
+  color: var(--app-text-secondary);
+}
+
+[data-theme="dark"] .map-page__sidebar-badge--soft {
+  background: rgba(107, 201, 155, 0.12);
+  color: var(--app-text-secondary);
+  border-color: rgba(107, 201, 155, 0.28);
+}
+
+[data-theme="dark"] .map-page__category-btn:not(.map-page__category-btn--active) {
+  background: linear-gradient(180deg, oklch(0.28 0.035 165), oklch(0.26 0.03 165));
+  color: var(--app-text-primary);
+  border-color: var(--app-border-hairline);
+}
+
+[data-theme="dark"] .map-page__category-count {
+  background: oklch(0.32 0.04 165 / 0.9);
+  color: var(--app-text-secondary);
+}
+
+[data-theme="dark"] .map-page__zoom-controls {
+  background: linear-gradient(180deg, oklch(0.28 0.035 165 / 0.97), oklch(0.26 0.03 165 / 0.97));
+  border-color: var(--app-border-hairline);
+  box-shadow: var(--edu-btn-shadow);
+}
+
+[data-theme="dark"] .map-page__zoom-btn {
+  color: var(--app-text-primary);
+  border-bottom-color: var(--app-border-hairline);
+}
+
+[data-theme="dark"] .map-page__zoom-btn:hover {
+  background: oklch(0.32 0.04 165);
+  color: var(--edu-accent);
+}
+
+[data-theme="dark"] .map-page__legend {
+  background: oklch(0.245 0.028 165 / 0.95);
+  border-color: var(--app-border-hairline);
+  color: var(--app-text-secondary);
+  box-shadow: 0 18px 24px -24px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"] .map-page__sidebar-foot {
+  color: var(--app-text-secondary);
+  border-top-color: var(--app-border-hairline);
+}
+
+[data-theme="dark"] .map-page__sidebar-foot-note {
+  color: var(--app-text-tertiary);
 }

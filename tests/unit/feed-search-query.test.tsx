@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import Feed from "../../src/pages/Feed";
 import { AuthContext, type AuthCtx } from "../../src/context/auth-context";
+import { ThemeProvider } from "../../src/context/ThemeProvider";
 
 vi.mock("../../src/lib/firestore", () => ({
   subscribeThreads: vi.fn((_opts: unknown, onNext: (threads: unknown[]) => void) => {
@@ -25,11 +26,13 @@ function renderFeedAt(path: string) {
   };
 
   return render(
-    <AuthContext.Provider value={value}>
-      <MemoryRouter initialEntries={[path]}>
-        <Feed />
-      </MemoryRouter>
-    </AuthContext.Provider>
+    <ThemeProvider>
+      <AuthContext.Provider value={value}>
+        <MemoryRouter initialEntries={[path]}>
+          <Feed />
+        </MemoryRouter>
+      </AuthContext.Provider>
+    </ThemeProvider>
   );
 }
 

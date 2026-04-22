@@ -40,9 +40,17 @@ src/lib/banned-words.ts
 functions/src/banned-words.ts
 
 # --- Local AI / agent tooling (skills, editor agent config — not app source) ---
+.claude/
 .agents/
 .cursor/
+.cursorignore
+.cursorules
 .codex/
+.aider*
+.continue/
+.codeium/
+.github/copilot-instructions.md
+CLAUDE.md
 
 # Local “source of truth” / prompt dumps for agents (may describe your stack in depth)
 PROJECT_CONTEXT.md

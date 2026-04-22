@@ -244,14 +244,14 @@ export async function seedCommunities() {
       fullName: c.fullName,
       description: c.description,
     };
-    if (!snap.exists()) {
+    if (snap.exists()) {
+      await setDoc(ref, meta, { merge: true });
+    } else {
       await setDoc(ref, {
         ...meta,
         memberCount: 0,
         createdAt: serverTimestamp(),
       });
-    } else {
-      await setDoc(ref, meta, { merge: true });
     }
   }
 
@@ -729,11 +729,10 @@ export type Post = {
 type ThreadDocData = Omit<Thread, "id">;
 type PostDocData = Omit<Post, "id">;
 
+type ThreadSortField = "lastActivityAt" | "createdAt" | "score" | "credibilityScore";
+
 /** Descending sort key for thread list (higher = more relevant first). */
-function threadSortValue(
-  t: Thread,
-  field: "lastActivityAt" | "createdAt" | "score" | "credibilityScore"
-): number {
+function threadSortValue(t: Thread, field: ThreadSortField): number {
   if (field === "score") {
     const s = t.score;
     return typeof s === "number" && !Number.isNaN(s) ? s : 0;
@@ -858,7 +857,9 @@ export async function createThread(input: {
     lastActivityAt: serverTimestamp(),
     postCount: 0,
   });
-  void recordUserContribution(sanitizedInput.authorId, "thread");
+  recordUserContribution(sanitizedInput.authorId, "thread").catch((err) =>
+    console.error("recordUserContribution (thread) failed", err)
+  );
   return ref.id;
 }
 
@@ -1090,7 +1091,9 @@ export async function addPost(
     moderationStatus: "approved",
     createdAt: serverTimestamp(),
   });
-  void recordUserContribution(sanitizedInput.authorId, "comment");
+  recordUserContribution(sanitizedInput.authorId, "comment").catch((err) =>
+    console.error("recordUserContribution (comment) failed", err)
+  );
 
   // best-effort: update thread stats; may fail if rules restrict thread updates
   try {

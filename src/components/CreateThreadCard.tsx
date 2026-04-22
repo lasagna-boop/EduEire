@@ -66,6 +66,29 @@ export function CreateThreadCard(props: Readonly<Props>) {
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
+  const useOverlay = props.presentation === "overlay";
+
+  useEffect(() => {
+    if (!useOverlay || !showNew) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [useOverlay, showNew]);
+
+  useEffect(() => {
+    if (!useOverlay || !showNew) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLocalError(null);
+        setShowNew(false);
+      }
+    };
+    globalThis.addEventListener("keydown", onKeyDown);
+    return () => globalThis.removeEventListener("keydown", onKeyDown);
+  }, [useOverlay, showNew]);
+
   const effectiveCommunityId =
     props.mode === "community" ? props.fixedCommunityId : props.communityId;
 
@@ -251,29 +274,6 @@ export function CreateThreadCard(props: Readonly<Props>) {
       </div>
     </form>
   );
-
-  const useOverlay = props.presentation === "overlay";
-
-  useEffect(() => {
-    if (!useOverlay || !showNew) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [useOverlay, showNew]);
-
-  useEffect(() => {
-    if (!useOverlay || !showNew) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setLocalError(null);
-        setShowNew(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [useOverlay, showNew]);
 
   const overlayNode =
     useOverlay && showNew ? (

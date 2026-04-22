@@ -8,10 +8,10 @@
 
 .policy-page__hero,
 .policy-page__card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--app-bg-card);
+  border: 1px solid var(--app-border-hairline);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(26, 32, 44, 0.08);
+  box-shadow: 0 1px 3px var(--app-shadow-rail);
   padding: 20px 22px;
   margin-bottom: 14px;
 }
@@ -19,20 +19,20 @@
 .policy-page__hero h1,
 .policy-page__card h2 {
   margin: 0 0 8px;
-  color: #1a202c;
+  color: var(--app-text-primary);
 }
 
 .policy-page__hero p,
 .policy-page__card p {
   margin: 0;
-  color: #4a5568;
+  color: var(--app-text-secondary);
   line-height: 1.6;
 }
 
 .policy-page__list {
   margin: 0;
   padding-left: 20px;
-  color: #4a5568;
+  color: var(--app-text-secondary);
   line-height: 1.6;
 }
 
@@ -52,16 +52,16 @@
   gap: 6px;
   font-size: 0.88rem;
   font-weight: 700;
-  color: #1a202c;
+  color: var(--app-text-primary);
 }
 
 .policy-page__form input,
 .policy-page__form textarea {
   font: inherit;
   font-weight: 400;
-  color: #1a202c;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  color: var(--app-text-primary);
+  background: var(--app-bg-card);
+  border: 1px solid var(--app-border-hairline);
   border-radius: 10px;
   padding: 10px 12px;
 }
@@ -69,7 +69,7 @@
 .policy-page__form input:focus,
 .policy-page__form textarea:focus {
   outline: none;
-  border-color: #2d6a4f;
+  border-color: var(--edu-btn-green);
   box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.12);
 }
 
@@ -89,7 +89,7 @@
 
 .policy-page__success {
   background: rgba(45, 106, 79, 0.1);
-  border: 1px solid #2d6a4f;
+  border: 1px solid var(--edu-btn-green);
   color: #1b4332;
 }
 

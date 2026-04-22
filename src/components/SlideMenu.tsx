@@ -44,7 +44,6 @@ export default function SlideMenu() {
       <div
         className={`slide-menu__overlay ${open ? "slide-menu__overlay--visible" : ""}`}
         onClick={close}
-        role="presentation"
         aria-hidden="true"
       />
 
@@ -103,11 +102,7 @@ export default function SlideMenu() {
 
         {user ? (
           <div className="slide-menu__footer">
-            <button
-              type="button"
-              className="slide-menu__item slide-menu__item--logout"
-              onClick={() => void handleLogout()}
-            >
+            <button type="button" className="slide-menu__item slide-menu__item--logout" onClick={handleLogout}>
               Log out
             </button>
           </div>
@@ -125,7 +120,7 @@ export default function SlideMenu() {
         aria-label="Open menu"
         aria-expanded={open}
       >
-        <img src="/menu-icon.png" alt="" className="slide-menu__icon" />
+        <img src="/menu-icon.png" alt="" className="slide-menu__icon" aria-hidden />
       </button>
 
       {typeof document !== "undefined" && sheet ? createPortal(sheet, document.body) : null}

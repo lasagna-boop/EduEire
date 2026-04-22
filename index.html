@@ -1,6 +1,23 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      (function () {
+        try {
+          var k = "edu-theme-preference";
+          var pref = localStorage.getItem(k);
+          var dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var resolved = "light";
+          if (pref === "dark") resolved = "dark";
+          else if (pref === "light") resolved = "light";
+          else resolved = dark ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme", resolved);
+          document.documentElement.style.colorScheme = resolved;
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta

@@ -18,7 +18,7 @@ export function validatePasswordPolicy(
   if (!/[A-Z]/.test(password)) {
     return { ok: false, message: "Password must include an uppercase letter." };
   }
-  if (!/[0-9]/.test(password)) {
+  if (!/\d/.test(password)) {
     return { ok: false, message: "Password must include a digit." };
   }
   return { ok: true };

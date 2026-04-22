@@ -76,22 +76,22 @@
 .login-page__title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1a202c;
+  color: var(--app-text-primary);
   margin: 0 0 8px 0;
 }
 
 .login-page__subtitle {
-  color: #4a5568;
+  color: var(--app-text-secondary);
   margin: 0 0 24px 0;
   font-size: 0.95rem;
 }
 
 .login-page__already {
-  color: #1a202c;
+  color: var(--app-text-primary);
 }
 
 .login-page__already a {
-  color: #2d6a4f;
+  color: var(--edu-btn-green);
   font-weight: 600;
 }
 
@@ -103,30 +103,30 @@
 
 .login-page__input {
   padding: 12px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--app-border-hairline);
   border-radius: 20px;
   font-size: 0.95rem;
-  background: #faf9f6;
+  background: var(--app-bg-muted);
   transition: all 0.2s;
 }
 
 .login-page__input:focus {
   outline: none;
-  border-color: #2d6a4f;
+  border-color: var(--edu-btn-green);
   box-shadow: 0 0 0 4px rgba(45, 106, 79, 0.12);
-  background: #ffffff;
+  background: var(--app-bg-card);
 }
 
 .login-page__input::placeholder {
-  color: #4a5568;
+  color: var(--app-text-secondary);
 }
 
 .login-page__error {
-  color: #1a202c;
+  color: var(--app-text-primary);
   font-size: 0.875rem;
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid #ff9f1c;
+  border: 1px solid var(--edu-btn-accent);
   border-radius: 10px;
   background: rgba(255, 159, 28, 0.12);
 }
@@ -146,7 +146,7 @@
   font-weight: var(--edu-btn-weight);
   letter-spacing: -0.02em;
   font-family: inherit;
-  color: #ffffff;
+  color: var(--app-on-brand-fg);
   cursor: pointer;
   background: linear-gradient(
     135deg,
@@ -189,11 +189,11 @@
   content: "";
   flex: 1;
   height: 1px;
-  background: #e2e8f0;
+  background: var(--app-border-hairline);
 }
 
 .login-page__divider span {
-  color: #4a5568;
+  color: var(--app-text-secondary);
   font-size: 0.8rem;
   text-transform: uppercase;
 }
@@ -221,7 +221,7 @@
 
 .login-page__switch:hover:not(:disabled) {
   border-color: var(--edu-btn-accent);
-  color: #0f172a;
+  color: var(--app-text-strong);
   box-shadow: var(--edu-btn-shadow-accent);
   transform: translateY(-1px);
 }

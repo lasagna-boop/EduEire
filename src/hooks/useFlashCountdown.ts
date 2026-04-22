@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import type { Thread } from "../lib/firestore";
 import { parseFirestoreDate } from "../lib/firestoreFormat";
 
+/** Firestore Timestamp, Date, millis, or ISO string passed into countdown hooks. */
+type ExpiryInput = unknown | null | undefined;
+
 function formatRemaining(diffMs: number): string {
   if (diffMs <= 0) return "Expired";
   const h = Math.floor(diffMs / 3600000);
@@ -15,16 +18,16 @@ function formatRemaining(diffMs: number): string {
 /**
  * Live countdown for any Firestore-style expiry (thread flash, profile flash status, etc.).
  */
-export function useExpiryCountdown(expiresAt: unknown | null | undefined): string | null {
+export function useExpiryCountdown(expiresAt: ExpiryInput): string | null {
   const [now, setNow] = useState(() => Date.now());
-  const active = expiresAt != null && expiresAt !== undefined;
+  const active = expiresAt != null;
 
   useEffect(() => {
     if (!active) return;
-    const id = window.setInterval(() => {
+    const id = globalThis.setInterval(() => {
       setNow(Date.now());
     }, 1000);
-    return () => window.clearInterval(id);
+    return () => globalThis.clearInterval(id);
   }, [active, expiresAt]);
 
   if (!active) return null;

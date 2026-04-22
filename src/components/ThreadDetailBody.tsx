@@ -50,7 +50,7 @@ export function ThreadDetailBody({
   onCommentFlagged,
   onReplySubmit,
   viewerIsAdmin,
-}: ThreadDetailBodyProps) {
+}: Readonly<ThreadDetailBodyProps>) {
   const flashRemaining = useFlashCountdown(thread);
   const commentRoots = useMemo(() => buildCommentTree(comments), [comments]);
   const commentCount = useMemo(

@@ -116,7 +116,7 @@ export default function MapPage() {
       }
     };
 
-    void load();
+    load();
   }, []);
 
   const filteredPoints = useMemo(() => {

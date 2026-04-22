@@ -37,7 +37,7 @@ function hasLongCharRun(text: string): boolean {
 }
 
 function hasRepeatedPhrase(text: string): boolean {
-  const normalized = text.toLowerCase().replace(/\s+/g, " ").trim();
+  const normalized = text.toLowerCase().replaceAll(/\s+/g, " ").trim();
   return /\b(.{3,40})\b(?:\s+\1){2,}/i.test(normalized);
 }
 

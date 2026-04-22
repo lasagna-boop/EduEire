@@ -14,15 +14,15 @@ export function basePublicHandleFromUser(
 ): string {
   if (email?.includes("@")) {
     const local = email.split("@")[0].trim().toLowerCase();
-    const s = local.replace(/[^a-z0-9._-]/g, "").slice(0, 24);
+    const s = local.replaceAll(/[^a-z0-9._-]/g, "").slice(0, 24);
     if (s.length >= 2) return s;
   }
   if (displayName?.trim()) {
     const s = displayName
       .trim()
       .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9._-]/g, "")
+      .replaceAll(/\s+/g, "_")
+      .replaceAll(/[^a-z0-9._-]/g, "")
       .slice(0, 24);
     if (s.length >= 2) return s;
   }
@@ -33,13 +33,13 @@ export function basePublicHandleFromUser(
  * Pick a unique publicHandle for this uid (Firestore users.publicHandle).
  */
 export async function resolveUniquePublicHandle(uid: string, base: string): Promise<string> {
-  const normalized = base.toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 24) || "member";
+  const normalized = base.toLowerCase().replaceAll(/[^a-z0-9._-]/g, "").slice(0, 24) || "member";
   const candidates = [
     normalized,
     `${normalized}-${uid.slice(-4)}`,
     `${normalized}-${uid.slice(-6)}`,
     `u-${uid.slice(-8)}`,
-    `id${uid.replace(/[^a-zA-Z0-9]/g, "").slice(-12)}`.toLowerCase(),
+    `id${uid.replaceAll(/[^a-zA-Z0-9]/g, "").slice(-12)}`.toLowerCase(),
   ];
   for (const c of candidates) {
     if (c.length < 2 || c.length > 30) continue;
@@ -49,10 +49,12 @@ export async function resolveUniquePublicHandle(uid: string, base: string): Prom
     const conflict = snap.docs.some((d) => d.id !== uid);
     if (!conflict) return c;
   }
-  const alnum = uid.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  const tail = (alnum.length >= 8 ? alnum.slice(-14) : uid.replace(/[^a-zA-Z0-9]/g, "")).toLowerCase();
+  const alnum = uid.replaceAll(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  const tail = (alnum.length >= 8 ? alnum.slice(-14) : uid.replaceAll(/[^a-zA-Z0-9]/g, "")).toLowerCase();
   const fallback = `u${tail}`.slice(0, 30);
-  return HANDLE_RE.test(fallback) ? fallback : `user${uid.slice(0, 10)}`.toLowerCase().replace(/[^a-z0-9]/g, "x");
+  return HANDLE_RE.test(fallback)
+    ? fallback
+    : `user${uid.slice(0, 10)}`.toLowerCase().replaceAll(/[^a-z0-9]/g, "x");
 }
 
 /**

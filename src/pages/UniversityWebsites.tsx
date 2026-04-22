@@ -113,7 +113,7 @@ export default function UniversityWebsites() {
         if (!cancelled) setActiveUsersLoading(false);
       }
     };
-    void loadActiveUsers();
+    loadActiveUsers();
     return () => {
       cancelled = true;
     };

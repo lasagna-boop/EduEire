@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import App from "../../src/App";
 import { AuthContext, type AuthCtx } from "../../src/context/auth-context";
+import { ThemeProvider } from "../../src/context/ThemeProvider";
 
 function renderAppAt(path: string, auth: Partial<AuthCtx>) {
   const value: AuthCtx = {
@@ -15,11 +16,13 @@ function renderAppAt(path: string, auth: Partial<AuthCtx>) {
   };
 
   return render(
-    <AuthContext.Provider value={value}>
-      <MemoryRouter initialEntries={[path]}>
-        <App />
-      </MemoryRouter>
-    </AuthContext.Provider>
+    <ThemeProvider>
+      <AuthContext.Provider value={value}>
+        <MemoryRouter initialEntries={[path]}>
+          <App />
+        </MemoryRouter>
+      </AuthContext.Provider>
+    </ThemeProvider>
   );
 }
 

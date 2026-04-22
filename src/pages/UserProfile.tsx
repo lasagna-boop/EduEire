@@ -168,7 +168,7 @@ export default function UserProfile() {
   }, [resolvedUid, profileKeyParam, navigate, fbUser]);
 
   useEffect(() => {
-    if (resolvedUid) void load();
+    if (resolvedUid) load();
   }, [resolvedUid, load]);
 
   const isSelf = fbUser?.uid === resolvedUid;
@@ -277,7 +277,7 @@ export default function UserProfile() {
                     <button
                       type="button"
                       className="profile-user-follow-btn"
-                      onClick={() => void handleToggleFollow()}
+                      onClick={() => handleToggleFollow()}
                       disabled={followBusy}
                       aria-pressed={isFollowing}
                     >
